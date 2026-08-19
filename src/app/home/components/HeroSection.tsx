@@ -11,15 +11,9 @@ export default function HeroSection() {
       {/* Hero Content — centered */}
       <div className="relative z-10 flex flex-col items-center text-center pt-16 pb-0 px-5 md:px-8">
 
-        {/* Eyebrow badge */}
-        <div className="hero-headline inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-primary-mint/40 text-near-black font-sans text-xs font-600 px-5 py-2.5 rounded-pill mb-4 shadow-sm tracking-widest uppercase">
-          <span className="w-2 h-2 rounded-full bg-primary-mint inline-block" />
-          Student Meal Subscription · AIU Campus
-        </div>
-
         {/* Main headline */}
         <h1
-          className="hero-headline font-sans font-700 text-near-black leading-tight tracking-tight mb-3 max-w-3xl"
+          className="hero-headline font-700 text-near-black tracking-tight mb-3 max-w-3xl text-[37px]"
           style={{ fontSize: 'clamp(2.2rem, 5vw, 3.2rem)', fontWeight: 700, letterSpacing: '-0.025em', animationDelay: '0.1s' }}
         >
           A smarter way to{' '}
