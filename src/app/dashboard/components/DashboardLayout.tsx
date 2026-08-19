@@ -1,0 +1,224 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
+
+const navItems = [
+  {
+    href: '/dashboard',
+    label: 'Home',
+    icon: (active: boolean) => (
+      <svg className={`w-5 h-5 ${active ? 'text-[#3ECBA0]' : 'text-[#9CA3AF]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+      </svg>
+    ),
+  },
+  {
+    href: '/dashboard/meals',
+    label: 'Meals',
+    icon: (active: boolean) => (
+      <svg className={`w-5 h-5 ${active ? 'text-[#3ECBA0]' : 'text-[#9CA3AF]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+      </svg>
+    ),
+  },
+  {
+    href: '/dashboard/orders',
+    label: 'Orders',
+    icon: (active: boolean) => (
+      <svg className={`w-5 h-5 ${active ? 'text-[#3ECBA0]' : 'text-[#9CA3AF]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+      </svg>
+    ),
+  },
+  {
+    href: '/dashboard/wallet',
+    label: 'Wallet',
+    icon: (active: boolean) => (
+      <svg className={`w-5 h-5 ${active ? 'text-[#3ECBA0]' : 'text-[#9CA3AF]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+      </svg>
+    ),
+  },
+  {
+    href: '/dashboard/profile',
+    label: 'Profile',
+    icon: (active: boolean) => (
+      <svg className={`w-5 h-5 ${active ? 'text-[#3ECBA0]' : 'text-[#9CA3AF]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      </svg>
+    ),
+  },
+  {
+    href: '/dashboard/plans',
+    label: 'Plans',
+    icon: (active: boolean) => (
+      <svg className={`w-5 h-5 ${active ? 'text-[#3ECBA0]' : 'text-[#9CA3AF]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 4h6m-6 4h6" />
+      </svg>
+    ),
+  },
+];
+
+const bottomNavItems = [
+  {
+    href: '/dashboard/support',
+    label: 'Help & Support',
+    icon: (
+      <svg className="w-4 h-4 text-[#9CA3AF]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
+];
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const { user, signOut } = useAuth();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push('/login');
+  };
+
+  const isActive = (href: string) => {
+    if (href === '/dashboard') return pathname === '/dashboard';
+    return pathname.startsWith(href);
+  };
+
+  const initials = user?.user_metadata?.full_name
+    ? user.user_metadata.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
+    : user?.email?.[0]?.toUpperCase() || 'U';
+
+  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Student';
+
+  return (
+    <div className="min-h-screen bg-[#F5F6FA] flex">
+      {/* ── Sidebar — desktop ── */}
+      <aside className="hidden lg:flex flex-col w-56 bg-white border-r border-gray-100 fixed inset-y-0 left-0 z-30">
+        {/* Logo */}
+        <div className="px-5 py-5 border-b border-gray-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 bg-[#3ECBA0] rounded-lg flex items-center justify-center">
+              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </div>
+            <span className="text-[#1A1A1A] font-bold text-lg tracking-tight">Makanan</span>
+          </div>
+        </div>
+
+        {/* Main Nav */}
+        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+          {navItems.map((item) => {
+            const active = isActive(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group ${
+                  active
+                    ? 'bg-[#EBF9F4] text-[#3ECBA0]'
+                    : 'text-[#6B7280] hover:bg-gray-50 hover:text-[#374151]'
+                }`}
+              >
+                {item.icon(active)}
+                <span className={`text-sm font-medium ${active ? 'text-[#3ECBA0]' : 'text-[#6B7280] group-hover:text-[#374151]'}`}>
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Bottom nav */}
+        <div className="px-3 pb-3 space-y-0.5 border-t border-gray-100 pt-3">
+          {bottomNavItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group ${
+                pathname.startsWith(item.href) ? 'bg-[#EBF9F4] text-[#3ECBA0]' : 'text-[#9CA3AF] hover:bg-gray-50 hover:text-[#374151]'
+              }`}
+            >
+              {item.icon}
+              <span className="text-sm font-medium">{item.label}</span>
+            </Link>
+          ))}
+          <Link
+            href="#"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 text-[#9CA3AF] hover:bg-gray-50 hover:text-[#374151]"
+          >
+            <svg className="w-4 h-4 text-[#9CA3AF]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+            <span className="text-sm font-medium">Terms & Privacy</span>
+          </Link>
+          <button
+            onClick={handleSignOut}
+            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-[#9CA3AF] hover:bg-red-50 hover:text-red-500 transition-all duration-150 group"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span className="text-sm font-medium">Log Out</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* ── Main content ── */}
+      <main className="flex-1 lg:ml-56 pb-20 lg:pb-0 min-h-screen flex flex-col">
+        {/* Top bar — desktop only */}
+        <div className="hidden lg:flex items-center justify-end px-8 py-4 bg-white border-b border-gray-100 sticky top-0 z-20">
+          <div className="flex items-center gap-3">
+            <button className="relative w-9 h-9 bg-gray-50 rounded-full flex items-center justify-center border border-gray-100 hover:bg-gray-100 transition-colors">
+              <svg className="w-4 h-4 text-[#6B7280]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[#3ECBA0] rounded-full" />
+            </button>
+            <div className="flex items-center gap-2.5 pl-3 border-l border-gray-100">
+              <div className="w-8 h-8 bg-gradient-to-br from-[#3ECBA0] to-[#2DAF87] rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-white font-bold text-xs">{initials}</span>
+              </div>
+              <div className="text-right">
+                <div className="text-[#1A1A1A] font-semibold text-sm leading-tight">{displayName}</div>
+                <div className="text-[#9CA3AF] text-xs">{user?.email}</div>
+              </div>
+              <svg className="w-4 h-4 text-[#9CA3AF]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+        </div>
+        <div className="flex-1">
+          {children}
+        </div>
+      </main>
+
+      {/* ── Bottom nav — mobile ── */}
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-100 z-30" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <div className="flex items-center justify-around px-1 py-2">
+          {navItems.slice(0, 5).map((item) => {
+            const active = isActive(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all min-w-0"
+              >
+                {item.icon(active)}
+                <span className={`text-xs font-medium transition-colors ${active ? 'text-[#3ECBA0]' : 'text-[#9CA3AF]'}`}>
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+    </div>
+  );
+}
