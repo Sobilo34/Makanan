@@ -13,7 +13,7 @@ export default function HeroSection() {
 
         {/* Main headline */}
         <h1
-          className="hero-headline font-sans font-700 text-near-black leading-tight tracking-tight mb-3 max-w-3xl"
+          className="hero-headline font-700 text-near-black tracking-tight mb-3 max-w-3xl text-[37px]"
           style={{ fontSize: 'clamp(2.2rem, 5vw, 3.2rem)', fontWeight: 700, letterSpacing: '-0.025em', animationDelay: '0.1s' }}
         >
           A smarter way to{' '}
