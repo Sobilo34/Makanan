@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
@@ -23,27 +24,15 @@ export default function Header() {
         <div className="max-w-6xl mx-auto px-5 md:px-8 flex items-center justify-between">
           {/* Logo */}
           <a href="#" className="flex items-center gap-2.5 group">
-            {/* Makanan SVG Logo Mark */}
-            <div className="flex items-center gap-2">
-              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="16" cy="16" r="16" fill="#3ECBA0" />
-                {/* Bowl icon */}
-                <path d="M8 17C8 21.4183 11.5817 25 16 25C20.4183 25 24 21.4183 24 17H8Z" fill="white" />
-                <path d="M10 17H22" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-                {/* Steam lines */}
-                <path d="M13 13C13 13 13.5 11.5 13 10" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-                <path d="M16 12C16 12 16.5 10.5 16 9" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-                <path d="M19 13C19 13 19.5 11.5 19 10" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-              <span
-                className={`font-sans font-700 text-xl tracking-tight transition-colors ${
-                  scrolled ? 'text-near-black' : 'text-near-black'
-                }`}
-                style={{ fontWeight: 700 }}
-              >
-                Makanan
-              </span>
-            </div>
+            <Image
+              src="/assets/images/makanan-logo-primary-1787355980109.png"
+              alt="Makanan — Eat with Ease"
+              width={160}
+              height={48}
+              className="object-contain"
+              style={{ maxHeight: 48 }}
+              priority
+            />
           </a>
 
           {/* Desktop Nav */}

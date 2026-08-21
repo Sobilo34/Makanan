@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 
 export default function Footer() {
   return (
@@ -7,19 +8,15 @@ export default function Footer() {
         {/* Left: Logo + tagline */}
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="16" cy="16" r="16" fill="#3ECBA0" />
-              <path d="M8 17C8 21.4183 11.5817 25 16 25C20.4183 25 24 21.4183 24 17H8Z" fill="white" />
-              <path d="M10 17H22" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-              <path d="M13 13C13 13 13.5 11.5 13 10" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-              <path d="M16 12C16 12 16.5 10.5 16 9" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-              <path d="M19 13C19 13 19.5 11.5 19 10" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-            <span className="font-sans font-700 text-white text-xl" style={{ fontWeight: 700 }}>Makanan</span>
+            <Image
+              src="/assets/images/image-1787356039140.png"
+              alt="Makanan — Eat with Ease"
+              width={160}
+              height={44}
+              className="object-contain"
+              style={{ maxHeight: 44 }}
+            />
           </div>
-          <p className="font-sans text-white/40 text-sm leading-snug max-w-[220px]" style={{ fontStyle: 'italic' }}>
-            · Eat with Ease ·
-          </p>
           <p className="font-sans text-white/30 text-xs leading-relaxed max-w-[220px] mt-1">
             Student meal subscription platform. Nutritious, affordable, convenient.
           </p>
