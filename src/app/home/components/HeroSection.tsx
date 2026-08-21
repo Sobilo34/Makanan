@@ -25,7 +25,7 @@ export default function HeroSection() {
           className="hero-sub font-sans font-400 text-muted-text leading-relaxed max-w-lg mb-6"
           style={{ fontSize: 'clamp(0.95rem, 2vw, 1.05rem)', animationDelay: '0.3s' }}
         >
-          Affordable meal plans for AIU students — starting from just RM250/month.
+          Guaranteed meals for students. Guaranteed revenue for vendors
         </p>
 
         {/* CTA Buttons */}
