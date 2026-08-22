@@ -35,20 +35,6 @@ interface Order {
   partners: { name: string };
 }
 
-const categoryColors: Record<string, string> = {
-  breakfast: 'bg-orange-100 text-orange-600',
-  lunch: 'bg-green-100 text-green-600',
-  dinner: 'bg-blue-100 text-blue-600',
-  supper: 'bg-purple-100 text-purple-600',
-};
-
-const categoryLabel: Record<string, string> = {
-  breakfast: 'Breakfast',
-  lunch: 'Lunch',
-  dinner: 'Dinner',
-  supper: 'Supper',
-};
-
 export default function DashboardHome() {
   const { user } = useAuth();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -263,8 +249,8 @@ export default function DashboardHome() {
                     </div>
                     {/* Meal info */}
                     <div className="p-3 flex flex-col flex-1">
-                      <span className={`inline-block text-xs font-semibold px-2 py-0.5 rounded-full mb-1.5 self-start ${categoryColors[meal.category] || 'bg-gray-100 text-gray-600'}`}>
-                        {categoryLabel[meal.category] || meal.category}
+                      <span className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full mb-1.5 self-start bg-[#EBF9F4] text-[#3ECBA0]">
+                        Meal
                       </span>
                       <p className="text-[#1A1A1A] font-bold text-sm leading-tight mb-0.5">{meal.name}</p>
                       <p className="text-[#9CA3AF] text-xs mb-3">{meal.partners?.name}</p>
@@ -322,7 +308,7 @@ export default function DashboardHome() {
                             </td>
                             <td className="px-5 py-4">
                               <p className="text-[#1A1A1A] font-semibold text-sm">{order.meals?.name || 'Meal'}</p>
-                              <p className="text-[#9CA3AF] text-xs capitalize">{order.meals?.category || ''} • {order.partners?.name || ''}</p>
+                              <p className="text-[#9CA3AF] text-xs">{order.partners?.name || ''}</p>
                             </td>
                             <td className="px-5 py-4 hidden sm:table-cell">
                               <p className="text-[#374151] text-sm">{dt.date}</p>
