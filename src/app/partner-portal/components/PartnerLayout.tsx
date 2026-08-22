@@ -41,6 +41,15 @@ const navItems = [
     ),
   },
   {
+    href: '/partner-portal/earnings',
+    label: 'Earnings',
+    icon: (active: boolean) => (
+      <svg className={`w-5 h-5 ${active ? 'text-[#3ECBA0]' : 'text-[#9CA3AF]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
+  {
     href: '/partner-portal/verify',
     label: 'Verify Meal',
     icon: (active: boolean) => (
@@ -116,7 +125,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] flex" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="min-h-screen bg-[#F5F6FA] flex" style={{ fontFamily: "'Poppins', sans-serif" }}>
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-40 w-[220px] bg-white border-r border-[#E5E7EB] flex flex-col transition-transform duration-300 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
         {/* Logo */}
