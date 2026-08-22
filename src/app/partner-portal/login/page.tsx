@@ -15,6 +15,15 @@ export default function PartnerLoginPage() {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  const DEMO_EMAIL = 'demo.partner@makanan.app';
+  const DEMO_PASSWORD = 'demo1234';
+
+  const fillDemo = () => {
+    setEmail(DEMO_EMAIL);
+    setPassword(DEMO_PASSWORD);
+    setError('');
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -125,6 +134,24 @@ export default function PartnerLoginPage() {
             <h1 className="text-2xl font-bold text-[#111827] mb-2">Partner Sign In</h1>
             <p className="text-[#6B7280] text-sm">Access your partner dashboard to manage meals and redemptions.</p>
           </div>
+
+          {/* Demo hint */}
+          <button
+            type="button"
+            onClick={fillDemo}
+            className="w-full mb-6 text-left bg-gradient-to-r from-[#E6F9F2] to-[#F2FBF7] border border-[#C8F0E4] rounded-2xl p-4 flex items-start gap-3 hover:border-[#3ECBA0]/60 transition-all group"
+          >
+            <div className="w-8 h-8 bg-[#3ECBA0]/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg className="w-4 h-4 text-[#3ECBA0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[#2DAF87] text-xs font-bold mb-0.5">Demo Partner Account</p>
+              <p className="text-[#1A1A1A] text-xs font-mono">{DEMO_EMAIL} · {DEMO_PASSWORD}</p>
+              <p className="text-[#9CA3AF] text-xs mt-1 group-hover:text-[#6B7280] transition-colors">Click to fill credentials automatically</p>
+            </div>
+          </button>
 
           {error && (
             <div className="mb-5 p-4 rounded-xl bg-red-50 border border-red-100 flex items-start gap-3">

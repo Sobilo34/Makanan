@@ -54,6 +54,7 @@ export async function middleware(request: NextRequest) {
     '/partner-portal/login',
     '/partner-portal/register',
     '/partner-portal/forgot-password',
+    '/partner-portal/apply',
   ];
   if (
     !user &&
