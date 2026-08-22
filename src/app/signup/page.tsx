@@ -132,7 +132,7 @@ export default function SignupPage() {
         <div className="relative z-10 p-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Image
-              src="/assets/images/image-1787356052779.png"
+              src="/assets/images/makanan-app-icon-removebg-preview-1787356761493.png"
               alt="Makanan"
               width={40}
               height={40}
@@ -171,9 +171,13 @@ export default function SignupPage() {
       <div className="flex-1 flex items-center justify-center p-6 lg:p-12 bg-white overflow-y-auto">
         <div className="w-full max-w-[400px] py-8">
           <div className="flex items-center gap-3 mb-10 lg:hidden">
-            <div className="w-9 h-9 bg-[#3ECBA0] rounded-xl flex items-center justify-center shadow-lg shadow-[#3ECBA0]/30">
-              <span className="text-white font-bold text-base">M</span>
-            </div>
+            <Image
+              src="/assets/images/makanan-app-icon-removebg-preview-1787356761493.png"
+              alt="Makanan"
+              width={36}
+              height={36}
+              className="object-contain"
+            />
             <span className="text-[#1A1A1A] font-bold text-lg tracking-tight">Makanan</span>
           </div>
 

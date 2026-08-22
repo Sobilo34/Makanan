@@ -182,7 +182,7 @@ export default function LoginPage() {
         <div className="relative z-10 p-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Image
-              src="/assets/images/image-1787356052779.png"
+              src="/assets/images/makanan-app-icon-removebg-preview-1787356761493.png"
               alt="Makanan"
               width={40}
               height={40}
@@ -228,7 +228,7 @@ export default function LoginPage() {
           {/* Mobile logo */}
           <div className="flex items-center gap-3 mb-10 lg:hidden">
             <Image
-              src="/assets/images/image-1787356052779.png"
+              src="/assets/images/makanan-app-icon-removebg-preview-1787356761493.png"
               alt="Makanan"
               width={36}
               height={36}

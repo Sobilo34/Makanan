@@ -9,13 +9,14 @@ export default function Footer() {
         <div>
           <div className="flex items-center gap-2 mb-3">
             <Image
-              src="/assets/images/image-1787356039140.png"
+              src="/assets/images/makanan-icon-dark-removebg-preview-1787356765802.png"
               alt="Makanan — Eat with Ease"
-              width={160}
+              width={44}
               height={44}
               className="object-contain"
               style={{ maxHeight: 44 }}
             />
+            <span className="text-white font-bold text-lg tracking-tight">Makanan</span>
           </div>
           <p className="font-sans text-white/30 text-xs leading-relaxed max-w-[220px] mt-1">
             Student meal subscription platform. Nutritious, affordable, convenient.

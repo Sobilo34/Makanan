@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   title: 'Makanan — Student Meal Network',
   description: 'Affordable, predictable campus meals for students. Subscribe to a meal plan and redeem meals with a QR code.',
   icons: {
-    icon: [{ url: '/assets/images/image-1787356070849.png', type: 'image/png' }],
+    icon: [{ url: '/assets/images/makanan-icon-light-removebg-preview-1787356770029.png', type: 'image/png' }],
   },
 };
 

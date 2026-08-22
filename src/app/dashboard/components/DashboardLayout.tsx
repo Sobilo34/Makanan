@@ -104,7 +104,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="px-5 py-5 border-b border-gray-100">
           <div className="flex items-center gap-2.5">
             <Image
-              src="/assets/images/image-1787356027380.png"
+              src="/assets/images/makanan-logo-black-removebg-preview-1787356756845.png"
               alt="Makanan Logo"
               width={140}
               height={40}

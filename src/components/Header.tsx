@@ -25,14 +25,14 @@ export default function Header() {
           {/* Logo */}
           <a href="#" className="flex items-center gap-2.5 group">
             <Image
-              src="/assets/images/makanan-logo-primary-1787355980109.png"
-              alt="Makanan — Eat with Ease"
-              width={160}
-              height={48}
+              src="/assets/images/makanan-symbol-removebg-preview-1787356773844.png"
+              alt="Makanan symbol"
+              width={36}
+              height={36}
               className="object-contain"
-              style={{ maxHeight: 48 }}
               priority
             />
+            <span className="font-bold text-[#1A1A1A] text-lg tracking-tight">Makanan</span>
           </a>
 
           {/* Desktop Nav */}
