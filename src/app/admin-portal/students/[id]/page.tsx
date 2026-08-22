@@ -128,6 +128,24 @@ export default function StudentDetailPage() {
       }
     };
     load();
+
+    // Real-time: reflect subscription cancellations immediately
+    if (!studentId.startsWith('demo-')) {
+      const channel = supabase
+        .channel(`admin-student-subs-${studentId}`)
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'subscriptions',
+          filter: `user_id=eq.${studentId}`,
+        }, (payload) => {
+          setSubscriptions((prev) =>
+            prev.map((s) => s.id === (payload.new as any).id ? { ...s, ...(payload.new as any) } : s)
+          );
+        })
+        .subscribe();
+      return () => { supabase.removeChannel(channel); };
+    }
   }, [studentId]);
 
   const activeSubscription = subscriptions.find((s) => s.status === 'active');

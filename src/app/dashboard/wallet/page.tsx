@@ -26,6 +26,7 @@ interface Transaction {
 
 const txnIcon = (desc: string, delta: number) => {
   if (desc.toLowerCase().includes('subscription') || desc.toLowerCase().includes('subscribed')) return '📋';
+  if (desc.toLowerCase().includes('cancelled') || desc.toLowerCase().includes('refund')) return '↩️';
   if (delta < 0) return '🍽️';
   if (desc.toLowerCase().includes('top') || desc.toLowerCase().includes('balance')) return '💳';
   return '✨';
@@ -34,12 +35,140 @@ const txnIcon = (desc: string, delta: number) => {
 const txnIconBg = (delta: number) =>
   delta < 0 ? 'bg-red-50' : 'bg-[#EBF9F4]';
 
+// ── Cancel Confirmation Modal ──────────────────────────────────────────────
+interface CancelModalProps {
+  subscription: Subscription;
+  creditsRemaining: number;
+  onConfirm: () => void;
+  onClose: () => void;
+  cancelling: boolean;
+  cancelError: string;
+}
+
+function CancelModal({ subscription, creditsRemaining, onConfirm, onClose, cancelling, cancelError }: CancelModalProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={!cancelling ? onClose : undefined} />
+      {/* Modal */}
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 z-10">
+        {/* Icon */}
+        <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <svg className="w-7 h-7 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+        </div>
+
+        <h2 className="text-[#1A1A1A] font-bold text-lg text-center mb-1">Cancel Subscription?</h2>
+        <p className="text-[#6B7280] text-sm text-center mb-5 leading-relaxed">
+          You are about to cancel your <span className="font-semibold text-[#1A1A1A]">{subscription.meal_plans?.name}</span> plan.
+        </p>
+
+        {/* Refund info */}
+        <div className={`rounded-xl p-4 mb-5 border ${creditsRemaining > 0 ? 'bg-[#EBF9F4] border-[#C8F0E4]' : 'bg-gray-50 border-gray-200'}`}>
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">{creditsRemaining > 0 ? '💰' : 'ℹ️'}</span>
+            <div>
+              {creditsRemaining > 0 ? (
+                <>
+                  <p className="text-[#2DAF87] font-bold text-sm">Instant Wallet Refund</p>
+                  <p className="text-[#5A7A6A] text-xs mt-0.5">
+                    <span className="font-bold text-[#1A1A1A]">{creditsRemaining} unused meal credit{creditsRemaining !== 1 ? 's' : ''}</span> will be credited to your wallet immediately.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-[#6B7280] font-bold text-sm">No Credits to Refund</p>
+                  <p className="text-[#9CA3AF] text-xs mt-0.5">All meal credits have already been used.</p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {cancelError && (
+          <div className="mb-4 bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-red-600 text-sm flex items-center gap-2">
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {cancelError}
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            disabled={cancelling}
+            className="flex-1 py-3 rounded-xl border border-gray-200 text-[#374151] font-semibold text-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
+          >
+            Keep Plan
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={cancelling}
+            className="flex-1 py-3 rounded-xl bg-red-500 text-white font-semibold text-sm hover:bg-red-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            {cancelling ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Cancelling...
+              </>
+            ) : (
+              'Yes, Cancel'
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Success Toast ──────────────────────────────────────────────────────────
+function SuccessToast({ creditsRefunded, onClose }: { creditsRefunded: number; onClose: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 4000);
+    return () => clearTimeout(t);
+  }, [onClose]);
+
+  return (
+    <div className="fixed top-5 inset-x-0 flex justify-center z-50 px-4">
+      <div className="bg-[#1A1A1A] text-white rounded-2xl px-5 py-3.5 flex items-center gap-3 shadow-xl max-w-sm w-full">
+        <div className="w-8 h-8 bg-[#3ECBA0] rounded-full flex items-center justify-center flex-shrink-0">
+          <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <div className="flex-1">
+          <p className="font-bold text-sm">Subscription Cancelled</p>
+          {creditsRefunded > 0 && (
+            <p className="text-[#9CA3AF] text-xs mt-0.5">{creditsRefunded} credit{creditsRefunded !== 1 ? 's' : ''} refunded to your wallet</p>
+          )}
+        </div>
+        <button onClick={onClose} className="text-[#9CA3AF] hover:text-white transition-colors">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function WalletPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Cancel modal state
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState('');
+  const [successRefund, setSuccessRefund] = useState<number | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -82,7 +211,10 @@ export default function WalletPage() {
         table: 'subscriptions',
         filter: `user_id=eq.${user.id}`,
       }, (payload) => {
-        if (payload.new) {
+        if (payload.new && (payload.new as any).status !== 'active') {
+          // Subscription was cancelled/expired — remove from state
+          setSubscription(null);
+        } else if (payload.new) {
           setSubscription((prev) => prev ? { ...prev, ...(payload.new as any) } : null);
         }
       })
@@ -119,10 +251,47 @@ export default function WalletPage() {
       month: 'short',
       year: 'numeric',
     }) +
-    '• ' + new Date(dateStr).toLocaleTimeString('en-MY', {
+    ' • ' + new Date(dateStr).toLocaleTimeString('en-MY', {
       hour: '2-digit',
       minute: '2-digit',
     });
+
+  const handleCancelConfirm = async () => {
+    if (!user || !subscription) return;
+    setCancelling(true);
+    setCancelError('');
+
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.rpc('cancel_subscription_with_refund', {
+        p_subscription_id: subscription.id,
+        p_user_id: user.id,
+      });
+
+      if (error) {
+        setCancelError(error.message || 'Cancellation failed. Please try again.');
+        setCancelling(false);
+        return;
+      }
+
+      const result = data as { success: boolean; error?: string; credits_refunded?: number };
+      if (!result?.success) {
+        setCancelError(result?.error || 'Cancellation failed. Please try again.');
+        setCancelling(false);
+        return;
+      }
+
+      // Success — update local state immediately (real-time will also fire)
+      setSubscription(null);
+      setShowCancelModal(false);
+      setSuccessRefund(result.credits_refunded ?? 0);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Cancellation failed. Please try again.';
+      setCancelError(msg);
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -136,6 +305,23 @@ export default function WalletPage() {
 
   return (
     <div className="min-h-full bg-[#F5F7F5] pb-8">
+      {/* Success toast */}
+      {successRefund !== null && (
+        <SuccessToast creditsRefunded={successRefund} onClose={() => setSuccessRefund(null)} />
+      )}
+
+      {/* Cancel confirmation modal */}
+      {showCancelModal && subscription && (
+        <CancelModal
+          subscription={subscription}
+          creditsRemaining={creditsRemaining}
+          onConfirm={handleCancelConfirm}
+          onClose={() => { setShowCancelModal(false); setCancelError(''); }}
+          cancelling={cancelling}
+          cancelError={cancelError}
+        />
+      )}
+
       {/* ── Mobile header ── */}
       <div className="lg:hidden flex items-center justify-between px-5 pt-6 pb-4">
         <h1 className="text-[#1A1A1A] font-bold text-2xl">Wallet</h1>
@@ -178,8 +364,7 @@ export default function WalletPage() {
               <div className="relative z-10">
                 <p className="text-[#5A7A6A] text-sm font-medium mb-1">Available Balance</p>
                 <p className="text-[#2DAF87] font-bold text-4xl leading-none mb-2">
-                  RM{subscription ? creditsRemaining * 0 : '0.00'}
-                  <span className="text-2xl">0.00</span>
+                  RM<span className="text-2xl">0.00</span>
                 </p>
                 <p className="text-[#5A7A6A] text-xs mb-4">Add balance to pay for meal plans and more.</p>
                 <button
@@ -286,6 +471,19 @@ export default function WalletPage() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Cancel subscription button */}
+                  <div className="mt-4 pt-4 border-t border-[#D4F0E4]">
+                    <button
+                      onClick={() => { setCancelError(''); setShowCancelModal(true); }}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-red-200 text-red-500 font-semibold text-sm hover:bg-red-50 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      Cancel Subscription
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="bg-[#F7FDF9] rounded-xl p-6 text-center border border-[#D4F0E4]">
@@ -328,7 +526,7 @@ export default function WalletPage() {
                       </div>
                       <div className="text-right flex-shrink-0">
                         <p className={`font-bold text-sm ${txn.credits_delta < 0 ? 'text-[#DC2626]' : 'text-[#3ECBA0]'}`}>
-                          {txn.credits_delta > 0 ? '+' : ''}RM{Math.abs(txn.credits_delta)}.00
+                          {txn.credits_delta > 0 ? '+' : ''}{txn.credits_delta} credits
                         </p>
                         <span className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full bg-[#EBF9F4] text-[#2DAF87]">
                           Completed
