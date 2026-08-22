@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
@@ -12,6 +13,7 @@ interface FormData {
   ownerName: string;
   email: string;
   phone: string;
+  password: string;
   location: string;
   address: string;
   openingTime: string;
@@ -33,6 +35,7 @@ const initialForm: FormData = {
   ownerName: '',
   email: '',
   phone: '',
+  password: '',
   location: '',
   address: '',
   openingTime: '07:00',
@@ -45,12 +48,12 @@ const initialForm: FormData = {
 
 export default function PartnerApplyPage() {
   const supabase = createClient();
+  const router = useRouter();
   const [step, setStep] = useState<Step>(1);
   const [form, setForm] = useState<FormData>(initialForm);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [applicationId, setApplicationId] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const updateField = (field: keyof FormData, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -81,6 +84,7 @@ export default function PartnerApplyPage() {
       if (!form.ownerName.trim()) { setError('Owner name is required.'); return false; }
       if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email)) { setError('A valid email address is required.'); return false; }
       if (!form.phone.trim()) { setError('Phone number is required.'); return false; }
+      if (!form.password || form.password.length < 8) { setError('Password must be at least 8 characters.'); return false; }
     }
     if (step === 2) {
       if (!form.location.trim()) { setError('Location / outlet name is required.'); return false; }
@@ -110,7 +114,40 @@ export default function PartnerApplyPage() {
     setError('');
 
     try {
-      const { data, error: insertError } = await supabase
+      // Step 1: Create auth user
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+        options: {
+          data: {
+            full_name: form.ownerName.trim(),
+            role: 'partner',
+          },
+        },
+      });
+
+      if (signUpError) throw signUpError;
+      if (!signUpData.user) throw new Error('Account creation failed. Please try again.');
+
+      const userId = signUpData.user.id;
+
+      // Step 2: Insert partner record linked to the new auth user
+      const { error: partnerError } = await supabase
+        .from('partners')
+        .insert({
+          user_id: userId,
+          name: form.businessName.trim(),
+          location: form.location.trim(),
+          email: form.email.trim().toLowerCase(),
+          phone: form.phone.trim(),
+          description: form.description.trim(),
+          is_active: true,
+        });
+
+      if (partnerError) throw partnerError;
+
+      // Step 3: Also store full application details for records
+      await supabase
         .from('partner_applications')
         .insert({
           business_name: form.businessName.trim(),
@@ -125,101 +162,25 @@ export default function PartnerApplyPage() {
           description: form.description.trim(),
           cuisine_types: form.cuisineTypes,
           seating_capacity: form.seatingCapacity ? parseInt(form.seatingCapacity, 10) : null,
-          status: 'pending',
-        })
-        .select('id')
-        .single();
+          status: 'approved',
+        });
 
-      if (insertError) throw insertError;
-      setApplicationId(data?.id || '');
-      setSubmitted(true);
+      // Step 4: Sign in the new partner
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+      });
+
+      if (signInError) throw signInError;
+
+      // Step 5: Redirect to partner dashboard
+      router.push('/partner-portal/dashboard');
     } catch (err: any) {
       setError(err.message || 'Submission failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
-
-  // ─── Success Screen ────────────────────────────────────────────────────────
-  if (submitted) {
-    return (
-      <div className="min-h-screen bg-[#F8FAF9] flex items-center justify-center p-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-        <div className="w-full max-w-lg text-center">
-          <div className="w-20 h-20 rounded-full bg-[#3ECBA0]/15 flex items-center justify-center mx-auto mb-6">
-            <svg className="w-10 h-10 text-[#3ECBA0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold text-[#111827] mb-3">Application Submitted!</h1>
-          <p className="text-[#6B7280] text-sm leading-relaxed mb-2">
-            Thank you, <span className="font-semibold text-[#374151]">{form.ownerName}</span>. Your application for{' '}
-            <span className="font-semibold text-[#374151]">{form.businessName}</span> has been received.
-          </p>
-          <p className="text-[#6B7280] text-sm leading-relaxed mb-6">
-            Our team will review your application and reach out to you at{' '}
-            <span className="font-semibold text-[#374151]">{form.email}</span> within 2–3 business days.
-          </p>
-
-          {/* Status card */}
-          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 mb-6 text-left">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wide">Application Status</span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                Pending Review
-              </span>
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-[#9CA3AF]">Business</span>
-                <span className="font-medium text-[#111827]">{form.businessName}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-[#9CA3AF]">Location</span>
-                <span className="font-medium text-[#111827]">{form.location}</span>
-              </div>
-              {applicationId && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-[#9CA3AF]">Reference ID</span>
-                  <span className="font-mono text-xs text-[#6B7280]">{applicationId.slice(0, 8).toUpperCase()}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* What happens next */}
-          <div className="bg-[#F0FBF7] rounded-2xl border border-[#3ECBA0]/20 p-5 mb-8 text-left">
-            <p className="text-xs font-semibold text-[#3ECBA0] uppercase tracking-wide mb-3">What happens next</p>
-            <div className="space-y-2.5">
-              {[
-                'Our team reviews your application details',
-                'We may contact you for additional information',
-                'Upon approval, you will receive login credentials via email',
-                'You can then access the full partner dashboard',
-              ].map((item, i) => (
-                <div key={i} className="flex items-start gap-2.5">
-                  <span className="w-5 h-5 rounded-full bg-[#3ECBA0]/20 text-[#3ECBA0] text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
-                    {i + 1}
-                  </span>
-                  <p className="text-sm text-[#374151]">{item}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <Link
-            href="/partner-portal/login"
-            className="inline-flex items-center gap-2 text-sm text-[#3ECBA0] font-semibold hover:text-[#2db88d] transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to Partner Login
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   // ─── Application Form ──────────────────────────────────────────────────────
   return (
@@ -303,7 +264,7 @@ export default function PartnerApplyPage() {
           {/* Header */}
           <div className="mb-7">
             <h1 className="text-2xl font-bold text-[#111827] mb-1">Partner Application</h1>
-            <p className="text-[#6B7280] text-sm">Fill in your business details to apply for a partner account.</p>
+            <p className="text-[#6B7280] text-sm">Fill in your business details to create your partner account.</p>
           </div>
 
           {/* Step Indicator */}
@@ -394,7 +355,37 @@ export default function PartnerApplyPage() {
                     placeholder="business@example.com"
                     className="w-full px-4 py-3 rounded-xl border border-[#E5E7EB] bg-white text-[#111827] text-sm placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#3ECBA0]/30 focus:border-[#3ECBA0] transition-all"
                   />
-                  <p className="text-xs text-[#9CA3AF] mt-1.5">Your login credentials will be sent to this email after approval.</p>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-[#374151] mb-1.5">
+                    Create Password <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={form.password}
+                      onChange={(e) => updateField('password', e.target.value)}
+                      placeholder="Minimum 8 characters"
+                      className="w-full px-4 py-3 rounded-xl border border-[#E5E7EB] bg-white text-[#111827] text-sm placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#3ECBA0]/30 focus:border-[#3ECBA0] transition-all pr-12"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#6B7280] transition-colors"
+                    >
+                      {showPassword ? (
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-xs text-[#9CA3AF] mt-1.5">You will use this password to sign in to your partner dashboard.</p>
                 </div>
               </div>
             </div>
@@ -571,7 +562,7 @@ export default function PartnerApplyPage() {
               </div>
 
               <p className="text-xs text-[#9CA3AF] leading-relaxed">
-                By submitting this application, you confirm that all information provided is accurate and that you agree to Makanan's partner terms and conditions.
+                By submitting this application, you confirm that all information provided is accurate and that you agree to Makanan's partner terms and conditions. Your account will be created immediately upon submission.
               </p>
             </div>
           )}
@@ -627,11 +618,11 @@ export default function PartnerApplyPage() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
-                    Submitting...
+                    Creating Account...
                   </>
                 ) : (
                   <>
-                    Submit Application
+                    Create Partner Account
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
