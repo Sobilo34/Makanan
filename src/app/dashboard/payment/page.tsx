@@ -61,15 +61,11 @@ function PaymentContent() {
       const supabase = createClient();
       const appUrl = window.location.origin;
 
-      const { data, error: fnErr } = await supabase.functions.invoke<{
-        sessionId?: string;
-        url?: string;
-        error?: string;
-      }>('create-checkout-session', {
+      const { data, error: fnErr } = await supabase.functions.invoke('create-checkout-session', {
         body: {
           planId,
           planName,
-          priceMyr: parseFloat(price),
+          priceMyr: price, // send as string — edge function parses it
           credits: parseInt(credits),
           userId: user.id,
           userEmail: user.email,
@@ -79,13 +75,21 @@ function PaymentContent() {
       });
 
       if (fnErr) {
-        throw new Error((data as { error?: string })?.error ?? fnErr.message ?? 'Payment setup failed');
+        // Try to extract the error message from the response body
+        const errMsg = (data as { error?: string } | null)?.error ?? fnErr.message ?? 'Payment setup failed';
+        throw new Error(errMsg);
       }
 
-      if (data?.url) {
-        window.location.href = data.url;
+      const result = data as { sessionId?: string; url?: string; error?: string } | null;
+
+      if (result?.error) {
+        throw new Error(result.error);
+      }
+
+      if (result?.url) {
+        window.location.href = result.url;
       } else {
-        throw new Error('No checkout URL returned');
+        throw new Error('No checkout URL returned from payment service');
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Payment failed. Please try again.';

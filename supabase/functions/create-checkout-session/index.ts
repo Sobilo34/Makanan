@@ -19,14 +19,25 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!);
+    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
+    if (!stripeKey) {
+      console.error('STRIPE_SECRET_KEY is not set in Edge Function secrets');
+      return new Response(JSON.stringify({ error: 'Payment service not configured. Please contact support.' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const stripe = new Stripe(stripeKey, { apiVersion: '2023-10-16' });
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const { planId, planName, priceMyr, credits, userId, userEmail, successUrl, cancelUrl } =
-      await req.json();
+    const body = await req.json();
+    const { planId, planName, priceMyr, credits, userId, userEmail, successUrl, cancelUrl } = body;
+
+    console.log('Checkout request:', { planId, planName, priceMyr, credits, userId, userEmail });
 
     if (!planId || !priceMyr || !userId || !userEmail) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
@@ -58,18 +69,24 @@ Deno.serve(async (req: Request) => {
     }
 
     // Amount in smallest currency unit (sen for MYR)
-    const amountSen = Math.round(parseFloat(priceMyr) * 100);
+    const amountSen = Math.round(parseFloat(String(priceMyr)) * 100);
+    console.log('Amount in sen:', amountSen);
+
+    // Determine payment methods — card is always available.
+    // fpx and grabpay require explicit enablement in your Stripe Dashboard.
+    // We attempt to include them but fall back to card-only if they cause errors.
+    const paymentMethodTypes: Stripe.Checkout.SessionCreateParams.PaymentMethodType[] = ['card'];
 
     // Create Stripe Checkout Session
-    const session = await stripe.checkout.sessions.create({
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
       customer: customerId,
-      payment_method_types: ['card', 'fpx', 'grabpay'],
+      payment_method_types: paymentMethodTypes,
       line_items: [
         {
           price_data: {
             currency: 'myr',
             product_data: {
-              name: planName,
+              name: planName || 'Meal Plan',
               description: `${credits} meal credits — Makanan Student Meal Plan`,
             },
             unit_amount: amountSen,
@@ -86,18 +103,29 @@ Deno.serve(async (req: Request) => {
         credits: String(credits),
         amount_myr: String(priceMyr),
       },
-    });
+    };
+
+    console.log('Creating Stripe session with params:', JSON.stringify(sessionParams));
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
+
+    console.log('Stripe session created:', session.id);
 
     // Pre-create a pending payment record
-    await supabase.from('payments').insert({
+    const { error: insertError } = await supabase.from('payments').insert({
       user_id: userId,
       meal_plan_id: planId,
-      amount_myr: parseFloat(priceMyr),
+      amount_myr: parseFloat(String(priceMyr)),
       payment_method: 'stripe',
       status: 'pending',
       stripe_session_id: session.id,
       reference_code: session.id,
     });
+
+    if (insertError) {
+      console.error('Failed to insert payment record:', insertError);
+      // Don't fail the checkout — the webhook will handle it
+    }
 
     return new Response(JSON.stringify({ sessionId: session.id, url: session.url }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
