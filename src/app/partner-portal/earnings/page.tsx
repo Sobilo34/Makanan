@@ -112,22 +112,20 @@ export default function EarningsPage() {
     setLoading(true);
     const since = getPeriodStart(p);
 
-    const [{ data: periodReds }, { data: allReds }] = await Promise.all([
-      supabase
-        .from('redemptions')
-        .select('id, status, redeemed_at, meals:meal_id(name, price_myr)')
-        .eq('partner_id', pid)
-        .gte('redeemed_at', since)
-        .order('redeemed_at', { ascending: false }),
-      supabase
-        .from('redemptions')
-        .select('id, status, redeemed_at, meals:meal_id(name, price_myr)')
-        .eq('partner_id', pid)
-        .order('redeemed_at', { ascending: false }),
-    ]);
+    const periodReds = await supabase
+      .from('redemptions')
+      .select('id, status, redeemed_at, meals:meal_id(name, price_myr)')
+      .eq('partner_id', pid)
+      .gte('redeemed_at', since)
+      .order('redeemed_at', { ascending: false });
+    const allReds = await supabase
+      .from('redemptions')
+      .select('id, status, redeemed_at, meals:meal_id(name, price_myr)')
+      .eq('partner_id', pid)
+      .order('redeemed_at', { ascending: false });
 
-    const pr = periodReds || [];
-    const ar = allReds || [];
+    const pr = periodReds.data || [];
+    const ar = allReds.data || [];
 
     const currentPeriodEarnings = pr
       .filter((r) => r.status === 'confirmed')

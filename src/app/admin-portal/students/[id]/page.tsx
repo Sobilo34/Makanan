@@ -112,11 +112,11 @@ export default function StudentDetailPage() {
         if (reds) {
           const enrichedReds = await Promise.all(
             reds.map(async (r) => {
-              const [{ data: mealData }, { data: partnerData }] = await Promise.all([
+              const [mealResult, partnerResult] = await Promise.all([
                 supabase.from('meals').select('name').eq('id', r.meal_id).maybeSingle(),
                 supabase.from('partners').select('name').eq('id', r.partner_id).maybeSingle(),
               ]);
-              return { ...r, meal: mealData || undefined, partner: partnerData || undefined };
+              return { ...r, meal: mealResult.data || undefined, partner: partnerResult.data || undefined };
             })
           );
           setRedemptions(enrichedReds);
