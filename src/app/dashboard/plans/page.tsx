@@ -25,19 +25,6 @@ interface Subscription {
   meal_plans: { name: string; tier: string; price_myr: number };
 }
 
-const planFeatures: Record<string, { icon: string; text: string }> = {
-  value: { icon: '🎁', text: 'Best value for regular eaters' },
-  standard: { icon: '⭐', text: 'Great balance of value and flexibility' },
-  premium: { icon: '💎', text: 'Premium choice for your routine' },
-};
-
-const planIcons: Record<string, string> = {
-  value: '🎁',
-  standard: '⭐',
-  premium: '👑',
-};
-
-// Map plan index to feature icon
 const featureIcons = ['🎁', '⭐', '🏅', '❤️', '👑', '💎'];
 const featureTexts = [
   'Best value for regular eaters',
@@ -46,6 +33,27 @@ const featureTexts = [
   'Perfect for consistent routines',
   'Max value for daily eaters',
   'Premium choice for your routine',
+];
+
+const paymentMethods = [
+  {
+    label: 'Cards',
+    icons: ['💳'],
+    desc: 'Visa, Mastercard, Amex',
+    color: 'bg-blue-50 text-blue-700 border-blue-100',
+  },
+  {
+    label: 'FPX',
+    icons: ['🏦'],
+    desc: 'All Malaysian banks',
+    color: 'bg-green-50 text-green-700 border-green-100',
+  },
+  {
+    label: 'GrabPay',
+    icons: ['🟢'],
+    desc: 'GrabPay e-wallet',
+    color: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  },
 ];
 
 export default function PlansPage() {
@@ -86,7 +94,9 @@ export default function PlansPage() {
 
   const handleContinue = () => {
     if (!selectedPlan) return;
-    router.push(`/dashboard/payment?planId=${selectedPlan.id}&price=${selectedPlan.price_myr}&credits=${selectedPlan.credits}&name=${encodeURIComponent(selectedPlan.name)}`);
+    router.push(
+      `/dashboard/payment?planId=${selectedPlan.id}&price=${selectedPlan.price_myr}&credits=${selectedPlan.credits}&name=${encodeURIComponent(selectedPlan.name)}`
+    );
   };
 
   if (loading) {
@@ -104,7 +114,7 @@ export default function PlansPage() {
 
   return (
     <div className="min-h-full bg-[#F5F7F5] pb-32">
-      {/* ── Header ── */}
+      {/* Header */}
       <div className="px-5 lg:px-8 pt-6 lg:pt-8 pb-4">
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -121,7 +131,6 @@ export default function PlansPage() {
             </div>
             <p className="text-[#6B7280] text-sm ml-12">Pick the plan that works best for your routine.</p>
           </div>
-          {/* Decorative bowl icon */}
           <div className="hidden sm:flex w-20 h-20 bg-[#EBF9F4] rounded-full items-center justify-center flex-shrink-0 ml-4">
             <span className="text-4xl">🍲</span>
           </div>
@@ -129,6 +138,28 @@ export default function PlansPage() {
       </div>
 
       <div className="px-5 lg:px-8">
+        {/* Payment methods banner */}
+        <div className="mb-5 bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <p className="text-[#1A1A1A] font-bold text-sm mb-3 flex items-center gap-2">
+            <span>🔒</span> Secure Payment Methods
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {paymentMethods.map((pm) => (
+              <div key={pm.label} className={`rounded-xl border px-3 py-2 text-center ${pm.color}`}>
+                <div className="text-lg mb-0.5">{pm.icons[0]}</div>
+                <p className="font-bold text-xs">{pm.label}</p>
+                <p className="text-xs opacity-75 leading-tight">{pm.desc}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2">
+            <span className="text-sm">🏦</span>
+            <p className="text-[#6B7280] text-xs">
+              FPX covers: Maybank, CIMB, RHB, Public Bank, Hong Leong, AmBank, Bank Islam &amp; more
+            </p>
+          </div>
+        </div>
+
         {/* Active plan notice */}
         {subscription && (
           <div className="mb-5 bg-[#EBF9F4] border border-[#C8F0E4] rounded-2xl px-4 py-3 flex items-center gap-3">
@@ -151,7 +182,7 @@ export default function PlansPage() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          {/* ── Plans grid ── */}
+          {/* Plans grid */}
           <div className="lg:col-span-2">
             <div className="grid grid-cols-2 gap-3 lg:gap-4">
               {plans.map((plan, idx) => {
@@ -170,7 +201,6 @@ export default function PlansPage() {
                         : 'border-gray-100 hover:border-[#3ECBA0]/40'
                     }`}
                   >
-                    {/* Selected checkmark */}
                     {isSelected && (
                       <div className="absolute top-3 right-3 w-7 h-7 bg-[#3ECBA0] rounded-full flex items-center justify-center">
                         <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -178,20 +208,15 @@ export default function PlansPage() {
                         </svg>
                       </div>
                     )}
-
-                    {/* Current plan badge */}
                     {isCurrentPlan && !isSelected && (
                       <div className="absolute top-3 right-3">
                         <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#EBF9F4] text-[#2DAF87]">Active</span>
                       </div>
                     )}
-
-                    {/* Price */}
                     <p className={`font-bold text-2xl lg:text-3xl mb-0.5 ${isSelected ? 'text-[#3ECBA0]' : 'text-[#2DAF87]'}`}>
                       RM{plan.price_myr}
                     </p>
                     <p className="text-[#1A1A1A] font-semibold text-sm mb-3">{plan.credits} Meals</p>
-
                     <div className="border-t border-gray-100 pt-3 mb-3">
                       <div className="flex items-start gap-2">
                         <div className="w-8 h-8 bg-[#EBF9F4] rounded-full flex items-center justify-center flex-shrink-0">
@@ -200,8 +225,6 @@ export default function PlansPage() {
                         <p className="text-[#6B7280] text-xs leading-snug mt-1">{featureText}</p>
                       </div>
                     </div>
-
-                    {/* Select button */}
                     <div
                       className={`w-full py-2 rounded-xl text-sm font-semibold text-center transition-all ${
                         isSelected
@@ -239,21 +262,23 @@ export default function PlansPage() {
             </div>
           </div>
 
-          {/* ── Right info panel — desktop ── */}
+          {/* Right info panel — desktop */}
           <div className="hidden lg:flex flex-col gap-5">
             <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
               <h3 className="text-[#1A1A1A] font-bold text-sm mb-3">How it works</h3>
               <div className="space-y-3">
                 {[
                   { icon: '📦', title: 'Choose a plan', desc: 'Select a package that fits your needs' },
-                  { icon: '💳', title: 'Make payment', desc: 'Pay securely with your preferred method' },
+                  { icon: '💳', title: 'Pay securely', desc: 'Card, FPX bank transfer, or GrabPay' },
                   { icon: '✨', title: 'Get credits', desc: 'Credits are instantly added to your wallet' },
-                  { icon: '🍽️', title: 'Redeem meals', desc: 'Use credits at any partner cafeteria' },
+                  { icon: '🍽️', title: 'Redeem meals', desc: 'Use QR code at partner restaurants' },
                 ].map((step) => (
                   <div key={step.title} className="flex items-start gap-3">
-                    <span className="text-xl flex-shrink-0">{step.icon}</span>
+                    <div className="w-8 h-8 bg-[#EBF9F4] rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm">{step.icon}</span>
+                    </div>
                     <div>
-                      <p className="text-[#374151] font-semibold text-sm">{step.title}</p>
+                      <p className="text-[#1A1A1A] font-semibold text-xs">{step.title}</p>
                       <p className="text-[#9CA3AF] text-xs">{step.desc}</p>
                     </div>
                   </div>
@@ -261,53 +286,54 @@ export default function PlansPage() {
               </div>
             </div>
 
-            {selectedPlan && (
-              <div className="bg-[#EBF9F4] rounded-2xl p-5 border border-[#C8F0E4]">
-                <p className="text-[#2DAF87] font-bold text-sm mb-2">Selected Plan</p>
-                <p className="text-[#1A1A1A] font-bold text-lg">{selectedPlan.name}</p>
-                <p className="text-[#6B7280] text-sm">{selectedPlan.credits} meals · RM{selectedPlan.price_myr}</p>
-                <button
-                  onClick={handleContinue}
-                  className="mt-3 w-full bg-[#3ECBA0] text-white font-bold py-3 rounded-xl hover:bg-[#2DAF87] transition-colors"
-                >
-                  Continue
-                </button>
+            <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+              <h3 className="text-[#1A1A1A] font-bold text-sm mb-3">Payment Methods</h3>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-xl">
+                  <span className="text-lg">💳</span>
+                  <div>
+                    <p className="text-blue-700 font-semibold text-xs">Credit / Debit Cards</p>
+                    <p className="text-blue-500 text-xs">Visa, Mastercard, Amex</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-2 bg-green-50 rounded-xl">
+                  <span className="text-lg">🏦</span>
+                  <div>
+                    <p className="text-green-700 font-semibold text-xs">FPX Online Banking</p>
+                    <p className="text-green-500 text-xs">All major Malaysian banks</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-2 bg-emerald-50 rounded-xl">
+                  <span className="text-lg">🟢</span>
+                  <div>
+                    <p className="text-emerald-700 font-semibold text-xs">GrabPay</p>
+                    <p className="text-emerald-500 text-xs">GrabPay e-wallet</p>
+                  </div>
+                </div>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ── Sticky bottom bar ── */}
-      <div className="fixed bottom-0 inset-x-0 bg-white border-t border-gray-100 px-5 lg:px-8 py-4 z-20" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}>
-        <div className="max-w-screen-lg mx-auto">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-[#EBF9F4] rounded-xl flex items-center justify-center">
-                <svg className="w-4 h-4 text-[#3ECBA0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-[#9CA3AF] text-xs">Selected Plan</p>
-                <p className="text-[#1A1A1A] font-bold text-sm">
-                  {selectedPlan ? `${selectedPlan.name} – ${selectedPlan.credits} Meals` : 'No plan selected'}
-                </p>
-              </div>
-            </div>
-            {selectedPlan && (
-              <span className="bg-[#EBF9F4] text-[#2DAF87] font-bold text-sm px-3 py-1.5 rounded-xl">
-                {selectedPlan.credits} meals
-              </span>
-            )}
-          </div>
+      {/* Sticky continue button */}
+      <div
+        className="fixed bottom-0 inset-x-0 bg-white border-t border-gray-100 px-5 py-4 z-20"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}
+      >
+        <div className="max-w-2xl mx-auto">
           <button
             onClick={handleContinue}
             disabled={!selectedPlan}
-            className="w-full bg-[#3ECBA0] text-white font-bold py-3.5 rounded-2xl hover:bg-[#2DAF87] transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-base"
+            className="w-full bg-[#3ECBA0] text-white font-bold py-4 rounded-2xl hover:bg-[#2DAF87] transition-colors disabled:opacity-40 text-base"
           >
-            Continue
+            {selectedPlan
+              ? `Continue — RM${selectedPlan.price_myr} for ${selectedPlan.credits} meals`
+              : 'Select a Plan to Continue'}
           </button>
+          <p className="text-center text-[#9CA3AF] text-xs mt-2">
+            🔒 Secured by Stripe · Cards · FPX · GrabPay
+          </p>
         </div>
       </div>
     </div>
