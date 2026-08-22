@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 
 interface VerificationResult {
   valid: boolean;
+  alreadyConfirmed?: boolean;
   studentName: string;
   mealName: string;
   planName: string;
@@ -18,7 +19,6 @@ interface VerificationResult {
 
 export default function VerifyMealPage() {
   const supabase = createClient();
-  const [code, setCode] = useState('');
   const [manualCode, setManualCode] = useState('');
   const [showManual, setShowManual] = useState(false);
   const [verifying, setVerifying] = useState(false);
@@ -40,7 +40,7 @@ export default function VerifyMealPage() {
     load();
   }, []);
 
-  // Simulate QR scan animation
+  // Scan line animation
   useEffect(() => {
     if (!scanning) return;
     let pos = 0;
@@ -75,16 +75,19 @@ export default function VerifyMealPage() {
           )
         `)
         .eq('qr_code', qrCode.trim())
-        .single();
+        .maybeSingle();
 
       if (rErr || !redemption) {
         setResult({ valid: false, studentName: '', mealName: '', planName: '' });
         return;
       }
 
+      const isAlreadyConfirmed = redemption.status === 'confirmed';
       const isValid = redemption.status === 'pending';
+
       setResult({
         valid: isValid,
+        alreadyConfirmed: isAlreadyConfirmed,
         studentName: (redemption.user_profiles as any)?.full_name || 'Unknown Student',
         mealName: (redemption.meals as any)?.name || 'Unknown Meal',
         planName: (redemption.subscriptions as any)?.meal_plans?.name || 'Unknown Plan',
@@ -94,6 +97,10 @@ export default function VerifyMealPage() {
         mealId: redemption.meal_id,
         partnerId: redemption.partner_id,
       });
+
+      if (isAlreadyConfirmed) {
+        setConfirmed(true);
+      }
     } catch (err: any) {
       setError(err.message || 'Verification failed.');
     } finally {
@@ -105,11 +112,8 @@ export default function VerifyMealPage() {
     setScanning(true);
     setTimeout(() => {
       setScanning(false);
-      // Simulate a QR code scan with a demo code
-      const demoCode = 'DEMO-QR-' + Date.now();
-      setCode(demoCode);
-      verifyCode(demoCode);
-    }, 2000);
+      setShowManual(true);
+    }, 1500);
   };
 
   const handleManualVerify = () => {
@@ -117,22 +121,19 @@ export default function VerifyMealPage() {
   };
 
   const handleConfirm = async () => {
-    if (!result?.redemptionId) return;
+    if (!result?.redemptionId || !partnerId) return;
     setConfirming(true);
     setError('');
 
     try {
-      const { error: updateError } = await supabase
-        .from('redemptions')
-        .update({ status: 'confirmed', partner_id: partnerId })
-        .eq('id', result.redemptionId);
+      // Use atomic confirm_redemption RPC
+      const { data: rpcResult, error: rpcErr } = await supabase.rpc('confirm_redemption', {
+        redemption_id_param: result.redemptionId,
+        partner_id_param: partnerId,
+      });
 
-      if (updateError) throw updateError;
-
-      // Increment redemption count on meal
-      if (result.mealId) {
-        await supabase.rpc('increment_redemption_count', { meal_id_param: result.mealId }).catch(() => {});
-      }
+      if (rpcErr) throw rpcErr;
+      if (!rpcResult?.success) throw new Error(rpcResult?.error || 'Confirmation failed');
 
       setConfirmed(true);
     } catch (err: any) {
@@ -144,7 +145,6 @@ export default function VerifyMealPage() {
 
   const handleReset = () => {
     setResult(null);
-    setCode('');
     setManualCode('');
     setConfirmed(false);
     setError('');
@@ -156,7 +156,7 @@ export default function VerifyMealPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-[#111827]">Verify Meal</h1>
-          <p className="text-[#6B7280] text-sm mt-0.5">Scan a student's QR code or enter a redemption code to verify.</p>
+          <p className="text-[#6B7280] text-sm mt-0.5">Scan or enter a student&apos;s redemption code to confirm their meal.</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -164,12 +164,10 @@ export default function VerifyMealPage() {
           <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6">
             <h2 className="text-base font-bold text-[#111827] mb-4">Scan QR Code</h2>
 
-            {/* Scanner area */}
             <div
               className="relative w-full aspect-square max-w-sm mx-auto rounded-2xl overflow-hidden bg-[#1a1a2e] flex items-center justify-center cursor-pointer"
               onClick={!scanning && !verifying ? handleSimulateScan : undefined}
             >
-              {/* Corner markers */}
               {[
                 'top-3 left-3 border-t-4 border-l-4',
                 'top-3 right-3 border-t-4 border-r-4',
@@ -179,7 +177,6 @@ export default function VerifyMealPage() {
                 <div key={i} className={`absolute w-8 h-8 border-white/70 rounded-sm ${cls}`} />
               ))}
 
-              {/* Scan line */}
               {scanning && (
                 <div
                   ref={scanLineRef}
@@ -188,7 +185,6 @@ export default function VerifyMealPage() {
                 />
               )}
 
-              {/* Center content */}
               <div className="flex flex-col items-center gap-3 text-white/60">
                 {scanning ? (
                   <>
@@ -204,28 +200,37 @@ export default function VerifyMealPage() {
                     <div className="w-10 h-10 rounded-full border-2 border-[#3ECBA0] border-t-transparent animate-spin" />
                     <p className="text-sm">Verifying...</p>
                   </>
-                ) : result?.valid ? (
+                ) : confirmed ? (
                   <>
                     <div className="w-16 h-16 rounded-xl bg-white/10 flex items-center justify-center">
                       <svg className="w-8 h-8 text-[#3ECBA0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
-                    <p className="text-sm text-[#3ECBA0]">QR Verified</p>
+                    <p className="text-sm text-[#3ECBA0]">Meal Confirmed</p>
+                  </>
+                ) : result?.valid ? (
+                  <>
+                    <div className="w-16 h-16 rounded-xl bg-white/10 flex items-center justify-center">
+                      <svg className="w-8 h-8 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-sm text-amber-400">Awaiting Confirmation</p>
                   </>
                 ) : (
                   <>
                     <svg className="w-12 h-12 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8H3m2 8H3m18-8h-2M5 4H3m2 16H3m18-4h-2M5 12H3" />
                     </svg>
-                    <p className="text-sm text-white/40">Tap to simulate scan</p>
-                    <p className="text-xs text-white/25">(Camera integration coming soon)</p>
+                    <p className="text-sm text-white/40">Tap to open scanner</p>
+                    <p className="text-xs text-white/25">or enter code manually below</p>
                   </>
                 )}
               </div>
             </div>
 
-            {/* Manual code fallback */}
+            {/* Manual code entry */}
             <div className="mt-4">
               <button
                 onClick={() => setShowManual(!showManual)}
@@ -240,17 +245,16 @@ export default function VerifyMealPage() {
                     type="text"
                     value={manualCode}
                     onChange={(e) => setManualCode(e.target.value)}
-                    placeholder="Enter code..."
+                    placeholder="e.g. MKN-ABC123-XY789012"
                     className="flex-1 px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-sm text-[#111827] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#3ECBA0]/30 focus:border-[#3ECBA0]"
                     onKeyDown={(e) => e.key === 'Enter' && handleManualVerify()}
                   />
                   <button
                     onClick={handleManualVerify}
                     disabled={verifying || !manualCode.trim()}
-                    className="px-4 py-2.5 rounded-xl text-white text-sm font-semibold disabled:opacity-50 transition-all"
-                    style={{ background: 'linear-gradient(135deg, #3ECBA0 0%, #2db88d 100%)' }}
+                    className="px-4 py-2.5 rounded-xl bg-[#3ECBA0] text-white text-sm font-semibold disabled:opacity-50 transition-all hover:bg-[#2db88d]"
                   >
-                    Verify
+                    {verifying ? '...' : 'Verify'}
                   </button>
                 </div>
               )}
@@ -258,121 +262,214 @@ export default function VerifyMealPage() {
           </div>
 
           {/* Right: Verification Result */}
-          <div className="space-y-4">
-            {/* Status banner */}
-            {result && (
-              <div className={`p-4 rounded-xl border flex items-center gap-3 ${
-                confirmed
-                  ? 'bg-emerald-50 border-emerald-200'
-                  : result.valid
-                  ? 'bg-emerald-50 border-emerald-200' :'bg-red-50 border-red-200'
-              }`}>
-                {confirmed ? (
-                  <>
-                    <svg className="w-5 h-5 text-emerald-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="text-emerald-700 font-semibold text-sm">Redemption Confirmed Successfully</span>
-                  </>
-                ) : result.valid ? (
-                  <>
-                    <svg className="w-5 h-5 text-emerald-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="text-emerald-700 font-semibold text-sm">Meal Successfully Verified</span>
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="text-red-600 font-semibold text-sm">Invalid or Already Redeemed</span>
-                  </>
-                )}
-              </div>
-            )}
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6">
+            <h2 className="text-base font-bold text-[#111827] mb-4">Verification Result</h2>
 
-            {/* Details card */}
-            {result && (
-              <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 space-y-4">
-                <h2 className="text-base font-bold text-[#111827]">Redemption Details</h2>
-
-                <div className="space-y-3">
-                  {[
-                    { label: 'Student', value: result.studentName },
-                    { label: 'Meal', value: result.mealName },
-                    { label: 'Plan', value: result.planName },
-                  ].map((item) => (
-                    <div key={item.label} className="flex items-center justify-between py-2 border-b border-[#F3F4F6] last:border-0">
-                      <span className="text-sm text-[#6B7280]">{item.label}:</span>
-                      <span className="text-sm font-semibold text-[#111827]">{item.value || '—'}</span>
-                    </div>
-                  ))}
-
-                  <div className="flex items-center justify-between py-2">
-                    <span className="text-sm text-[#6B7280]">Status:</span>
-                    <div className="flex items-center gap-3">
-                      {result.valid && !confirmed ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold bg-emerald-100 text-emerald-700">
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                          VALID
-                        </span>
-                      ) : confirmed ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold bg-emerald-100 text-emerald-700">
-                          ✓ CONFIRMED
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold bg-red-100 text-red-600">
-                          ✗ INVALID
-                        </span>
-                      )}
-
-                      {result.valid && !confirmed && (
-                        <button
-                          onClick={handleConfirm}
-                          disabled={confirming}
-                          className="px-4 py-2 rounded-xl text-white text-sm font-semibold transition-all disabled:opacity-60"
-                          style={{ background: 'linear-gradient(135deg, #3ECBA0 0%, #2db88d 100%)' }}
-                        >
-                          {confirming ? 'Confirming...' : 'Confirm Redemption'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {error && (
-                  <p className="text-red-500 text-sm">{error}</p>
-                )}
-
-                {(confirmed || !result.valid) && (
-                  <button
-                    onClick={handleReset}
-                    className="w-full py-2.5 rounded-xl border border-[#E5E7EB] text-sm font-medium text-[#374151] hover:bg-[#F3F4F6] transition-colors mt-2"
-                  >
-                    Scan Another Code
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* Idle state */}
             {!result && !verifying && (
-              <div className="bg-white rounded-2xl border border-[#E5E7EB] p-8 flex flex-col items-center justify-center text-center gap-3">
-                <div className="w-14 h-14 rounded-2xl bg-[#F3F4F6] flex items-center justify-center">
-                  <svg className="w-7 h-7 text-[#9CA3AF]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <div className="flex flex-col items-center justify-center h-48 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-[#F3F4F6] flex items-center justify-center mb-3">
+                  <svg className="w-7 h-7 text-[#9CA3AF]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                   </svg>
                 </div>
-                <p className="text-[#374151] font-semibold">Ready to Verify</p>
-                <p className="text-[#9CA3AF] text-sm">Scan a QR code or enter a redemption code to verify a student's meal.</p>
+                <p className="text-[#374151] font-semibold text-sm">No code scanned yet</p>
+                <p className="text-[#9CA3AF] text-xs mt-1">Scan or enter a redemption code to verify</p>
+              </div>
+            )}
+
+            {verifying && (
+              <div className="flex flex-col items-center justify-center h-48">
+                <div className="w-10 h-10 rounded-full border-2 border-[#3ECBA0] border-t-transparent animate-spin mb-3" />
+                <p className="text-[#6B7280] text-sm">Verifying code...</p>
+              </div>
+            )}
+
+            {result && !verifying && (
+              <div className="space-y-4">
+                {/* Status banner */}
+                {confirmed ? (
+                  <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-100">
+                    <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-emerald-700 font-bold text-sm">Meal Confirmed!</p>
+                      <p className="text-emerald-600 text-xs">Student can collect their meal</p>
+                    </div>
+                  </div>
+                ) : result.alreadyConfirmed ? (
+                  <div className="flex items-center gap-3 p-4 rounded-xl bg-blue-50 border border-blue-100">
+                    <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-blue-700 font-bold text-sm">Already Confirmed</p>
+                      <p className="text-blue-600 text-xs">This meal was already redeemed</p>
+                    </div>
+                  </div>
+                ) : result.valid ? (
+                  <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-50 border border-amber-100">
+                    <div className="w-10 h-10 rounded-full bg-amber-400 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-amber-700 font-bold text-sm">Valid — Awaiting Confirmation</p>
+                      <p className="text-amber-600 text-xs">Tap Confirm to complete the redemption</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-100">
+                    <div className="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-red-700 font-bold text-sm">Invalid Code</p>
+                      <p className="text-red-600 text-xs">This code was not found or is expired</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Student details */}
+                {(result.valid || result.alreadyConfirmed) && (
+                  <div className="bg-[#F9FAFB] rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-[#9CA3AF] font-medium">Student</span>
+                      <span className="text-sm font-semibold text-[#111827]">{result.studentName}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-[#9CA3AF] font-medium">Meal</span>
+                      <span className="text-sm font-semibold text-[#111827]">{result.mealName}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-[#9CA3AF] font-medium">Plan</span>
+                      <span className="text-sm font-semibold text-[#111827]">{result.planName}</span>
+                    </div>
+                  </div>
+                )}
+
+                {error && (
+                  <div className="bg-red-50 border border-red-100 rounded-xl px-3 py-2.5 text-red-600 text-sm flex items-center gap-2">
+                    <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    {error}
+                  </div>
+                )}
+
+                {/* Action buttons */}
+                <div className="flex gap-3">
+                  {result.valid && !confirmed && (
+                    <button
+                      onClick={handleConfirm}
+                      disabled={confirming}
+                      className="flex-1 bg-[#3ECBA0] text-white font-bold py-3 rounded-xl text-sm disabled:opacity-60 hover:bg-[#2db88d] transition-colors"
+                    >
+                      {confirming ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                          Confirming...
+                        </span>
+                      ) : 'Confirm Meal'}
+                    </button>
+                  )}
+                  <button
+                    onClick={handleReset}
+                    className="flex-1 border border-[#E5E7EB] text-[#374151] font-semibold py-3 rounded-xl text-sm hover:bg-[#F3F4F6] transition-colors"
+                  >
+                    {confirmed ? 'Scan Next' : 'Clear'}
+                  </button>
+                </div>
               </div>
             )}
           </div>
         </div>
+
+        {/* Recent confirmations with real-time */}
+        <RecentConfirmations partnerId={partnerId} />
       </div>
     </PartnerLayout>
+  );
+}
+
+function RecentConfirmations({ partnerId }: { partnerId: string }) {
+  const supabase = createClient();
+  const [recent, setRecent] = useState<any[]>([]);
+
+  const loadRecent = async () => {
+    if (!partnerId) return;
+    const { data } = await supabase
+      .from('redemptions')
+      .select(`
+        id, status, redeemed_at,
+        user_profiles:user_id(full_name),
+        meals:meal_id(name)
+      `)
+      .eq('partner_id', partnerId)
+      .order('redeemed_at', { ascending: false })
+      .limit(5);
+    setRecent(data || []);
+  };
+
+  useEffect(() => {
+    if (!partnerId) return;
+    loadRecent();
+
+    const channel = supabase
+      .channel(`verify-recent-${partnerId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'redemptions',
+        filter: `partner_id=eq.${partnerId}`,
+      }, () => {
+        loadRecent();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [partnerId]);
+
+  if (recent.length === 0) return null;
+
+  return (
+    <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-base font-bold text-[#111827]">Recent Confirmations</h2>
+        <span className="inline-flex items-center gap-1.5 text-xs text-[#3ECBA0] font-medium">
+          <span className="w-2 h-2 rounded-full bg-[#3ECBA0] animate-pulse" />
+          Live
+        </span>
+      </div>
+      <div className="space-y-2">
+        {recent.map((r) => {
+          const statusMap: Record<string, { bg: string; text: string; label: string }> = {
+            confirmed: { bg: 'bg-emerald-50', text: 'text-emerald-700', label: 'Confirmed' },
+            pending: { bg: 'bg-amber-50', text: 'text-amber-700', label: 'Pending' },
+            rejected: { bg: 'bg-red-50', text: 'text-red-600', label: 'Rejected' },
+          };
+          const s = statusMap[r.status] || statusMap.pending;
+          return (
+            <div key={r.id} className="flex items-center justify-between py-2.5 border-b border-[#F3F4F6] last:border-0">
+              <div>
+                <p className="text-sm font-medium text-[#374151]">{(r.user_profiles as any)?.full_name || 'Student'}</p>
+                <p className="text-xs text-[#9CA3AF]">{(r.meals as any)?.name || 'Meal'}</p>
+              </div>
+              <div className="text-right">
+                <span className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full ${s.bg} ${s.text}`}>{s.label}</span>
+                <p className="text-xs text-[#9CA3AF] mt-1">
+                  {new Date(r.redeemed_at).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }

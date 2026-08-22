@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import AdminLayout from '../components/AdminLayout';
 import { createClient } from '@/lib/supabase/client';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell,  } from 'recharts';
@@ -124,70 +124,113 @@ export default function AdminDashboardPage() {
     { name: 'Expired', value: 5 },
   ]);
   const [loading, setLoading] = useState(true);
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
+
+  const loadData = useCallback(async () => {
+    try {
+      const [studentsRes, plansRes, partnersRes, redemptionsRes] = await Promise.all([
+        supabase.from('user_profiles').select('id', { count: 'exact' }).eq('is_active', true).eq('role', 'student'),
+        supabase.from('subscriptions').select('id', { count: 'exact' }).eq('status', 'active'),
+        supabase.from('partners').select('id', { count: 'exact' }).eq('is_active', true),
+        supabase.from('redemptions').select('id', { count: 'exact' }).gte('redeemed_at', new Date().toISOString().split('T')[0]),
+      ]);
+
+      setStats({
+        activeStudents: studentsRes.count || 0,
+        activePlans: plansRes.count || 0,
+        partnerCafeterias: partnersRes.count || 0,
+        mealsRedeemedToday: redemptionsRes.count || 0,
+      });
+
+      const { data: partnerData } = await supabase
+        .from('partners')
+        .select('id, name, location, status, rating, meals_available, meals_redeemed')
+        .limit(5);
+
+      if (partnerData) {
+        const perfs: PartnerPerf[] = await Promise.all(
+          partnerData.map(async (p) => {
+            const { count } = await supabase
+              .from('redemptions')
+              .select('id', { count: 'exact' })
+              .eq('partner_id', p.id);
+            return {
+              name: p.name,
+              location: p.location || 'N/A',
+              redemptions: count || 0,
+              status: p.status || 'active',
+              rating: p.rating || 4.5,
+            };
+          })
+        );
+        setPartners(perfs);
+      }
+
+      const { data: subData } = await supabase.from('subscriptions').select('status');
+      if (subData && subData.length > 0) {
+        const total = subData.length;
+        const active = subData.filter((s) => s.status === 'active').length;
+        const expired = subData.filter((s) => s.status === 'expired').length;
+        const paused = total - active - expired;
+        setSubscriptionOverview([
+          { name: 'Active', value: Math.round((active / total) * 100) },
+          { name: 'Paused', value: Math.round((paused / total) * 100) },
+          { name: 'Expired', value: Math.round((expired / total) * 100) },
+        ]);
+      }
+
+      // Load recent activity from redemptions + payments
+      const { data: recentRed } = await supabase
+        .from('redemptions')
+        .select(`
+          id, status, redeemed_at,
+          user_profiles:user_id(full_name),
+          meals:meal_id(name),
+          partners:partner_id(name)
+        `)
+        .order('redeemed_at', { ascending: false })
+        .limit(5);
+
+      if (recentRed && recentRed.length > 0) {
+        const activities: ActivityItem[] = recentRed.map((r: any) => ({
+          id: r.id,
+          type: 'redemption',
+          description: `Meal Redeemed — ${r.user_profiles?.full_name || 'Student'} at ${r.partners?.name || 'Partner'}`,
+          time: new Date(r.redeemed_at).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' }) + ' today',
+          icon: '🍽️',
+        }));
+        setRecentActivity(activities);
+      } else {
+        setRecentActivity(mockActivity);
+      }
+    } catch (err) {
+      console.error('Dashboard load error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [studentsRes, plansRes, partnersRes, redemptionsRes] = await Promise.all([
-          supabase.from('user_profiles').select('id', { count: 'exact' }).eq('is_active', true).eq('role', 'student'),
-          supabase.from('subscriptions').select('id', { count: 'exact' }).eq('status', 'active'),
-          supabase.from('partners').select('id', { count: 'exact' }).eq('is_active', true),
-          supabase.from('redemptions').select('id', { count: 'exact' }).gte('redeemed_at', new Date().toISOString().split('T')[0]),
-        ]);
-
-        setStats({
-          activeStudents: studentsRes.count || 0,
-          activePlans: plansRes.count || 0,
-          partnerCafeterias: partnersRes.count || 0,
-          mealsRedeemedToday: redemptionsRes.count || 0,
-        });
-
-        const { data: partnerData } = await supabase
-          .from('partners')
-          .select('id, name, location, status, rating, meals_available, meals_redeemed')
-          .limit(5);
-
-        if (partnerData) {
-          const perfs: PartnerPerf[] = await Promise.all(
-            partnerData.map(async (p) => {
-              const { count } = await supabase
-                .from('redemptions')
-                .select('id', { count: 'exact' })
-                .eq('partner_id', p.id);
-              return {
-                name: p.name,
-                location: p.location || 'N/A',
-                redemptions: count || 0,
-                status: p.status || 'active',
-                rating: p.rating || 4.5,
-              };
-            })
-          );
-          setPartners(perfs);
-        }
-
-        const { data: subData } = await supabase
-          .from('subscriptions')
-          .select('status');
-        if (subData && subData.length > 0) {
-          const total = subData.length;
-          const active = subData.filter((s) => s.status === 'active').length;
-          const expired = subData.filter((s) => s.status === 'expired').length;
-          const paused = total - active - expired;
-          setSubscriptionOverview([
-            { name: 'Active', value: Math.round((active / total) * 100) },
-            { name: 'Paused', value: Math.round((paused / total) * 100) },
-            { name: 'Expired', value: Math.round((expired / total) * 100) },
-          ]);
-        }
-      } catch (err) {
-        console.error('Dashboard load error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     loadData();
-  }, []);
+  }, [loadData]);
+
+  // Real-time: refresh stats when redemptions or subscriptions change
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-dashboard-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'redemptions' }, () => {
+        loadData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions' }, () => {
+        loadData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => {
+        loadData();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [supabase, loadData]);
 
   const statusBadge = (status: string) => {
     const map: Record<string, { bg: string; text: string; label: string }> = {
@@ -341,7 +384,7 @@ export default function AdminDashboardPage() {
               <button className="text-xs text-[#3ECBA0] font-medium hover:text-[#2db88d]">View all</button>
             </div>
             <div className="space-y-3">
-              {mockActivity.map((item) => (
+              {recentActivity.map((item) => (
                 <div key={item.id} className="flex items-start gap-3 p-3 rounded-xl hover:bg-[#F9FAFB] transition-colors">
                   <div className="w-9 h-9 rounded-xl bg-[#F3F4F6] flex items-center justify-center flex-shrink-0 text-base">
                     {item.icon}

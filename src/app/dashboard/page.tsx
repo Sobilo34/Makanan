@@ -66,17 +66,17 @@ export default function DashboardHome() {
 
         const { data: meals } = await supabase
           .from('meals')
-          .select('*, partners(name)')
+          .select('*, partners(id, name)')
           .eq('is_active', true)
           .neq('availability', 'unavailable')
           .limit(4);
         setTodayMeals(meals || []);
 
         const { data: orders } = await supabase
-          .from('orders')
+          .from('redemptions')
           .select('*, meals(name, category), partners(name)')
           .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
+          .order('redeemed_at', { ascending: false })
           .limit(5);
         setRecentOrders(orders || []);
       } catch (err) {
@@ -86,6 +86,39 @@ export default function DashboardHome() {
       }
     };
     fetchData();
+
+    // Real-time: update subscription credits when redemption happens
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`student-dashboard-${user.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'subscriptions',
+        filter: `user_id=eq.${user.id}`,
+      }, (payload) => {
+        if (payload.new) {
+          setSubscription((prev) => prev ? { ...prev, ...(payload.new as any) } : null);
+        }
+      })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'redemptions',
+        filter: `user_id=eq.${user.id}`,
+      }, () => {
+        // Refresh orders
+        supabase
+          .from('redemptions')
+          .select('*, meals(name, category), partners(name)')
+          .eq('user_id', user.id)
+          .order('redeemed_at', { ascending: false })
+          .limit(5)
+          .then(({ data }) => setRecentOrders(data || []));
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user]);
 
   const creditsRemaining = subscription ? subscription.credits_total - subscription.credits_used : 0;

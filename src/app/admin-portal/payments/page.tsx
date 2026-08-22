@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import AdminLayout from '../components/AdminLayout';
+import { createClient } from '@/lib/supabase/client';
 
 interface Transaction {
   id: string;
@@ -10,36 +11,87 @@ interface Transaction {
   plan: string;
   amount: string;
   method: string;
-  status: 'Completed' | 'Pending' | 'Failed' | 'Refunded';
+  status: string;
+  created_at: string;
 }
 
-const demoTransactions: Transaction[] = [
-  { id: 't1', date: '22 Aug 2026', student: 'Ali Bin Abu', plan: 'Standard Plan', amount: 'RM 300.00', method: 'Online Banking', status: 'Completed' },
-  { id: 't2', date: '22 Aug 2026', student: 'Siti Aisyah', plan: 'Premium Plan', amount: 'RM 500.00', method: 'Credit Card', status: 'Completed' },
-  { id: 't3', date: '21 Aug 2026', student: 'Jason Tan', plan: 'Standard Plan', amount: 'RM 300.00', method: 'eWallet', status: 'Pending' },
-  { id: 't4', date: '21 Aug 2026', student: 'Nurul Huda', plan: 'Premium Plan', amount: 'RM 500.00', method: 'Credit Card', status: 'Failed' },
-  { id: 't5', date: '20 Aug 2026', student: 'Raj Kumar', plan: 'Standard Plan', amount: 'RM 300.00', method: 'Online Banking', status: 'Completed' },
-  { id: 't6', date: '20 Aug 2026', student: 'Lim Wei Xin', plan: 'Standard Plan', amount: 'RM 300.00', method: 'eWallet', status: 'Refunded' },
-  { id: 't7', date: '19 Aug 2026', student: 'Farah Nadia', plan: 'Premium Plan', amount: 'RM 500.00', method: 'Credit Card', status: 'Completed' },
-  { id: 't8', date: '19 Aug 2026', student: 'Hafiz Azman', plan: 'Standard Plan', amount: 'RM 300.00', method: 'Online Banking', status: 'Completed' },
-  { id: 't9', date: '18 Aug 2026', student: 'Priya Devi', plan: 'Premium Plan', amount: 'RM 500.00', method: 'eWallet', status: 'Pending' },
-  { id: 't10', date: '18 Aug 2026', student: 'Amirul Hakim', plan: 'Standard Plan', amount: 'RM 300.00', method: 'Credit Card', status: 'Failed' },
-];
-
 const statusStyle = (s: string) => {
-  if (s === 'Completed') return { bg: '#E8F8F1', text: '#4CAF7D' };
-  if (s === 'Pending') return { bg: '#FEF9EC', text: '#F2C94C' };
-  if (s === 'Failed') return { bg: '#FDECEA', text: '#E57373' };
-  return { bg: '#F3F4F6', text: '#9CA3AF' };
+  if (s === 'completed') return { bg: '#E8F8F1', text: '#4CAF7D', label: 'Completed' };
+  if (s === 'pending') return { bg: '#FEF9EC', text: '#F2C94C', label: 'Pending' };
+  if (s === 'failed') return { bg: '#FDECEA', text: '#E57373', label: 'Failed' };
+  if (s === 'refunded') return { bg: '#F3F4F6', text: '#9CA3AF', label: 'Refunded' };
+  return { bg: '#F3F4F6', text: '#9CA3AF', label: s };
 };
 
 export default function PaymentsPage() {
+  const supabase = createClient();
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('All');
   const [search, setSearch] = useState('');
 
-  const completed = demoTransactions.filter((t) => t.status === 'Completed');
-  const pending = demoTransactions.filter((t) => t.status === 'Pending');
-  const failed = demoTransactions.filter((t) => t.status === 'Failed');
+  const loadPayments = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await supabase
+        .from('payments')
+        .select(`
+          id, amount_myr, payment_method, status, created_at,
+          user_profiles:user_id(full_name),
+          meal_plans:meal_plan_id(name, price_myr, credits)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      const mapped: Transaction[] = (data || []).map((p: any) => ({
+        id: p.id,
+        date: new Date(p.created_at).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' }),
+        student: p.user_profiles?.full_name || 'Unknown',
+        plan: p.meal_plans?.name || 'Meal Plan',
+        amount: `RM ${parseFloat(p.amount_myr || 0).toFixed(2)}`,
+        method: formatMethod(p.payment_method),
+        status: p.status || 'completed',
+        created_at: p.created_at,
+      }));
+
+      setTransactions(mapped);
+    } catch (err) {
+      console.log('Payments load error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  useEffect(() => {
+    loadPayments();
+  }, [loadPayments]);
+
+  // Real-time subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-payments-live')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'payments',
+      }, () => {
+        loadPayments();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [supabase, loadPayments]);
+
+  function formatMethod(m: string) {
+    if (m === 'card') return 'Credit Card';
+    if (m === 'online_banking') return 'Online Banking';
+    if (m === 'other') return 'eWallet';
+    return m || 'Online Banking';
+  }
+
+  const completed = transactions.filter((t) => t.status === 'completed');
+  const pending = transactions.filter((t) => t.status === 'pending');
+  const failed = transactions.filter((t) => t.status === 'failed');
 
   const totalRevenue = completed.reduce((sum, t) => {
     const val = parseFloat(t.amount.replace('RM ', '').replace(',', ''));
@@ -48,13 +100,13 @@ export default function PaymentsPage() {
 
   const kpis = [
     { label: 'Total Revenue', value: `RM ${totalRevenue.toLocaleString('en-MY', { minimumFractionDigits: 2 })}`, icon: '💰', color: '#3ECBA0', sub: 'Completed payments' },
-    { label: 'Successful', value: completed.length, icon: '✅', color: '#4CAF7D', sub: `${Math.round((completed.length / demoTransactions.length) * 100)}% of total` },
+    { label: 'Successful', value: completed.length, icon: '✅', color: '#4CAF7D', sub: `${transactions.length > 0 ? Math.round((completed.length / transactions.length) * 100) : 0}% of total` },
     { label: 'Pending', value: pending.length, icon: '⏳', color: '#F2C94C', sub: 'Awaiting confirmation' },
     { label: 'Failed', value: failed.length, icon: '❌', color: '#E57373', sub: 'Requires attention' },
   ];
 
-  const filtered = demoTransactions.filter((t) => {
-    if (statusFilter !== 'All' && t.status !== statusFilter) return false;
+  const filtered = transactions.filter((t) => {
+    if (statusFilter !== 'All' && t.status !== statusFilter.toLowerCase()) return false;
     if (search && !t.student.toLowerCase().includes(search.toLowerCase()) && !t.plan.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
@@ -63,9 +115,15 @@ export default function PaymentsPage() {
     <AdminLayout>
       <div className="space-y-5">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-[#111827]">Payments</h1>
-          <p className="text-[#6B7280] text-sm mt-0.5">Transaction and payment management</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-[#111827]">Payments</h1>
+            <p className="text-[#6B7280] text-sm mt-0.5">Transaction and payment management</p>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-[#3ECBA0] font-medium bg-[#EBF9F4] px-3 py-1.5 rounded-full">
+            <span className="w-2 h-2 rounded-full bg-[#3ECBA0] animate-pulse" />
+            Live
+          </div>
         </div>
 
         {/* KPI cards */}
@@ -76,7 +134,7 @@ export default function PaymentsPage() {
                 {k.icon}
               </div>
               <p className="text-xs text-[#9CA3AF] font-medium mb-1">{k.label}</p>
-              <p className="text-2xl font-bold text-[#111827]">{k.value}</p>
+              <p className="text-2xl font-bold text-[#111827]">{loading ? '—' : k.value}</p>
               <p className="text-xs text-[#9CA3AF] mt-1">{k.sub}</p>
             </div>
           ))}
@@ -121,8 +179,14 @@ export default function PaymentsPage() {
             ))}
           </div>
 
-          {filtered.length === 0 ? (
-            <div className="text-center py-16 text-[#9CA3AF] text-sm">No transactions found</div>
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <div className="w-8 h-8 rounded-full border-2 border-[#3ECBA0] border-t-transparent animate-spin" />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-16 text-[#9CA3AF] text-sm">
+              {transactions.length === 0 ? 'No payment records yet. Payments will appear here after students subscribe.' : 'No transactions match the current filters.'}
+            </div>
           ) : (
             <div className="divide-y divide-[#F9FAFB]">
               {filtered.map((tx) => {
@@ -130,15 +194,11 @@ export default function PaymentsPage() {
                 return (
                   <div key={tx.id} className="grid grid-cols-[1.5fr_2fr_2fr_1.5fr_1.5fr_1fr] gap-3 px-5 py-3.5 hover:bg-[#F9FAFB] transition-colors items-center">
                     <p className="text-sm text-[#9CA3AF]">{tx.date}</p>
-                    <div>
-                      <p className="text-sm font-medium text-[#374151]">{tx.student}</p>
-                    </div>
-                    <p className="text-sm text-[#6B7280]">{tx.plan}</p>
+                    <p className="text-sm font-medium text-[#374151] truncate">{tx.student}</p>
+                    <p className="text-sm text-[#6B7280] truncate">{tx.plan}</p>
                     <p className="text-sm font-semibold text-[#374151]">{tx.amount}</p>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm text-[#6B7280]">{tx.method}</span>
-                    </div>
-                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full w-fit" style={{ background: ss.bg, color: ss.text }}>{tx.status}</span>
+                    <p className="text-sm text-[#6B7280]">{tx.method}</p>
+                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full w-fit" style={{ background: ss.bg, color: ss.text }}>{ss.label}</span>
                   </div>
                 );
               })}
@@ -146,7 +206,7 @@ export default function PaymentsPage() {
           )}
         </div>
 
-        <p className="text-xs text-[#9CA3AF] text-right">Showing {filtered.length} of {demoTransactions.length} transactions</p>
+        <p className="text-xs text-[#9CA3AF] text-right">Showing {filtered.length} of {transactions.length} transactions</p>
       </div>
     </AdminLayout>
   );

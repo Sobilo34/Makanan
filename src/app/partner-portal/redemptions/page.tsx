@@ -144,6 +144,23 @@ export default function RedemptionsPage() {
     if (partnerId) loadRedemptions(tab, partnerId);
   }, [tab]);
 
+  // Real-time subscription for new/updated redemptions
+  useEffect(() => {
+    if (!partnerId) return;
+    const channel = supabase
+      .channel(`partner-redemptions-${partnerId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'redemptions',
+        filter: `partner_id=eq.${partnerId}`,
+      }, () => {
+        loadRedemptions(tab, partnerId);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [partnerId, tab]);
+
   useEffect(() => {
     const q = search.toLowerCase();
     setFiltered(

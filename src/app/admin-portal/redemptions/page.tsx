@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import AdminLayout from '../components/AdminLayout';
 import { createClient } from '@/lib/supabase/client';
 
@@ -11,97 +11,151 @@ interface RedemptionRow {
   meal: string;
   partner: string;
   plan: string;
-  status: 'success' | 'pending' | 'rejected';
+  status: string;
+  redeemed_at: string;
 }
 
-const demoRows: RedemptionRow[] = [
-  { id: 'r1', time: '08:42 AM', student: 'Ali Bin Abu', meal: 'Nasi Lemak Special', partner: 'Central Kitchen', plan: 'Standard', status: 'success' },
-  { id: 'r2', time: '09:05 AM', student: 'Siti Aisyah', meal: 'Roti Canai Set', partner: 'Mamak Stall A', plan: 'Premium', status: 'success' },
-  { id: 'r3', time: '09:18 AM', student: 'Jason Tan', meal: 'Teh Tarik + Toast', partner: 'Campus Hub Cafe', plan: 'Standard', status: 'success' },
-  { id: 'r4', time: '10:02 AM', student: 'Nurul Huda', meal: 'Mee Goreng Mamak', partner: 'Mamak Stall A', plan: 'Premium', status: 'pending' },
-  { id: 'r5', time: '10:34 AM', student: 'Raj Kumar', meal: 'Nasi Campur', partner: 'Campus Hub Cafe', plan: 'Standard', status: 'success' },
-  { id: 'r6', time: '11:10 AM', student: 'Lim Wei Xin', meal: 'Char Kway Teow', partner: 'Kiosk 7', plan: 'Standard', status: 'rejected' },
-  { id: 'r7', time: '11:45 AM', student: 'Farah Nadia', meal: 'Ayam Goreng Berempah', partner: 'Central Kitchen', plan: 'Premium', status: 'success' },
-  { id: 'r8', time: '12:03 PM', student: 'Hafiz Azman', meal: 'Laksa Asam', partner: 'Central Kitchen', plan: 'Standard', status: 'pending' },
-  { id: 'r9', time: '12:30 PM', student: 'Priya Devi', meal: 'Nasi Lemak Special', partner: 'Central Kitchen', plan: 'Premium', status: 'success' },
-  { id: 'r10', time: '01:15 PM', student: 'Amirul Hakim', meal: 'Roti Canai Set', partner: 'Mamak Stall A', plan: 'Standard', status: 'rejected' },
-];
-
-const partners = ['All Partners', 'Central Kitchen', 'Mamak Stall A', 'Campus Hub Cafe', 'Kiosk 7'];
-const statusOptions = ['All Status', 'success', 'pending', 'rejected'];
-
 const statusStyle = (s: string) => {
-  if (s === 'success') return { bg: '#E8F8F1', text: '#4CAF7D', label: 'Success' };
+  if (s === 'confirmed') return { bg: '#E8F8F1', text: '#4CAF7D', label: 'Success' };
   if (s === 'pending') return { bg: '#FEF9EC', text: '#F2C94C', label: 'Pending' };
-  return { bg: '#FDECEA', text: '#E57373', label: 'Rejected' };
+  if (s === 'rejected' || s === 'cancelled') return { bg: '#FDECEA', text: '#E57373', label: s === 'rejected' ? 'Rejected' : 'Cancelled' };
+  return { bg: '#F3F4F6', text: '#9CA3AF', label: s };
 };
 
 export default function RedemptionsPage() {
   const supabase = createClient();
-  const [rows, setRows] = useState<RedemptionRow[]>(demoRows);
+  const [rows, setRows] = useState<RedemptionRow[]>([]);
   const [partnerFilter, setPartnerFilter] = useState('All Partners');
   const [statusFilter, setStatusFilter] = useState('All Status');
   const [dateFilter, setDateFilter] = useState('today');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [partners, setPartners] = useState<string[]>(['All Partners']);
+  const [liveCount, setLiveCount] = useState(0);
+
+  const getDateStart = (filter: string) => {
+    const now = new Date();
+    if (filter === 'today') {
+      const d = new Date(now); d.setHours(0, 0, 0, 0); return d.toISOString();
+    }
+    if (filter === 'week') {
+      const d = new Date(now); d.setDate(d.getDate() - 7); return d.toISOString();
+    }
+    // month
+    const d = new Date(now); d.setDate(1); d.setHours(0, 0, 0, 0); return d.toISOString();
+  };
+
+  const loadRedemptions = useCallback(async (dateF: string) => {
+    setLoading(true);
+    try {
+      const since = getDateStart(dateF);
+      const { data } = await supabase
+        .from('redemptions')
+        .select(`
+          id, status, redeemed_at,
+          user_profiles:user_id(full_name),
+          meals:meal_id(name),
+          partners:partner_id(name),
+          subscriptions:subscription_id(
+            meal_plans:meal_plan_id(name)
+          )
+        `)
+        .gte('redeemed_at', since)
+        .order('redeemed_at', { ascending: false })
+        .limit(100);
+
+      const mapped: RedemptionRow[] = (data || []).map((r: any) => ({
+        id: r.id,
+        time: new Date(r.redeemed_at).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' }),
+        student: r.user_profiles?.full_name || 'Unknown',
+        meal: r.meals?.name || 'Unknown Meal',
+        partner: r.partners?.name || 'Unknown Partner',
+        plan: r.subscriptions?.meal_plans?.name || 'Standard',
+        status: r.status || 'pending',
+        redeemed_at: r.redeemed_at,
+      }));
+
+      setRows(mapped);
+
+      // Build partner list
+      const uniquePartners = ['All Partners', ...Array.from(new Set(mapped.map((r) => r.partner).filter(Boolean)))];
+      setPartners(uniquePartners);
+    } catch (err) {
+      console.log('Redemptions load error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
 
   useEffect(() => {
-    const loadRedemptions = async () => {
-      setLoading(true);
-      try {
-        const today = new Date().toISOString().split('T')[0];
-        const { data } = await supabase
-          .from('redemptions')
-          .select('id, redeemed_at, status, user_profiles(full_name), meals(name), partners(name), subscriptions(plan_name)')
-          .gte('redeemed_at', today)
-          .order('redeemed_at', { ascending: false })
-          .limit(50);
+    loadRedemptions(dateFilter);
+  }, [dateFilter, loadRedemptions]);
 
-        if (data && data.length > 0) {
-          const mapped: RedemptionRow[] = data.map((r: any) => ({
-            id: r.id,
-            time: new Date(r.redeemed_at).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' }),
-            student: r.user_profiles?.full_name || 'Unknown',
-            meal: r.meals?.name || 'Unknown Meal',
-            partner: r.partners?.name || 'Unknown Partner',
-            plan: r.subscriptions?.plan_name || 'Standard',
-            status: r.status || 'success',
-          }));
-          setRows(mapped);
+  // Real-time subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-redemptions-live')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'redemptions',
+      }, (payload) => {
+        setLiveCount((c) => c + 1);
+        if (payload.eventType === 'INSERT') {
+          // Reload to get joined data
+          loadRedemptions(dateFilter);
+        } else if (payload.eventType === 'UPDATE') {
+          setRows((prev) =>
+            prev.map((r) =>
+              r.id === (payload.new as any).id
+                ? { ...r, status: (payload.new as any).status }
+                : r
+            )
+          );
         }
-      } catch {
-        // use demo data
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadRedemptions();
-  }, []);
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [supabase, dateFilter, loadRedemptions]);
 
   const filtered = rows.filter((r) => {
     if (partnerFilter !== 'All Partners' && r.partner !== partnerFilter) return false;
-    if (statusFilter !== 'All Status' && r.status !== statusFilter) return false;
+    if (statusFilter !== 'All Status') {
+      if (statusFilter === 'success' && r.status !== 'confirmed') return false;
+      if (statusFilter === 'pending' && r.status !== 'pending') return false;
+      if (statusFilter === 'rejected' && r.status !== 'rejected' && r.status !== 'cancelled') return false;
+    }
     return true;
   });
 
   const total = rows.length;
-  const successful = rows.filter((r) => r.status === 'success').length;
+  const successful = rows.filter((r) => r.status === 'confirmed').length;
   const pending = rows.filter((r) => r.status === 'pending').length;
-  const rejected = rows.filter((r) => r.status === 'rejected').length;
+  const rejected = rows.filter((r) => r.status === 'rejected' || r.status === 'cancelled').length;
 
   const kpis = [
-    { label: "Today\'s Redemptions", value: total, color: '#3ECBA0', icon: '🍽️', sub: 'All redemptions today' },
+    { label: "Today\'s Redemptions", value: total, color: '#3ECBA0', icon: '🍽️', sub: 'All redemptions' },
     { label: 'Successful', value: successful, color: '#4CAF7D', icon: '✅', sub: `${total > 0 ? Math.round((successful / total) * 100) : 0}% success rate` },
     { label: 'Pending', value: pending, color: '#F2C94C', icon: '⏳', sub: 'Awaiting confirmation' },
     { label: 'Rejected', value: rejected, color: '#E57373', icon: '❌', sub: 'Failed or declined' },
   ];
 
+  const statusOptions = ['All Status', 'success', 'pending', 'rejected'];
+
   return (
     <AdminLayout>
       <div className="space-y-5">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-[#111827]">Redemption Monitoring</h1>
-          <p className="text-[#6B7280] text-sm mt-0.5">Real-time meal redemption activity</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-[#111827]">Redemption Monitoring</h1>
+            <p className="text-[#6B7280] text-sm mt-0.5">Real-time meal redemption activity</p>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-[#3ECBA0] font-medium bg-[#EBF9F4] px-3 py-1.5 rounded-full">
+            <span className="w-2 h-2 rounded-full bg-[#3ECBA0] animate-pulse" />
+            Live
+            {liveCount > 0 && <span className="ml-1 bg-[#3ECBA0] text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">{liveCount > 9 ? '9+' : liveCount}</span>}
+          </div>
         </div>
 
         {/* KPI cards */}
@@ -155,12 +209,6 @@ export default function RedemptionsPage() {
             >
               {statusOptions.map((s) => <option key={s}>{s}</option>)}
             </select>
-            <div className="ml-auto text-xs text-[#9CA3AF]">
-              <span className="inline-flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#3ECBA0] animate-pulse" />
-                Live
-              </span>
-            </div>
           </div>
         </div>
 
@@ -177,7 +225,7 @@ export default function RedemptionsPage() {
               <div className="w-8 h-8 rounded-full border-2 border-[#3ECBA0] border-t-transparent animate-spin" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-16 text-[#9CA3AF] text-sm">No redemptions found</div>
+            <div className="text-center py-16 text-[#9CA3AF] text-sm">No redemptions found for the selected filters</div>
           ) : (
             <div className="divide-y divide-[#F9FAFB]">
               {filtered.map((row) => {
@@ -188,7 +236,7 @@ export default function RedemptionsPage() {
                     <p className="text-sm font-medium text-[#374151] truncate">{row.student}</p>
                     <p className="text-sm text-[#6B7280] truncate">{row.meal}</p>
                     <p className="text-sm text-[#6B7280] truncate">{row.partner}</p>
-                    <span className="text-xs px-2 py-1 rounded-full bg-[#F3F4F6] text-[#6B7280] w-fit">{row.plan}</span>
+                    <span className="text-xs px-2 py-1 rounded-full bg-[#F3F4F6] text-[#6B7280] w-fit truncate">{row.plan}</span>
                     <span className="text-xs font-semibold px-2.5 py-1 rounded-full w-fit" style={{ background: ss.bg, color: ss.text }}>{ss.label}</span>
                   </div>
                 );

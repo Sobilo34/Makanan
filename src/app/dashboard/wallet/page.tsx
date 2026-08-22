@@ -60,7 +60,7 @@ export default function WalletPage() {
             .select('*')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false })
-            .limit(10),
+            .limit(20),
         ]);
         setSubscription(subRes?.data || null);
         setTransactions(txnRes?.data || []);
@@ -71,6 +71,32 @@ export default function WalletPage() {
       }
     };
     fetchData();
+
+    // Real-time: update wallet when subscription or transactions change
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`student-wallet-${user.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'subscriptions',
+        filter: `user_id=eq.${user.id}`,
+      }, (payload) => {
+        if (payload.new) {
+          setSubscription((prev) => prev ? { ...prev, ...(payload.new as any) } : null);
+        }
+      })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'wallet_transactions',
+        filter: `user_id=eq.${user.id}`,
+      }, (payload) => {
+        setTransactions((prev) => [payload.new as any, ...prev.slice(0, 19)]);
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user]);
 
   const creditsRemaining = subscription

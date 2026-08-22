@@ -19,50 +19,31 @@ function PaymentContent() {
 
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('card');
   const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState('');
 
   const handlePay = async () => {
     if (!user || !planId) return;
     setProcessing(true);
+    setError('');
     try {
       const supabase = createClient();
-      // Cancel existing subscription
-      await supabase
-        .from('subscriptions')
-        .update({ status: 'cancelled' })
-        .eq('user_id', user.id)
-        .eq('status', 'active');
 
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 30);
-      const startsAt = new Date();
-
-      const { data: newSub, error: subErr } = await supabase
-        .from('subscriptions')
-        .insert({
-          user_id: user.id,
-          meal_plan_id: planId,
-          status: 'active',
-          credits_total: parseInt(credits),
-          credits_used: 0,
-          starts_at: startsAt.toISOString(),
-          expires_at: expiresAt.toISOString(),
-        })
-        .select()
-        .single();
-
-      if (subErr) throw subErr;
-
-      await supabase.from('wallet_transactions').insert({
-        user_id: user.id,
-        subscription_id: newSub.id,
-        description: `Subscribed to ${planName} — ${credits} credits issued`,
-        credits_delta: parseInt(credits),
-        balance_after: parseInt(credits),
+      // Use atomic RPC to process subscription payment
+      const { data: result, error: rpcErr } = await supabase.rpc('process_subscription_payment', {
+        p_user_id: user.id,
+        p_meal_plan_id: planId,
+        p_credits: parseInt(credits),
+        p_amount_myr: parseFloat(price),
+        p_payment_method: selectedMethod,
       });
 
+      if (rpcErr) throw rpcErr;
+      if (!result?.success) throw new Error(result?.error || 'Payment failed');
+
       router.push(`/dashboard/payment-success?price=${price}&credits=${credits}&name=${encodeURIComponent(planName)}`);
-    } catch (err) {
+    } catch (err: any) {
       console.log('Payment error:', err);
+      setError(err.message || 'Payment failed. Please try again.');
       setProcessing(false);
     }
   };
@@ -81,8 +62,7 @@ function PaymentContent() {
     },
     {
       id: 'online_banking',
-      label: 'Online banking',
-      sub: 'Expires 08/28',
+      label: 'Online Banking',
       icon: (
         <div className="w-10 h-10 bg-[#1A1F71] rounded-md flex items-center justify-center">
           <span className="text-white font-bold text-xs tracking-wider">VISA</span>
@@ -91,8 +71,7 @@ function PaymentContent() {
     },
     {
       id: 'other',
-      label: 'Other supported payment method',
-      sub: 'Expires 11/27',
+      label: 'eWallet / Other',
       icon: (
         <div className="w-10 h-10 bg-[#EBF9F4] rounded-full flex items-center justify-center">
           <svg className="w-5 h-5 text-[#3ECBA0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -105,7 +84,6 @@ function PaymentContent() {
 
   return (
     <div className="min-h-full bg-white lg:bg-[#F5F7F5]">
-      {/* ── Mobile / centered layout ── */}
       <div className="max-w-md mx-auto lg:max-w-2xl px-5 lg:px-8 pt-6 lg:pt-8 pb-32">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
@@ -123,8 +101,17 @@ function PaymentContent() {
         {/* Plan summary */}
         <div className="text-center mb-8">
           <p className="text-[#3ECBA0] font-bold text-4xl">RM{price}</p>
-          <p className="text-[#6B7280] text-base mt-1">{credits} Meals</p>
+          <p className="text-[#6B7280] text-base mt-1">{credits} Meals — {planName}</p>
         </div>
+
+        {error && (
+          <div className="mb-5 bg-red-50 border border-red-100 rounded-2xl px-4 py-3 text-red-600 text-sm flex items-center gap-2">
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {error}
+          </div>
+        )}
 
         <div className="bg-gray-50 lg:bg-white rounded-2xl p-5 lg:border lg:border-gray-100 lg:shadow-sm">
           <h3 className="text-[#1A1A1A] font-bold text-base mb-4">Payment Method</h3>
@@ -158,7 +145,7 @@ function PaymentContent() {
         </div>
       </div>
 
-      {/* ── Sticky pay button ── */}
+      {/* Sticky pay button */}
       <div
         className="fixed bottom-0 inset-x-0 bg-white border-t border-gray-100 px-5 py-4 z-20"
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}
@@ -169,9 +156,14 @@ function PaymentContent() {
             disabled={processing}
             className="w-full bg-[#3ECBA0] text-white font-bold py-4 rounded-2xl hover:bg-[#2DAF87] transition-colors disabled:opacity-60 text-base"
           >
-            {processing ? 'Processing...' : `Pay RM${price}`}
+            {processing ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                Processing...
+              </span>
+            ) : `Pay RM${price}`}
           </button>
-          <p className="text-center text-[#9CA3AF] text-xs mt-2">Your payment is securiely processed.</p>
+          <p className="text-center text-[#9CA3AF] text-xs mt-2">Your payment is securely processed.</p>
         </div>
       </div>
     </div>
