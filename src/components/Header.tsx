@@ -57,13 +57,6 @@ export default function Header() {
           {/* CTA */}
           <div className="flex items-center gap-3">
             <a
-              href="/partner-portal/login"
-              className="hidden md:inline-flex items-center gap-2 text-[#3ECBA0] font-sans text-sm px-4 py-2 rounded-pill hover:bg-[#3ECBA0]/10 transition-colors duration-200"
-              style={{ fontWeight: 500 }}
-            >
-              Partner Portal
-            </a>
-            <a
               href="/login"
               className="hidden md:inline-flex items-center gap-2 border border-near-black/20 text-near-black font-sans text-sm px-5 py-2.5 rounded-pill hover:border-near-black/40 transition-colors duration-200"
               style={{ fontWeight: 500 }}

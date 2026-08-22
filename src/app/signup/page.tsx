@@ -265,6 +265,13 @@ export default function SignupPage() {
               Sign in
             </Link>
           </p>
+
+          <p className="text-center text-[#9CA3AF] text-xs mt-3">
+            Partner Portal?{' '}
+            <Link href="/partner-portal/login" className="text-[#9CA3AF] underline hover:text-[#6B7280] transition-colors">
+              Sign up here
+            </Link>
+          </p>
         </div>
       </div>
     </div>
