@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import PartnerLayout from '../components/PartnerLayout';
 import { createClient } from '@/lib/supabase/client';
 
@@ -54,11 +54,80 @@ export default function PartnerDashboardPage() {
   const supabase = createClient();
   const [partnerName, setPartnerName] = useState('');
   const [partnerId, setPartnerId] = useState('');
+  const [pricePerMeal, setPricePerMeal] = useState(15);
   const [stats, setStats] = useState<Stats>({ todayMeals: 0, mealsRedeemed: 0, pending: 0, estimatedEarnings: 0 });
   const [schedule, setSchedule] = useState<MealScheduleItem[]>([]);
   const [recentRedemptions, setRecentRedemptions] = useState<RecentRedemption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [liveIndicator, setLiveIndicator] = useState(false);
+  const partnerIdRef = useRef('');
+  const pricePerMealRef = useRef(15);
 
+  const fetchRedemptionsData = useCallback(async (pid: string, ppm: number) => {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const { data: redemptions } = await supabase
+      .from('redemptions')
+      .select(`
+        id, status, redeemed_at,
+        user_profiles:user_id(full_name),
+        meals:meal_id(name, price_myr)
+      `)
+      .eq('partner_id', pid)
+      .gte('redeemed_at', todayStart.toISOString())
+      .order('redeemed_at', { ascending: false });
+
+    return redemptions || [];
+  }, [supabase]);
+
+  const fetchMealsData = useCallback(async (pid: string) => {
+    const { data: meals } = await supabase
+      .from('meals')
+      .select('id, name, serving_quantity, redemption_count, availability')
+      .eq('partner_id', pid)
+      .eq('is_active', true);
+
+    return meals || [];
+  }, [supabase]);
+
+  const refreshDashboard = useCallback(async (pid: string, ppm: number) => {
+    const [meals, redemptions] = await Promise.all([
+      fetchMealsData(pid),
+      fetchRedemptionsData(pid, ppm),
+    ]);
+
+    const todayMeals = meals.reduce((sum, m) => sum + (m.serving_quantity || 0), 0);
+    const redeemed = redemptions.filter((r) => r.status === 'confirmed').length;
+    const pending = redemptions.filter((r) => r.status === 'pending').length;
+    const earnings = redemptions
+      .filter((r) => r.status === 'confirmed')
+      .reduce((sum, r) => sum + ((r.meals as any)?.price_myr || ppm), 0);
+
+    setStats({ todayMeals, mealsRedeemed: redeemed, pending, estimatedEarnings: earnings });
+
+    setSchedule(
+      meals.slice(0, 4).map((m) => ({
+        id: m.id,
+        name: m.name,
+        servingQuantity: m.serving_quantity || 0,
+        redemptions: m.redemption_count || 0,
+        availability: m.availability || 'available',
+      }))
+    );
+
+    setRecentRedemptions(
+      redemptions.slice(0, 5).map((r) => ({
+        id: r.id,
+        studentName: (r.user_profiles as any)?.full_name || 'Student',
+        mealName: (r.meals as any)?.name || 'Meal',
+        time: new Date(r.redeemed_at).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' }),
+        status: r.status,
+      }))
+    );
+  }, [fetchMealsData, fetchRedemptionsData]);
+
+  // Initial load
   useEffect(() => {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -73,63 +142,56 @@ export default function PartnerDashboardPage() {
       if (!partner) return;
       setPartnerName(partner.name);
       setPartnerId(partner.id);
+      setPricePerMeal(partner.price_per_meal || 15);
+      partnerIdRef.current = partner.id;
+      pricePerMealRef.current = partner.price_per_meal || 15;
 
-      // Load today's meals
-      const { data: meals } = await supabase
-        .from('meals')
-        .select('id, name, serving_quantity, redemption_count, availability')
-        .eq('partner_id', partner.id)
-        .eq('is_active', true);
-
-      const todayMeals = meals?.reduce((sum, m) => sum + (m.serving_quantity || 0), 0) || 0;
-
-      // Load today's redemptions
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-
-      const { data: redemptions } = await supabase
-        .from('redemptions')
-        .select(`
-          id, status, redeemed_at,
-          user_profiles:user_id(full_name),
-          meals:meal_id(name, price_myr)
-        `)
-        .eq('partner_id', partner.id)
-        .gte('redeemed_at', todayStart.toISOString())
-        .order('redeemed_at', { ascending: false });
-
-      const redeemed = redemptions?.filter((r) => r.status === 'confirmed').length || 0;
-      const pending = redemptions?.filter((r) => r.status === 'pending').length || 0;
-      const earnings = redemptions
-        ?.filter((r) => r.status === 'confirmed')
-        .reduce((sum, r) => sum + ((r.meals as any)?.price_myr || (partner.price_per_meal || 15)), 0) || 0;
-
-      setStats({ todayMeals, mealsRedeemed: redeemed, pending, estimatedEarnings: earnings });
-
-      setSchedule(
-        (meals || []).slice(0, 4).map((m) => ({
-          id: m.id,
-          name: m.name,
-          servingQuantity: m.serving_quantity || 0,
-          redemptions: m.redemption_count || 0,
-          availability: m.availability || 'available',
-        }))
-      );
-
-      setRecentRedemptions(
-        (redemptions || []).slice(0, 5).map((r) => ({
-          id: r.id,
-          studentName: (r.user_profiles as any)?.full_name || 'Student',
-          mealName: (r.meals as any)?.name || 'Meal',
-          time: new Date(r.redeemed_at).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' }),
-          status: r.status,
-        }))
-      );
-
+      await refreshDashboard(partner.id, partner.price_per_meal || 15);
       setLoading(false);
     };
     load();
   }, []);
+
+  // Realtime subscription
+  useEffect(() => {
+    if (!partnerId) return;
+
+    const channel = supabase
+      .channel(`partner-dashboard-${partnerId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'redemptions',
+          filter: `partner_id=eq.${partnerId}`,
+        },
+        async () => {
+          // Flash live indicator
+          setLiveIndicator(true);
+          setTimeout(() => setLiveIndicator(false), 1500);
+          // Refresh all dashboard data
+          await refreshDashboard(partnerIdRef.current, pricePerMealRef.current);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'meals',
+          filter: `partner_id=eq.${partnerId}`,
+        },
+        async () => {
+          await refreshDashboard(partnerIdRef.current, pricePerMealRef.current);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [partnerId, supabase, refreshDashboard]);
 
   const statCards = [
     {
@@ -184,11 +246,22 @@ export default function PartnerDashboardPage() {
       ) : (
         <div className="space-y-6">
           {/* Greeting */}
-          <div>
-            <h1 className="text-2xl font-bold text-[#111827]">
-              {getGreeting()}, {partnerName || 'Partner'}
-            </h1>
-            <p className="text-[#6B7280] text-sm mt-1">Here's what's happening at your outlet today.</p>
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-[#111827]">
+                {getGreeting()}, {partnerName || 'Partner'}
+              </h1>
+              <p className="text-[#6B7280] text-sm mt-1">Here's what's happening at your outlet today.</p>
+            </div>
+            {/* Live indicator */}
+            <div className="flex items-center gap-2 mt-1">
+              <span
+                className={`w-2 h-2 rounded-full transition-colors duration-300 ${
+                  liveIndicator ? 'bg-[#3ECBA0] animate-ping' : 'bg-[#3ECBA0]'
+                }`}
+              />
+              <span className="text-xs text-[#6B7280] font-medium">Live</span>
+            </div>
           </div>
 
           {/* Stats cards */}
