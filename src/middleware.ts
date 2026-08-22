@@ -66,6 +66,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Protect admin portal routes (except login)
+  const adminPublicPaths = ['/admin-portal/login'];
+  if (
+    !user &&
+    pathname.startsWith('/admin-portal') &&
+    !adminPublicPaths.some((p) => pathname.startsWith(p))
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/admin-portal/login';
+    return NextResponse.redirect(url);
+  }
+
   // Redirect logged-in users away from student auth pages
   if (user && (pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password')) {
     const url = request.nextUrl.clone();
