@@ -79,6 +79,67 @@ Deno.serve(async (req: Request) => {
         })
         .eq('stripe_session_id', session.id);
 
+      // Fetch user email and plan details for notification + email
+      const { data: userProfile } = await supabase
+        .from('user_profiles')
+        .select('email, full_name')
+        .eq('id', userId)
+        .single();
+
+      const { data: planData } = await supabase
+        .from('meal_plans')
+        .select('name, credits, price_myr')
+        .eq('id', planId)
+        .single();
+
+      const { data: subData } = await supabase
+        .from('subscriptions')
+        .select('expires_at')
+        .eq('id', subscriptionId)
+        .single();
+
+      // Insert notification for student
+      await supabase.from('notifications').insert({
+        user_id: userId,
+        recipient_type: 'student',
+        type: 'subscription_confirmed',
+        title: 'Subscription Activated!',
+        message: `Your ${planData?.name || 'meal plan'} subscription is now active with ${credits} meal credits.`,
+        metadata: { plan_id: planId, subscription_id: subscriptionId, amount: amountMyr },
+      });
+
+      // Insert admin notification
+      await supabase.from('notifications').insert({
+        recipient_type: 'admin',
+        type: 'new_subscription',
+        title: 'New Subscription',
+        message: `${userProfile?.full_name || 'A student'} subscribed to ${planData?.name || 'a meal plan'} for RM ${amountMyr}.`,
+        metadata: { user_id: userId, plan_id: planId, amount: amountMyr },
+      });
+
+      // Send subscription confirmation email
+      if (userProfile?.email) {
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+        await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!}`,
+          },
+          body: JSON.stringify({
+            type: 'subscription_confirmed',
+            to: userProfile.email,
+            data: {
+              studentName: userProfile.full_name || 'Student',
+              planName: planData?.name || 'Meal Plan',
+              credits: credits,
+              amount: amountMyr.toFixed(2),
+              expiresAt: subData?.expires_at ? new Date(subData.expires_at).toLocaleDateString('en-MY') : '-',
+            },
+          }),
+        });
+      }
+
       console.log(`Subscription activated for user ${userId}, plan ${planId}`);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Subscription activation failed';
