@@ -60,16 +60,16 @@ function FounderCard({ founder, size = 'md' }: { founder: Founder; size?: 'lg' |
   return (
     <div
       className="flex flex-col items-center text-center"
-      style={{ width: isLarge ? 200 : 160 }}
+      style={{ width: isLarge ? 260 : 200 }}
     >
       {/* Avatar */}
       <div
-        className="rounded-full overflow-hidden mb-3 flex-shrink-0"
+        className="rounded-full overflow-hidden mb-4 flex-shrink-0"
         style={{
-          width: isLarge ? 120 : 88,
-          height: isLarge ? 120 : 88,
-          border: isLarge ? '3px solid #3ECBA0' : '2px solid rgba(62,203,160,0.4)',
-          boxShadow: isLarge ? '0 0 0 6px rgba(62,203,160,0.12)' : 'none',
+          width: isLarge ? 160 : 120,
+          height: isLarge ? 160 : 120,
+          border: isLarge ? '3px solid #3ECBA0' : '2px solid rgba(62,203,160,0.5)',
+          boxShadow: isLarge ? '0 0 0 8px rgba(62,203,160,0.12)' : '0 0 0 4px rgba(62,203,160,0.08)',
         }}
       >
         {founder.img ? (
@@ -85,7 +85,7 @@ function FounderCard({ founder, size = 'md' }: { founder: Founder; size?: 'lg' |
           >
             <span
               className="font-sans font-700 text-white"
-              style={{ fontSize: isLarge ? '2rem' : '1.4rem', fontWeight: 700 }}
+              style={{ fontSize: isLarge ? '2.2rem' : '1.6rem', fontWeight: 700 }}
             >
               {founder.initials}
             </span>
@@ -95,7 +95,7 @@ function FounderCard({ founder, size = 'md' }: { founder: Founder; size?: 'lg' |
 
       {/* Role badge */}
       <span
-        className="font-sans text-[10px] font-700 px-2.5 py-0.5 rounded-full mb-2"
+        className="font-sans text-[10px] font-700 px-3 py-1 rounded-full mb-2"
         style={{
           background: isLarge ? '#3ECBA0' : 'rgba(62,203,160,0.12)',
           color: isLarge ? '#0A0A0A' : '#2BB88A',
@@ -108,11 +108,11 @@ function FounderCard({ founder, size = 'md' }: { founder: Founder; size?: 'lg' |
 
       <h3
         className="font-sans font-700 text-near-black leading-tight mb-1"
-        style={{ fontSize: isLarge ? '1rem' : '0.85rem', fontWeight: 700 }}
+        style={{ fontSize: isLarge ? '1.1rem' : '0.95rem', fontWeight: 700 }}
       >
         {founder.name}
       </h3>
-      <p className="font-sans text-muted-text" style={{ fontSize: '0.75rem', lineHeight: 1.5 }}>
+      <p className="font-sans text-muted-text" style={{ fontSize: '0.8rem', lineHeight: 1.5 }}>
         {founder.bio}
       </p>
     </div>
@@ -142,39 +142,15 @@ export default function FoundersSection() {
             className="font-sans font-700 text-near-black leading-tight mb-4"
             style={{ fontSize: 'clamp(2rem, 5vw, 2.75rem)', fontWeight: 700 }}
           >
-            Born at AIU.
+            Built by students, for students.
           </h2>
           <p className="font-sans text-muted-text text-base leading-relaxed max-w-md mx-auto">
-            Five students. One shared frustration — skipping meals because campus food was expensive, inconvenient, or just not there. Makanan started right here at Albukhary International University.
+            Five students. One shared frustration — skipping meals because campus food was expensive, inconvenient, or simply unavailable. So they built the solution themselves.
           </p>
         </div>
 
         {/* DESKTOP: Star pattern — CEO center, 4 others around */}
-        <div className="hidden md:block relative" style={{ height: 520 }}>
-          {/* Connecting lines */}
-          <svg
-            className="absolute inset-0 w-full h-full pointer-events-none"
-            viewBox="0 0 800 520"
-            preserveAspectRatio="xMidYMid meet"
-          >
-            {/* Lines from center (400, 260) to each corner */}
-            {[
-              [160, 100],  // top-left (COO)
-              [640, 100],  // top-right (CFO)
-              [100, 380],  // bottom-left (CTO)
-              [700, 380],  // bottom-right (CMO)
-            ].map(([x, y], i) => (
-              <line
-                key={i}
-                x1="400" y1="260"
-                x2={x} y2={y}
-                stroke="rgba(62,203,160,0.2)"
-                strokeWidth="1.5"
-                strokeDasharray="4 4"
-              />
-            ))}
-          </svg>
-
+        <div className="hidden md:block relative" style={{ height: 620 }}>
           {/* CEO — center */}
           <div className="absolute" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
             <FounderCard founder={ceo} size="lg" />
@@ -208,10 +184,10 @@ export default function FoundersSection() {
             <div
               className="rounded-full overflow-hidden mb-3"
               style={{
-                width: 110,
-                height: 110,
+                width: 130,
+                height: 130,
                 border: '3px solid #3ECBA0',
-                boxShadow: '0 0 0 6px rgba(62,203,160,0.12)',
+                boxShadow: '0 0 0 8px rgba(62,203,160,0.12)',
               }}
             >
               {ceo.img ? (
