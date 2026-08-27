@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 const plans = [
+  { id: 'lite-30', label: 'Lite', meals: '30 meals', price: 'RM150', tag: 'Entry' },
   { id: 'value-40', label: 'Value', meals: '40 meals', price: 'RM250', tag: 'Starter' },
   { id: 'value-60', label: 'Value', meals: '60 meals', price: 'RM300', tag: 'Popular' },
   { id: 'regular-40', label: 'Regular', meals: '40 meals', price: 'RM300', tag: '' },
@@ -78,7 +79,7 @@ export default function ReservationSection() {
             {/* Plan selector grid */}
             <div className="reveal reveal-delay-1 mb-10">
               <p className="font-sans text-xs tracking-widest uppercase mb-4 font-600" style={{ color: 'rgba(255,255,255,0.35)', fontWeight: 600 }}>Choose your plan</p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 lg:grid-cols-4 gap-2">
                 {plans.map((plan) => (
                   <button
                     key={plan.id}

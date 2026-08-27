@@ -25,8 +25,9 @@ interface Subscription {
   meal_plans: { name: string; tier: string; price_myr: number };
 }
 
-const featureIcons = ['🎁', '⭐', '🏅', '❤️', '👑', '💎'];
+const featureIcons = ['🌱', '🎁', '⭐', '🏅', '❤️', '👑', '💎'];
 const featureTexts = [
+  'Great entry point for occasional eaters',
   'Best value for regular eaters',
   'Great balance of value and flexibility',
   'More meals for bigger appetite',

@@ -17,6 +17,18 @@ interface MealPlan {
 
 const mealPlans: MealPlan[] = [
   {
+    id: 'lite-plan',
+    name: 'Lite Plan',
+    description: 'A light start for occasional eaters. Covers your most essential meals throughout the month.',
+    meals: '30 meals',
+    price: 150,
+    priceLabel: 'RM150',
+    tag: 'Entry Level',
+    img: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=800&q=80',
+    imgAlt: 'Simple and fresh student meal with rice and vegetables',
+    validity: 'Valid 30 days',
+  },
+  {
     id: 'basic-plan',
     name: 'Basic Plan',
     description: 'Perfect for light eaters. Balanced daily meals to keep you fueled for class.',
@@ -50,18 +62,6 @@ const mealPlans: MealPlan[] = [
     img: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836',
     imgAlt: 'Premium meal selection with diverse cuisines and fresh ingredients',
     validity: 'Valid 30 days',
-  },
-  {
-    id: 'semester-plan',
-    name: 'Semester Plan',
-    description: 'Lock in savings for the whole semester. Best rate per meal, guaranteed.',
-    meals: '300 meals',
-    price: 900,
-    priceLabel: 'RM900',
-    tag: 'Semester Deal',
-    img: 'https://images.unsplash.com/photo-1498837167922-ddd27525d352',
-    imgAlt: 'Variety of healthy student meals arranged on a table',
-    validity: 'Valid 4 months',
   },
 ];
 
