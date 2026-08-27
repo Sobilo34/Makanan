@@ -77,6 +77,28 @@ export default function OrdersPage() {
       }
     };
     fetchOrders();
+
+    // Real-time: update when redemption status changes (e.g., partner confirms)
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`student-orders-${user.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'redemptions',
+        filter: `user_id=eq.${user.id}`,
+      }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setRedemptions((prev) => [payload.new as any, ...prev]);
+        } else if (payload.eventType === 'UPDATE') {
+          setRedemptions((prev) =>
+            prev.map((r) => r.id === (payload.new as any).id ? { ...r, status: (payload.new as any).status } : r)
+          );
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user]);
 
   const isToday = (dateStr: string) => {

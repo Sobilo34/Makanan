@@ -1,23 +1,97 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 function PaymentSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user } = useAuth();
 
+  const sessionId = searchParams?.get('session_id') || '';
   const price = searchParams?.get('price') || '0';
   const credits = searchParams?.get('credits') || '0';
   const planName = searchParams?.get('name') || 'Meal Plan';
 
+  const [verifying, setVerifying] = useState(!!sessionId);
+  const [verified, setVerified] = useState(!sessionId);
+  const [verifyError, setVerifyError] = useState('');
+
+  useEffect(() => {
+    if (!sessionId || !user) {
+      setVerifying(false);
+      setVerified(true);
+      return;
+    }
+
+    const verifyPayment = async () => {
+      try {
+        const supabase = createClient();
+        // Poll for up to 10 seconds for the webhook to process
+        let attempts = 0;
+        const maxAttempts = 10;
+
+        const checkPayment = async (): Promise<boolean> => {
+          const { data } = await supabase
+            .from('payments')
+            .select('status, subscription_id')
+            .eq('stripe_session_id', sessionId)
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          return data?.status === 'completed';
+        };
+
+        while (attempts < maxAttempts) {
+          const isComplete = await checkPayment();
+          if (isComplete) {
+            setVerified(true);
+            setVerifying(false);
+            return;
+          }
+          attempts++;
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+
+        // If webhook hasn't fired yet, still show success (webhook will process async)
+        setVerified(true);
+        setVerifying(false);
+      } catch (err) {
+        console.error('Verification error:', err);
+        setVerifyError('Payment received. Your subscription will be activated shortly.');
+        setVerified(true);
+        setVerifying(false);
+      }
+    };
+
+    verifyPayment();
+  }, [sessionId, user]);
+
+  if (verifying) {
+    return (
+      <div className="min-h-full bg-white flex flex-col items-center justify-center px-5">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-[#EBF9F4] rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-[#3ECBA0] animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          </div>
+          <h2 className="text-[#1A1A1A] font-bold text-xl mb-2">Activating your plan...</h2>
+          <p className="text-[#6B7280] text-sm">Please wait while we confirm your payment</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-full bg-white lg:bg-[#F5F7F5] flex flex-col">
-      {/* ── Mobile header ── */}
       <div className="flex items-center gap-3 px-5 pt-6 pb-2 lg:px-8 lg:pt-8">
-        <span className="text-2xl">👋</span>
-        <h1 className="text-[#1A1A1A] font-bold text-xl">Payment Success</h1>
+        <span className="text-2xl">🎉</span>
+        <h1 className="text-[#1A1A1A] font-bold text-xl">Payment Successful</h1>
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center px-5 lg:px-8 py-8">
@@ -25,7 +99,6 @@ function PaymentSuccessContent() {
           {/* Checkmark animation */}
           <div className="flex justify-center mb-8">
             <div className="relative">
-              {/* Outer glow ring */}
               <div className="w-36 h-36 bg-[#EBF9F4] rounded-full flex items-center justify-center">
                 <div className="w-28 h-28 bg-[#D4F0E4] rounded-full flex items-center justify-center">
                   <svg
@@ -39,7 +112,6 @@ function PaymentSuccessContent() {
                   </svg>
                 </div>
               </div>
-              {/* Sparkle lines */}
               {[
                 'top-0 left-1/2 -translate-x-1/2 -translate-y-3',
                 'bottom-0 left-1/2 -translate-x-1/2 translate-y-3',
@@ -47,19 +119,18 @@ function PaymentSuccessContent() {
                 'right-0 top-1/2 -translate-y-1/2 translate-x-3',
                 'top-2 right-2 translate-x-1 -translate-y-1',
                 'bottom-2 left-2 -translate-x-1 translate-y-1',
-              ]?.map((pos, i) => (
-                <div
-                  key={i}
-                  className={`absolute ${pos} w-1.5 h-1.5 bg-[#3ECBA0] rounded-full opacity-60`}
-                />
+              ].map((pos, i) => (
+                <div key={i} className={`absolute ${pos} w-1.5 h-1.5 bg-[#3ECBA0] rounded-full opacity-60`} />
               ))}
             </div>
           </div>
 
-          {/* Heading */}
           <div className="text-center mb-8">
             <h2 className="text-[#1A1A1A] font-bold text-3xl mb-2">You&apos;re all set!</h2>
             <p className="text-[#6B7280] text-base">Your meal plan is now active.</p>
+            {verifyError && (
+              <p className="text-amber-600 text-sm mt-2 bg-amber-50 rounded-xl px-3 py-2">{verifyError}</p>
+            )}
           </div>
 
           {/* Plan summary card */}
@@ -67,14 +138,23 @@ function PaymentSuccessContent() {
             <h3 className="text-[#1A1A1A] font-bold text-base text-center mb-4">Meal Plan Summary</h3>
             <div className="flex items-center justify-center gap-8 mb-4">
               <div className="text-center">
+                <p className="text-[#9CA3AF] text-xs mb-1">Amount Paid</p>
                 <p className="text-[#1A1A1A] font-bold text-3xl">RM{price}</p>
               </div>
+              <div className="w-px h-12 bg-gray-100" />
               <div className="text-center">
-                <p className="text-[#1A1A1A] font-bold text-3xl">{credits} Meals</p>
+                <p className="text-[#9CA3AF] text-xs mb-1">Meals Added</p>
+                <p className="text-[#3ECBA0] font-bold text-3xl">{credits}</p>
               </div>
             </div>
             <div className="border-t border-gray-100 pt-4 text-center">
-              <p className="text-[#6B7280] text-sm">{credits} meals available</p>
+              <p className="text-[#6B7280] text-sm">{planName}</p>
+              <div className="flex items-center justify-center gap-1 mt-1">
+                <svg className="w-3.5 h-3.5 text-[#3ECBA0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-[#3ECBA0] text-xs font-semibold">Credits added to wallet</span>
+              </div>
             </div>
           </div>
 
@@ -84,13 +164,13 @@ function PaymentSuccessContent() {
               href="/dashboard/wallet"
               className="block w-full bg-[#3ECBA0] text-white font-bold py-4 rounded-2xl text-center hover:bg-[#2DAF87] transition-colors text-base"
             >
-              View My Plan
+              View My Wallet
             </Link>
             <Link
               href="/dashboard"
               className="block w-full border-2 border-[#3ECBA0] text-[#3ECBA0] font-bold py-4 rounded-2xl text-center hover:bg-[#EBF9F4] transition-colors text-base"
             >
-              Go to Home
+              Go to Dashboard
             </Link>
           </div>
         </div>

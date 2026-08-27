@@ -10,6 +10,7 @@ import EventsSection from './components/EventsSection';
 import FoundersSection from './components/FoundersSection';
 import WaitlistSection from './components/WaitlistSection';
 import ContactSection from './components/ContactSection';
+import FAQSection from './components/FAQSection';
 
 export default function NoshPage() {
   return (
@@ -23,6 +24,7 @@ export default function NoshPage() {
         <TestimonialsSection />
         <EventsSection />
         <FoundersSection />
+        <FAQSection />
         <WaitlistSection />
         <ContactSection />
       </main>
