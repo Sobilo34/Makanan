@@ -10,7 +10,7 @@ interface Meal {
   category: string;
   tier: string;
   image_url: string;
-  partners?: { name: string };
+  partners?: { id?: string; name: string };
 }
 
 interface Subscription {
@@ -50,32 +50,33 @@ export default function RedemptionModal({ meal, subscription, creditsRemaining, 
     setError('');
     try {
       const supabase = createClient();
-      const code = `MKN-${meal.name.toUpperCase().replace(/\s/g, '-').slice(0, 8)}-${creditsRemaining - 1}-${new Date().toISOString().slice(0, 10)}`;
 
-      const { error: redErr } = await supabase.from('redemptions').insert({
-        user_id: user.id,
-        subscription_id: subscription.id,
-        meal_id: meal.id,
-        status: 'confirmed',
-        qr_code: code,
-      });
-      if (redErr) throw redErr;
+      // Get partner_id from meal's partner
+      let partnerId: string | null = null;
+      if (meal.partners?.id) {
+        partnerId = meal.partners.id;
+      } else {
+        // Look up partner by meal
+        const { data: mealData } = await supabase
+          .from('meals')
+          .select('partner_id')
+          .eq('id', meal.id)
+          .single();
+        partnerId = mealData?.partner_id || null;
+      }
 
-      const { error: subErr } = await supabase
-        .from('subscriptions')
-        .update({ credits_used: subscription.credits_used + 1 })
-        .eq('id', subscription.id);
-      if (subErr) throw subErr;
-
-      await supabase.from('wallet_transactions').insert({
-        user_id: user.id,
-        subscription_id: subscription.id,
-        description: `Redeemed: ${meal.name}`,
-        credits_delta: -1,
-        balance_after: creditsRemaining - 1,
+      // Use atomic RPC to redeem meal
+      const { data: result, error: rpcErr } = await supabase.rpc('redeem_meal', {
+        p_user_id: user.id,
+        p_subscription_id: subscription.id,
+        p_meal_id: meal.id,
+        p_partner_id: partnerId,
       });
 
-      setQrCode(code);
+      if (rpcErr) throw rpcErr;
+      if (!result?.success) throw new Error(result?.error || 'Redemption failed');
+
+      setQrCode(result.qr_code);
       onSuccess();
       setStep('success');
     } catch (err: any) {
@@ -100,7 +101,6 @@ export default function RedemptionModal({ meal, subscription, creditsRemaining, 
                 <div className="w-full h-full flex items-center justify-center text-5xl">🍽️</div>
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-              {/* Close */}
               <button
                 onClick={onClose}
                 className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center"
@@ -112,7 +112,6 @@ export default function RedemptionModal({ meal, subscription, creditsRemaining, 
             <div className="p-6">
               <h2 className="text-[#1A1A1A] font-bold text-xl mb-3">Confirm Redemption</h2>
 
-              {/* Meal info */}
               <div className="bg-[#F7F8FA] rounded-2xl p-4 mb-5 border border-[#EBEBEB]">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="bg-[#E8F9F2] text-[#2DAF87] text-xs font-bold px-2.5 py-1 rounded-full capitalize">{meal.category}</span>
@@ -136,7 +135,7 @@ export default function RedemptionModal({ meal, subscription, creditsRemaining, 
               <button
                 onClick={handleConfirm}
                 disabled={loading}
-                className="w-full bg-[#3ECBA0] text-white font-bold py-3.5 rounded-xl text-sm mb-3 disabled:opacity-60 cta-primary disabled:shadow-none"
+                className="w-full bg-[#3ECBA0] text-white font-bold py-3.5 rounded-xl text-sm mb-3 disabled:opacity-60"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -155,15 +154,13 @@ export default function RedemptionModal({ meal, subscription, creditsRemaining, 
           </>
         ) : (
           <div className="p-6">
-            {/* Header */}
             <div className="flex items-center gap-3 mb-5">
               <button onClick={onClose} className="text-[#9CA3AF] hover:text-[#1A1A1A] transition-colors">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
               </button>
-              <h2 className="text-[#1A1A1A] font-bold text-lg flex-1">Success!</h2>
+              <h2 className="text-[#1A1A1A] font-bold text-lg flex-1">Redemption Requested!</h2>
             </div>
 
-            {/* Success card */}
             <div className="rounded-2xl overflow-hidden mb-5" style={{ background: 'linear-gradient(135deg, #0d2b22 0%, #1a3a2e 100%)' }}>
               <div className="p-5 text-center">
                 <div className="w-12 h-12 bg-[#3ECBA0] rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg shadow-[#3ECBA0]/30">
@@ -171,10 +168,9 @@ export default function RedemptionModal({ meal, subscription, creditsRemaining, 
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h3 className="text-white font-bold text-lg mb-1">Meal Redeemed!</h3>
-                <p className="text-white/50 text-xs mb-4">Show this at the cafeteria counter</p>
+                <h3 className="text-white font-bold text-lg mb-1">QR Code Generated!</h3>
+                <p className="text-white/50 text-xs mb-4">Show this to the partner to confirm your meal</p>
 
-                {/* QR Code */}
                 <div className="bg-white rounded-2xl p-4 inline-block mb-3">
                   <div className="grid grid-cols-7 gap-0.5 w-28 h-28">
                     {qrCells.map((filled, i) => (
@@ -185,12 +181,16 @@ export default function RedemptionModal({ meal, subscription, creditsRemaining, 
 
                 <p className="text-[#3ECBA0] font-mono text-xs font-bold mb-1">{qrCode}</p>
                 <p className="text-white/40 text-xs">Valid for: <span className="text-white/70 font-medium">{meal.name}</span></p>
+                <div className="mt-3 flex items-center justify-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                  <p className="text-amber-300 text-xs">Awaiting partner confirmation</p>
+                </div>
               </div>
             </div>
 
             <button
               onClick={onClose}
-              className="w-full bg-[#3ECBA0] text-white font-bold py-3.5 rounded-xl text-sm cta-primary"
+              className="w-full bg-[#3ECBA0] text-white font-bold py-3.5 rounded-xl text-sm"
             >
               Done
             </button>

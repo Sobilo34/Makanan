@@ -42,14 +42,43 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Protect dashboard routes
+  // Protect dashboard routes (student)
   if (!user && pathname.startsWith('/dashboard')) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
   }
 
-  // Redirect logged-in users away from auth pages
+  // Protect partner portal routes (except login/register/forgot-password)
+  const partnerPublicPaths = [
+    '/partner-portal/login',
+    '/partner-portal/register',
+    '/partner-portal/forgot-password',
+    '/partner-portal/apply',
+  ];
+  if (
+    !user &&
+    pathname.startsWith('/partner-portal') &&
+    !partnerPublicPaths.some((p) => pathname.startsWith(p))
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/partner-portal/login';
+    return NextResponse.redirect(url);
+  }
+
+  // Protect admin portal routes (except login)
+  const adminPublicPaths = ['/admin-portal/login'];
+  if (
+    !user &&
+    pathname.startsWith('/admin-portal') &&
+    !adminPublicPaths.some((p) => pathname.startsWith(p))
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/admin-portal/login';
+    return NextResponse.redirect(url);
+  }
+
+  // Redirect logged-in users away from student auth pages
   if (user && (pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password')) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';

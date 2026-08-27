@@ -26,7 +26,7 @@ interface Subscription {
   status: string;
 }
 
-const CATEGORIES = ['Breakfast', 'Lunch', 'Dinner'];
+const FILTERS = ['All', 'Available', 'Low Stock'];
 
 const availabilityConfig: Record<string, { label: string; bg: string; text: string }> = {
   available: { label: 'Available', bg: '#E8F9F2', text: '#2DAF87' },
@@ -38,7 +38,7 @@ export default function MealsPage() {
   const { user } = useAuth();
   const [meals, setMeals] = useState<Meal[]>([]);
   const [filtered, setFiltered] = useState<Meal[]>([]);
-  const [activeCategory, setActiveCategory] = useState('Breakfast');
+  const [activeFilter, setActiveFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
@@ -67,7 +67,8 @@ export default function MealsPage() {
 
   useEffect(() => {
     let result = meals;
-    if (activeCategory !== 'all') result = result.filter((m) => m.category.toLowerCase() === activeCategory.toLowerCase());
+    if (activeFilter === 'Available') result = result.filter((m) => m.availability === 'available');
+    if (activeFilter === 'Low Stock') result = result.filter((m) => m.availability === 'low_stock');
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(
@@ -75,7 +76,7 @@ export default function MealsPage() {
       );
     }
     setFiltered(result);
-  }, [meals, activeCategory, search]);
+  }, [meals, activeFilter, search]);
 
   const creditsRemaining = subscription ? subscription.credits_total - subscription.credits_used : 0;
 
@@ -93,7 +94,7 @@ export default function MealsPage() {
         <div className="bg-white px-8 py-6 border-b border-gray-100 flex-shrink-0">
           <h1 className="text-[#1A1A1A] font-bold text-2xl mb-5">Meals</h1>
 
-          {/* Search + filters row */}
+          {/* Search row */}
           <div className="flex items-center gap-3 mb-5">
             <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 w-64 focus-within:border-[#3ECBA0] transition-colors">
               <svg className="w-4 h-4 text-[#9CA3AF] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -112,29 +113,21 @@ export default function MealsPage() {
                 </button>
               )}
             </div>
-            <button className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-[#6B7280] hover:border-[#3ECBA0] transition-colors">
-              <span>Filter by</span>
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-            </button>
-            <button className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-[#6B7280] hover:border-[#3ECBA0] transition-colors">
-              <span>Filter by</span>
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-            </button>
           </div>
 
-          {/* Category tabs */}
+          {/* Availability filter tabs */}
           <div className="flex gap-2">
-            {CATEGORIES.map((cat) => (
+            {FILTERS.map((f) => (
               <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
+                key={f}
+                onClick={() => setActiveFilter(f)}
                 className={`px-5 py-2 rounded-full text-sm font-semibold transition-all border ${
-                  activeCategory === cat
+                  activeFilter === f
                     ? 'bg-[#3ECBA0] text-white border-[#3ECBA0]'
                     : 'bg-white text-[#6B7280] border-gray-200 hover:border-[#3ECBA0]/50'
                 }`}
               >
-                {cat}
+                {f}
               </button>
             ))}
           </div>
@@ -159,7 +152,7 @@ export default function MealsPage() {
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4 text-3xl">🔍</div>
               <p className="text-[#1A1A1A] font-bold mb-1">No meals found</p>
-              <p className="text-[#9CA3AF] text-sm">Try a different search or category</p>
+              <p className="text-[#9CA3AF] text-sm">Try a different search or filter</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -181,12 +174,6 @@ export default function MealsPage() {
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-4xl">🍽️</div>
                       )}
-                      {/* Category badge */}
-                      <div className="absolute top-2 left-2">
-                        <span className="bg-white/90 backdrop-blur-sm text-[#374151] text-xs font-semibold px-2.5 py-1 rounded-full capitalize">
-                          {meal.category}
-                        </span>
-                      </div>
                       {meal.availability === 'low_stock' && (
                         <div className="absolute top-2 right-2">
                           <span className="bg-[#FFF8E6] text-[#D97706] text-xs font-semibold px-2 py-0.5 rounded-full">Low Stock</span>
@@ -249,11 +236,6 @@ export default function MealsPage() {
           {/* Meal info */}
           <div className="p-5 flex-1">
             <h2 className="text-[#1A1A1A] font-bold text-lg mb-2">{selectedMeal.name}</h2>
-
-            {/* Category badge */}
-            <span className="inline-block bg-[#EBF9F4] text-[#3ECBA0] text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide mb-3">
-              {selectedMeal.category}
-            </span>
 
             <p className="text-[#3ECBA0] font-semibold text-sm mb-1">{selectedMeal.partners?.name}</p>
             <p className="text-[#6B7280] text-sm mb-5 leading-relaxed">{selectedMeal.description || 'A delicious meal prepared fresh daily at the cafeteria.'}</p>

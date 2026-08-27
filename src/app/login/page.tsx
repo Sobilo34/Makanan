@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import Image from 'next/image';
 
 const slides = [
   {
@@ -180,10 +181,13 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="relative z-10 p-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-[#3ECBA0] rounded-xl flex items-center justify-center shadow-lg shadow-[#3ECBA0]/30">
-              <span className="text-white font-bold text-base">M</span>
-            </div>
-            <span className="text-white font-bold text-lg tracking-tight">Makanan</span>
+            <Image
+              src="/assets/images/makanan-app-icon-removebg-preview-1787356761493.png"
+              alt="Makanan"
+              width={40}
+              height={40}
+              className="object-contain"
+            />
           </div>
           <div className="text-white/40 text-xs font-medium">Student Meal Network</div>
         </div>
@@ -223,9 +227,13 @@ export default function LoginPage() {
         <div className="w-full max-w-[400px]">
           {/* Mobile logo */}
           <div className="flex items-center gap-3 mb-10 lg:hidden">
-            <div className="w-9 h-9 bg-[#3ECBA0] rounded-xl flex items-center justify-center shadow-lg shadow-[#3ECBA0]/30">
-              <span className="text-white font-bold text-base">M</span>
-            </div>
+            <Image
+              src="/assets/images/makanan-app-icon-removebg-preview-1787356761493.png"
+              alt="Makanan"
+              width={36}
+              height={36}
+              className="object-contain"
+            />
             <span className="text-[#1A1A1A] font-bold text-lg tracking-tight">Makanan</span>
           </div>
 
@@ -314,6 +322,13 @@ export default function LoginPage() {
             Don&apos;t have an account?{' '}
             <Link href="/signup" className="text-[#3ECBA0] font-bold hover:text-[#2DAF87] transition-colors">
               Create one
+            </Link>
+          </p>
+
+          <p className="text-center text-[#9CA3AF] text-xs mt-3">
+            Partner Portal?{' '}
+            <Link href="/partner-portal/login" className="text-[#9CA3AF] underline hover:text-[#6B7280] transition-colors">
+              Sign in here
             </Link>
           </p>
         </div>
