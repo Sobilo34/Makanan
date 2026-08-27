@@ -32,7 +32,7 @@ const mealPlans: MealPlan[] = [
     id: 'basic-plan',
     name: 'Basic Plan',
     description: 'Perfect for light eaters. Balanced daily meals to keep you fueled for class.',
-    meals: '40 meals',
+    meals: '60 meals',
     price: 250,
     priceLabel: 'RM250',
     tag: 'Most Popular',
