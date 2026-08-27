@@ -1,10 +1,20 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
 
+const plans = [
+  { id: 'value-40', label: 'Value', meals: '40 meals', price: 'RM250', tag: 'Starter' },
+  { id: 'value-60', label: 'Value', meals: '60 meals', price: 'RM300', tag: 'Popular' },
+  { id: 'regular-40', label: 'Regular', meals: '40 meals', price: 'RM300', tag: '' },
+  { id: 'regular-60', label: 'Regular', meals: '60 meals', price: 'RM400', tag: 'Best Value' },
+  { id: 'flex-40', label: 'Flex', meals: '40 meals', price: 'RM400', tag: '' },
+  { id: 'flex-60', label: 'Flex', meals: '60 meals', price: 'RM500', tag: 'Full Cover' },
+];
+
 export default function ReservationSection() {
-  const [planType, setPlanType] = useState<'student' | 'partner'>('student');
-  const [meals, setMeals] = useState('40');
+  const [selectedPlan, setSelectedPlan] = useState('value-60');
   const [startDate, setStartDate] = useState('');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
 
@@ -22,93 +32,143 @@ export default function ReservationSection() {
     setSubmitted(true);
   };
 
-  return (
-    <section ref={sectionRef} className="bg-very-light-mint py-20 md:py-28 px-5 md:px-10 relative overflow-hidden" id="subscribe">
-      {/* Decorative background */}
-      <div
-        className="absolute top-0 right-0 w-[40%] h-full opacity-20 pointer-events-none"
-        style={{ backgroundImage: 'radial-gradient(ellipse at 100% 50%, #3ECBA0 0%, transparent 70%)' }}
-      />
+  const activePlan = plans.find((p) => p.id === selectedPlan) || plans[1];
 
-      <div className="max-w-5xl mx-auto relative">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-20 items-start">
-          {/* Left: Copy */}
+  return (
+    <section
+      ref={sectionRef}
+      className="relative overflow-hidden py-20 md:py-28 px-5 md:px-10"
+      style={{ background: '#0D0D0D' }}
+      id="subscribe"
+    >
+      {/* Background texture */}
+      <div className="absolute inset-0 pointer-events-none" style={{
+        backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(62,203,160,0.08) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(62,203,160,0.05) 0%, transparent 40%)',
+      }} />
+      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(62,203,160,0.4), transparent)' }} />
+
+      <div className="max-w-6xl mx-auto relative">
+        {/* Top label */}
+        <div className="reveal mb-12 flex items-center gap-4">
+          <div className="w-8 h-px" style={{ background: '#3ECBA0' }} />
+          <span className="font-sans text-xs tracking-[0.2em] uppercase font-600" style={{ color: '#3ECBA0', fontWeight: 600 }}>Subscribe Today</span>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-start">
+          {/* Left: Bold headline + plan selector */}
           <div>
-            <div className="reveal">
-              <span className="section-label">Subscribe Today</span>
-              <h2 className="font-sans font-700 text-near-black leading-tight mb-5" style={{ fontSize: 'clamp(1.75rem, 4vw, 2.75rem)', fontWeight: 700 }}>
+            <div className="reveal mb-10">
+              <h2
+                className="font-sans font-700 leading-[1.05] mb-5"
+                style={{ fontSize: 'clamp(2.2rem, 5vw, 3.5rem)', fontWeight: 700, color: '#FFFFFF' }}
+              >
                 Your meals,<br />
-                <span style={{ color: '#3ECBA0' }}>sorted for the semester.</span>
+                <span style={{
+                  background: 'linear-gradient(135deg, #3ECBA0 0%, #2BB88A 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }}>sorted.</span>
               </h2>
-              <p className="font-sans text-muted-text text-base leading-relaxed mb-8">
-                Subscribe in minutes. Choose your plan, set your start date, and we handle the rest. Fresh meals, every day.
+              <p className="font-sans text-base leading-relaxed" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                Pick your plan, set your start date. We handle everything else — fresh meals, every single day.
               </p>
             </div>
 
-            {/* Benefits */}
-            <div className="reveal reveal-delay-1 flex flex-col gap-4">
+            {/* Plan selector grid */}
+            <div className="reveal reveal-delay-1 mb-10">
+              <p className="font-sans text-xs tracking-widest uppercase mb-4 font-600" style={{ color: 'rgba(255,255,255,0.35)', fontWeight: 600 }}>Choose your plan</p>
+              <div className="grid grid-cols-3 gap-2">
+                {plans.map((plan) => (
+                  <button
+                    key={plan.id}
+                    type="button"
+                    onClick={() => setSelectedPlan(plan.id)}
+                    className="relative text-left p-3 rounded-xl transition-all duration-200"
+                    style={{
+                      background: selectedPlan === plan.id ? 'rgba(62,203,160,0.12)' : 'rgba(255,255,255,0.04)',
+                      border: selectedPlan === plan.id ? '1px solid rgba(62,203,160,0.5)' : '1px solid rgba(255,255,255,0.08)',
+                    }}
+                  >
+                    {plan.tag && (
+                      <span
+                        className="absolute -top-2 right-2 font-sans text-[9px] font-700 px-2 py-0.5 rounded-full"
+                        style={{ background: '#3ECBA0', color: '#0D0D0D', fontWeight: 700 }}
+                      >
+                        {plan.tag}
+                      </span>
+                    )}
+                    <p className="font-sans text-[10px] font-600 mb-0.5" style={{ color: selectedPlan === plan.id ? '#3ECBA0' : 'rgba(255,255,255,0.4)', fontWeight: 600 }}>{plan.label}</p>
+                    <p className="font-sans text-xs font-700 text-white" style={{ fontWeight: 700 }}>{plan.meals}</p>
+                    <p className="font-sans text-xs font-600 mt-0.5" style={{ color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>{plan.price}/mo</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Benefit strips */}
+            <div className="reveal reveal-delay-2 flex flex-col gap-3">
               {[
-                { icon: '🍱', text: 'Fresh, nutritious meals prepared daily by our kitchen partners' },
-                { icon: '📱', text: 'Order via app — tap to collect, no queuing required' },
-                { icon: '💳', text: 'Flexible plans from RM250/month, cancel anytime' },
+                { icon: '🍱', title: 'Kitchen-fresh daily', sub: 'Prepared by our partner kitchens every morning' },
+                { icon: '📱', title: 'Tap to collect', sub: 'No queuing — order via app, pick up in seconds' },
+                { icon: '💳', title: 'Cancel anytime', sub: 'No lock-in. Pause or cancel with one tap' },
               ].map((item) => (
-                <div key={item.text} className="flex items-start gap-3">
-                  <span className="text-lg mt-0.5">{item.icon}</span>
-                  <p className="font-sans text-sm text-muted-text leading-snug">{item.text}</p>
+                <div
+                  key={item.title}
+                  className="flex items-center gap-4 p-3.5 rounded-xl"
+                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+                >
+                  <span className="text-xl flex-shrink-0">{item.icon}</span>
+                  <div>
+                    <p className="font-sans text-sm font-600 text-white" style={{ fontWeight: 600 }}>{item.title}</p>
+                    <p className="font-sans text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>{item.sub}</p>
+                  </div>
                 </div>
               ))}
-            </div>
-
-            {/* Social proof */}
-            <div className="reveal reveal-delay-2 mt-8 inline-flex items-center gap-2.5 bg-primary-mint/20 border border-primary-mint/30 rounded-pill px-4 py-2">
-              <div className="w-2 h-2 rounded-full bg-primary-mint animate-pulse" />
-              <p className="font-sans text-xs text-soft-teal tracking-wide font-500" style={{ fontWeight: 500 }}>
-                12,400+ students subscribed this semester
-              </p>
             </div>
           </div>
 
           {/* Right: Form */}
           <div className="reveal reveal-delay-1">
             {submitted ? (
-              <div className="bg-near-black rounded-xl2 p-10 text-center border border-primary-mint/20">
-                <div className="text-4xl mb-4">🍱</div>
-                <h3 className="font-sans font-700 text-white text-2xl mb-3" style={{ fontWeight: 700 }}>You're all set!</h3>
-                <p className="font-sans text-white/60 text-sm leading-relaxed">
-                  Your subscription request is received. We'll send your confirmation and app access link within the hour.
+              <div
+                className="rounded-2xl p-10 text-center"
+                style={{ background: 'rgba(62,203,160,0.08)', border: '1px solid rgba(62,203,160,0.25)' }}
+              >
+                <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ background: 'rgba(62,203,160,0.15)' }}>
+                  <span className="text-3xl">🍱</span>
+                </div>
+                <h3 className="font-sans font-700 text-white text-2xl mb-3" style={{ fontWeight: 700 }}>You&apos;re all set!</h3>
+                <p className="font-sans text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                  Subscription request received. We&apos;ll send your confirmation and app access link within the hour.
                 </p>
               </div>
             ) : (
               <form
                 onSubmit={handleSubmit}
-                className="bg-white rounded-xl2 p-7 md:p-9 border border-border-light shadow-card flex flex-col gap-5"
+                className="rounded-2xl p-7 md:p-8 flex flex-col gap-5"
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}
               >
-                {/* Plan type toggle */}
-                <div>
-                  <label className="font-sans text-xs text-muted-text uppercase tracking-widest block mb-3 font-600" style={{ fontWeight: 600 }}>
-                    Account Type
-                  </label>
-                  <div className="flex gap-3">
-                    {(['student', 'partner'] as const).map((type) => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => setPlanType(type)}
-                        className={`flex-1 py-2.5 rounded-pill font-sans text-sm font-600 transition-all duration-200 ${
-                          planType === type
-                            ? 'bg-near-black text-white' :'border border-border-light text-muted-text hover:border-primary-mint'
-                        }`}
-                        style={{ fontWeight: 600 }}
-                      >
-                        {type === 'student' ? '🎓 Student' : '🏢 Partner'}
-                      </button>
-                    ))}
+                {/* Selected plan summary */}
+                <div
+                  className="flex items-center justify-between p-4 rounded-xl"
+                  style={{ background: 'rgba(62,203,160,0.1)', border: '1px solid rgba(62,203,160,0.2)' }}
+                >
+                  <div>
+                    <p className="font-sans text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>Selected plan</p>
+                    <p className="font-sans text-sm font-700 text-white" style={{ fontWeight: 700 }}>
+                      {activePlan.label} — {activePlan.meals}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-sans text-xl font-700" style={{ color: '#3ECBA0', fontWeight: 700 }}>{activePlan.price}</p>
+                    <p className="font-sans text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>per month</p>
                   </div>
                 </div>
 
                 {/* Start date */}
                 <div>
-                  <label className="font-sans text-xs text-muted-text uppercase tracking-widest block mb-2 font-600" style={{ fontWeight: 600 }}>
+                  <label className="font-sans text-xs uppercase tracking-widest block mb-2 font-600" style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>
                     Start Date
                   </label>
                   <input
@@ -116,59 +176,84 @@ export default function ReservationSection() {
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
                     required
-                    className="makanan-input w-full px-4 py-3 rounded-xl text-sm"
+                    className="w-full px-4 py-3 rounded-xl text-sm font-sans outline-none transition-all"
+                    style={{
+                      background: 'rgba(255,255,255,0.07)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      color: 'white',
+                      colorScheme: 'dark',
+                    }}
                   />
-                </div>
-
-                {/* Meals per month */}
-                <div>
-                  <label className="font-sans text-xs text-muted-text uppercase tracking-widest block mb-2 font-600" style={{ fontWeight: 600 }}>
-                    Meals per Month
-                  </label>
-                  <select
-                    value={meals}
-                    onChange={(e) => setMeals(e.target.value)}
-                    className="makanan-input w-full px-4 py-3 rounded-xl text-sm"
-                  >
-                    {['40 meals — RM250', '60 meals — RM300', '80 meals — RM400', '300 meals — RM900 (Semester)'].map((n) => (
-                      <option key={n} value={n}>{n}</option>
-                    ))}
-                  </select>
                 </div>
 
                 {/* Name */}
                 <div>
-                  <label className="font-sans text-xs text-muted-text uppercase tracking-widest block mb-2 font-600" style={{ fontWeight: 600 }}>
+                  <label className="font-sans text-xs uppercase tracking-widest block mb-2 font-600" style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>
                     Full Name
                   </label>
                   <input
                     type="text"
                     placeholder="Ahmad Faris"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                     required
-                    className="makanan-input w-full px-4 py-3 rounded-xl text-sm"
+                    className="w-full px-4 py-3 rounded-xl text-sm font-sans outline-none transition-all"
+                    style={{
+                      background: 'rgba(255,255,255,0.07)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      color: 'white',
+                    }}
                   />
                 </div>
 
                 {/* Email */}
                 <div>
-                  <label className="font-sans text-xs text-muted-text uppercase tracking-widest block mb-2 font-600" style={{ fontWeight: 600 }}>
+                  <label className="font-sans text-xs uppercase tracking-widest block mb-2 font-600" style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>
                     University Email
                   </label>
                   <input
                     type="email"
-                    placeholder="ahmad@student.utm.my"
+                    placeholder="ahmad@student.aiu.edu.my"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="makanan-input w-full px-4 py-3 rounded-xl text-sm"
+                    className="w-full px-4 py-3 rounded-xl text-sm font-sans outline-none transition-all"
+                    style={{
+                      background: 'rgba(255,255,255,0.07)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      color: 'white',
+                    }}
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="cta-primary w-full bg-near-black text-white font-sans font-700 text-sm py-4 rounded-pill hover:bg-near-black/80 transition-colors duration-200 mt-1"
-                  style={{ fontWeight: 700 }}
+                  className="w-full font-sans font-700 text-sm py-4 rounded-xl transition-all duration-200 mt-1"
+                  style={{
+                    background: 'linear-gradient(135deg, #3ECBA0 0%, #2BB88A 100%)',
+                    color: '#0D0D0D',
+                    fontWeight: 700,
+                  }}
                 >
-                  Start My Subscription
+                  Start My Subscription →
                 </button>
+
+                <div className="flex items-center justify-center gap-4">
+                  <div className="flex -space-x-2">
+                    {[1, 2, 3].map((n) => (
+                      <div
+                        key={n}
+                        className="w-6 h-6 rounded-full border-2 flex items-center justify-center text-[8px] font-700"
+                        style={{ borderColor: '#0D0D0D', background: `hsl(${n * 40 + 150}, 50%, 50%)`, color: 'white', fontWeight: 700 }}
+                      >
+                        {n}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="font-sans text-[11px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                    Join students already subscribed at AIU
+                  </p>
+                </div>
               </form>
             )}
           </div>
