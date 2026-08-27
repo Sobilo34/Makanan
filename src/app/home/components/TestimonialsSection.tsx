@@ -60,6 +60,37 @@ const testimonials: Testimonial[] = [
   },
 ];
 
+function StarRating({ count }: { count: number }) {
+  return (
+    <div className="flex gap-1 mb-4">
+      {Array.from({ length: count }).map((_, i) => (
+        <svg key={i} width="14" height="14" viewBox="0 0 14 14" fill="#3ECBA0">
+          <path d="M7 1l1.8 3.6L13 5.3l-3 2.9.7 4.1L7 10.4l-3.7 1.9.7-4.1-3-2.9 4.2-.7L7 1z" />
+        </svg>
+      ))}
+    </div>
+  );
+}
+
+function QuoteText({ quote, emphasis }: { quote: string; emphasis: string }) {
+  const parts = quote.split(emphasis);
+  return (
+    <blockquote
+      className="font-sans text-near-black leading-relaxed mb-5"
+      style={{ fontSize: 'clamp(0.9rem, 1.8vw, 1.05rem)', fontWeight: 400 }}
+    >
+      {parts.map((part, pi) => (
+        <React.Fragment key={pi}>
+          {part}
+          {pi < parts.length - 1 && (
+            <em className="not-italic font-700" style={{ color: '#3ECBA0', fontWeight: 700 }}>{emphasis}</em>
+          )}
+        </React.Fragment>
+      ))}
+    </blockquote>
+  );
+}
+
 export default function TestimonialsSection() {
   const [active, setActive] = useState(0);
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -82,7 +113,7 @@ export default function TestimonialsSection() {
 
   return (
     <section ref={sectionRef} className="py-20 md:py-28 px-5 md:px-10 overflow-hidden" style={{ background: '#F7F7F5' }} id="stories">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="reveal flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-14">
           <div>
@@ -92,8 +123,8 @@ export default function TestimonialsSection() {
               <span style={{ color: '#3ECBA0' }}>when they eat with ease</span>
             </h2>
           </div>
-          {/* Navigation arrows */}
-          <div className="flex items-center gap-2">
+          {/* Navigation arrows — mobile only */}
+          <div className="flex md:hidden items-center gap-2">
             <button
               onClick={() => setActive((active - 1 + testimonials.length) % testimonials.length)}
               className="w-11 h-11 border rounded-full flex items-center justify-center transition-all duration-200 hover:border-near-black"
@@ -117,88 +148,88 @@ export default function TestimonialsSection() {
           </div>
         </div>
 
-        {/* Testimonial card — ALWAYS shows both image and text on all screen sizes */}
-        <div className="reveal reveal-delay-1 relative" style={{ minHeight: 320 }}>
-          {testimonials.map((item, i) => (
+        {/* ── DESKTOP: 2×2 grid, all cards visible ── */}
+        <div className="hidden md:grid grid-cols-2 gap-6 reveal reveal-delay-1">
+          {testimonials.map((item) => (
             <div
               key={item.id}
-              className="absolute inset-0 transition-all duration-700 ease-in-out"
-              style={{
-                opacity: i === active ? 1 : 0,
-                zIndex: i === active ? 10 : 0,
-                pointerEvents: i === active ? 'auto' : 'none',
-              }}
+              className="flex flex-row rounded-2xl overflow-hidden"
+              style={{ background: '#FFFFFF', border: '1px solid #EBEBEB' }}
             >
-              {/* Card — flex column on mobile, row on md+ */}
+              {/* Photo column */}
+              <div className="flex-shrink-0 relative" style={{ width: 160 }}>
+                <img
+                  src={item.img}
+                  alt={item.imgAlt}
+                  className="w-full h-full object-cover object-top absolute inset-0"
+                />
+              </div>
+
+              {/* Content column */}
+              <div className="flex-1 flex flex-col justify-between p-6">
+                <div>
+                  <StarRating count={item.rating} />
+                  <QuoteText quote={item.quote} emphasis={item.emphasis} />
+                </div>
+                <div className="flex items-center justify-between pt-4" style={{ borderTop: '1px solid #F0F0F0' }}>
+                  <div>
+                    <p className="font-sans font-700 text-near-black text-sm" style={{ fontWeight: 700 }}>{item.name}</p>
+                    <p className="font-sans text-xs text-muted-text">{item.role}</p>
+                  </div>
+                  <span
+                    className="font-sans text-[10px] font-600 px-2.5 py-1 rounded-full"
+                    style={{ background: 'rgba(62,203,160,0.1)', color: '#2BB88A', fontWeight: 600 }}
+                  >
+                    {item.location}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── MOBILE: Slideshow ── */}
+        <div className="md:hidden reveal reveal-delay-1">
+          <div className="relative overflow-hidden" style={{ minHeight: 420 }}>
+            {testimonials.map((item, i) => (
               <div
-                className="flex flex-col sm:flex-row gap-0 rounded-2xl overflow-hidden"
-                style={{ background: '#FFFFFF', border: '1px solid #EBEBEB' }}
+                key={item.id}
+                className="absolute inset-0 transition-all duration-700 ease-in-out"
+                style={{
+                  opacity: i === active ? 1 : 0,
+                  zIndex: i === active ? 10 : 0,
+                  pointerEvents: i === active ? 'auto' : 'none',
+                }}
               >
-                {/* Photo — fixed height on mobile, fixed width on desktop */}
                 <div
-                  className="flex-shrink-0 relative"
-                  style={{ width: '100%', height: 220 }}
+                  className="flex flex-col rounded-2xl overflow-hidden h-full"
+                  style={{ background: '#FFFFFF', border: '1px solid #EBEBEB' }}
                 >
-                  <div className="sm:hidden w-full h-full relative">
+                  {/* Photo row — fixed height */}
+                  <div className="relative flex-shrink-0" style={{ height: 200 }}>
                     <img
                       src={item.img}
                       alt={item.imgAlt}
                       className="w-full h-full object-cover object-top"
                     />
-                    <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.5) 100%)' }} />
+                    <div
+                      className="absolute inset-0"
+                      style={{ background: 'linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.55) 100%)' }}
+                    />
                     <div className="absolute bottom-3 left-4">
                       <p className="font-sans font-700 text-white text-sm" style={{ fontWeight: 700 }}>{item.name}</p>
                       <p className="font-sans text-xs text-white/70">{item.role}</p>
                     </div>
                   </div>
-                </div>
 
-                {/* Desktop photo (hidden on mobile) */}
-                <div
-                  className="hidden sm:block flex-shrink-0 relative"
-                  style={{ width: 200, minHeight: 320 }}
-                >
-                  <img
-                    src={item.img}
-                    alt={item.imgAlt}
-                    className="w-full h-full object-cover object-top absolute inset-0"
-                  />
-                </div>
-
-                {/* Quote content — always visible */}
-                <div className="flex-1 flex flex-col justify-between p-6 sm:p-8">
-                  {/* Stars */}
-                  <div>
-                    <div className="flex gap-1 mb-4">
-                      {Array.from({ length: item.rating }).map((_, si) => (
-                        <svg key={si} width="14" height="14" viewBox="0 0 14 14" fill="#3ECBA0">
-                          <path d="M7 1l1.8 3.6L13 5.3l-3 2.9.7 4.1L7 10.4l-3.7 1.9.7-4.1-3-2.9 4.2-.7L7 1z" />
-                        </svg>
-                      ))}
-                    </div>
-
-                    <blockquote
-                      className="font-sans text-near-black leading-relaxed mb-5"
-                      style={{ fontSize: 'clamp(0.95rem, 2vw, 1.15rem)', fontWeight: 400 }}
-                    >
-                      {item.quote.split(item.emphasis).map((part, pi) => (
-                        <React.Fragment key={pi}>
-                          {part}
-                          {pi < item.quote.split(item.emphasis).length - 1 && (
-                            <em className="not-italic font-700" style={{ color: '#3ECBA0', fontWeight: 700 }}>{item.emphasis}</em>
-                          )}
-                        </React.Fragment>
-                      ))}
-                    </blockquote>
-                  </div>
-
-                  {/* Author — shown on desktop (mobile shows on photo) */}
-                  <div className="hidden sm:flex items-center gap-3 pt-4" style={{ borderTop: '1px solid #F0F0F0' }}>
+                  {/* Quote content */}
+                  <div className="flex-1 flex flex-col justify-between p-5">
                     <div>
-                      <p className="font-sans font-700 text-near-black text-sm" style={{ fontWeight: 700 }}>{item.name}</p>
-                      <p className="font-sans text-xs text-muted-text">{item.role}</p>
+                      <StarRating count={item.rating} />
+                      <QuoteText quote={item.quote} emphasis={item.emphasis} />
                     </div>
-                    <div className="ml-auto">
+                    <div className="flex items-center justify-between pt-4" style={{ borderTop: '1px solid #F0F0F0' }}>
+                      <p className="font-sans text-xs text-muted-text">{item.role}</p>
                       <span
                         className="font-sans text-[10px] font-600 px-2.5 py-1 rounded-full"
                         style={{ background: 'rgba(62,203,160,0.1)', color: '#2BB88A', fontWeight: 600 }}
@@ -207,41 +238,27 @@ export default function TestimonialsSection() {
                       </span>
                     </div>
                   </div>
-
-                  {/* Mobile author (below quote, above border) */}
-                  <div className="sm:hidden flex items-center justify-between pt-4 mt-2" style={{ borderTop: '1px solid #F0F0F0' }}>
-                    <div>
-                      <p className="font-sans font-700 text-near-black text-sm" style={{ fontWeight: 700 }}>{item.name}</p>
-                      <p className="font-sans text-xs text-muted-text">{item.role}</p>
-                    </div>
-                    <span
-                      className="font-sans text-[10px] font-600 px-2.5 py-1 rounded-full"
-                      style={{ background: 'rgba(62,203,160,0.1)', color: '#2BB88A', fontWeight: 600 }}
-                    >
-                      {item.location}
-                    </span>
-                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        {/* Dots */}
-        <div className="reveal reveal-delay-2 flex items-center justify-center gap-2 mt-8">
-          {testimonials.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setActive(i)}
-              className="rounded-full transition-all duration-300"
-              style={{
-                width: i === active ? 24 : 8,
-                height: 8,
-                background: i === active ? '#3ECBA0' : '#D8D8D8',
-              }}
-              aria-label={`Go to testimonial ${i + 1}`}
-            />
-          ))}
+          {/* Dots */}
+          <div className="flex items-center justify-center gap-2 mt-8 pb-4">
+            {testimonials.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setActive(i)}
+                className="rounded-full transition-all duration-300"
+                style={{
+                  width: i === active ? 24 : 8,
+                  height: 8,
+                  background: i === active ? '#3ECBA0' : '#D8D8D8',
+                }}
+                aria-label={`Go to testimonial ${i + 1}`}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </section>
