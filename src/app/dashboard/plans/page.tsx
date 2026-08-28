@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -69,6 +70,16 @@ export default function PlansPage() {
     };
     fetchData();
   }, [user]);
+
+  // handle preselect from query params (e.g., from landing page)
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const pre = searchParams?.get('preselect');
+    if (pre && plans.length > 0) {
+      const p = plans.find((pl) => pl.id === pre);
+      if (p) setSelectedPlan(p);
+    }
+  }, [searchParams, plans]);
 
   const handleContinue = () => {
     if (!selectedPlan) return;

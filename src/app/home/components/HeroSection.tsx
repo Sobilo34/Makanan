@@ -7,14 +7,14 @@ const demoVideoUrl =
 export default function HeroSection() {
   return (
     <section
-      className="relative w-full overflow-hidden min-h-[75vh] md:min-h-screen"
+      className="relative w-full overflow-hidden flex flex-col min-h-auto md:min-h-screen"
       id="hero"
       style={{
         background: 'linear-gradient(180deg, #E6F9F2 0%, #C8F0E4 60%, #B0E8D4 100%)',
       }}
     >
       {/* Hero Content — centered */}
-      <div className="relative z-10 flex flex-col items-center text-center pt-12 md:pt-16 pb-0 px-5 md:px-8">
+      <div className="relative z-10 flex-none flex flex-col items-center text-center pt-10 md:pt-14 pb-0 px-5 md:px-8">
         {/* Main headline */}
         <h1
           className="hero-headline font-700 text-near-black tracking-tight mb-3 max-w-3xl text-[37px]"
@@ -63,11 +63,11 @@ export default function HeroSection() {
 
         {/* ── App Showcase / Demo Video ── */}
         <div
-          className="hero-showcase relative w-full max-w-4xl mx-auto"
+          className="hero-showcase flex-1 flex items-end w-full"
           style={{ animationDelay: '0.85s' }}
         >
           <div
-            className="relative mx-auto overflow-hidden w-[min(100%,980px)] aspect-video md:aspect-[16/10] min-h-[220px] md:min-h-[320px] rounded-t-[28px]"
+            className="relative mx-auto overflow-hidden w-[min(100%,980px)] h-[60vh] md:h-full rounded-t-[28px]"
             style={{ boxShadow: '0 28px 60px rgba(15,44,34,0.12)' }}
           >
             <video

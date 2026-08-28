@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Image from 'next/image';
 
@@ -145,6 +145,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextParam = searchParams?.get('next') || null;
 
   useEffect(() => {
     const timer = setInterval(() => setActiveSlide((p) => (p + 1) % slides.length), 4500);
@@ -157,7 +159,14 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signIn(email, password);
-      router.push('/dashboard');
+      // If a next param is provided, navigate there after sign-in
+      if (nextParam) {
+        // decode if it was encoded
+        const dest = decodeURIComponent(nextParam);
+        router.push(dest);
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err: any) {
       setError(err.message || 'Invalid email or password');
     } finally {

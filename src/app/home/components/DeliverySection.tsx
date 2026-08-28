@@ -1,5 +1,7 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import AppImage from '@/components/ui/AppImage';
 
 interface MealPlan {
@@ -82,6 +84,8 @@ const mealPlans: MealPlan[] = [
 export default function DeliverySection() {
   const [cart, setCart] = useState<Record<string, number>>({});
   const sectionRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const { user, loading } = useAuth();
 
   const addToCart = (id: string) => {
     setCart((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
@@ -212,27 +216,30 @@ export default function DeliverySection() {
                 </p>
 
                 <button
-                  onClick={() => addToCart(plan.id)}
+                  onClick={() => {
+                    if (!user) {
+                      // redirect to auth (preserve return url to subscription)
+                      const returnTo = encodeURIComponent(
+                        `${window.location.origin}/dashboard/plans?plan=${plan.id}`
+                      );
+                      router.push(`/login?next=${returnTo}`);
+                      return;
+                    }
+                    // if authenticated, go to plans page with plan preselected
+                    router.push(`/dashboard/plans?preselect=${plan.id}`);
+                  }}
                   className="w-full bg-near-black text-white font-sans font-600 text-sm py-3 rounded-pill hover:bg-near-black/80 flex items-center justify-center gap-2 transition-colors"
                   style={{ fontWeight: 600 }}
                 >
-                  {cart[plan.id] ? (
-                    <>
-                      <span>Selected ✓</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                        <path
-                          d="M7 2v10M2 7h10"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                      Subscribe Now
-                    </>
-                  )}
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path
+                      d="M7 2v10M2 7h10"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  Subscribe Now
                 </button>
               </div>
             </div>
