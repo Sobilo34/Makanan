@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -58,7 +57,14 @@ export default function PlansPage() {
       try {
         const [plansRes, subRes] = await Promise.all([
           supabase.from('meal_plans').select('*').eq('is_active', true).order('price_myr'),
-          supabase.from('subscriptions').select('*, meal_plans(name, tier, price_myr)').eq('user_id', user.id).eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle(),
+          supabase
+            .from('subscriptions')
+            .select('*, meal_plans(name, tier, price_myr)')
+            .eq('user_id', user.id)
+            .eq('status', 'active')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
         ]);
         setPlans(plansRes.data || []);
         setSubscription(subRes.data || null);
@@ -72,18 +78,24 @@ export default function PlansPage() {
   }, [user]);
 
   // handle preselect from query params (e.g., from landing page)
-  const searchParams = useSearchParams();
   useEffect(() => {
-    const pre = searchParams?.get('preselect');
-    if (pre && plans.length > 0) {
-      const p = plans.find((pl) => pl.id === pre);
-      if (p) setSelectedPlan(p);
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      const pre = sp.get('preselect');
+      if (pre && plans.length > 0) {
+        const p = plans.find((pl) => pl.id === pre);
+        if (p) setSelectedPlan(p);
+      }
+    } catch (err) {
+      // ignore
     }
-  }, [searchParams, plans]);
+  }, [plans]);
 
   const handleContinue = () => {
     if (!selectedPlan) return;
-    router.push(`/dashboard/payment?planId=${selectedPlan.id}&price=${selectedPlan.price_myr}&credits=${selectedPlan.credits}&name=${encodeURIComponent(selectedPlan.name)}`);
+    router.push(
+      `/dashboard/payment?planId=${selectedPlan.id}&price=${selectedPlan.price_myr}&credits=${selectedPlan.credits}&name=${encodeURIComponent(selectedPlan.name)}`
+    );
   };
 
   if (loading) {
@@ -102,7 +114,10 @@ export default function PlansPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F0F2F5] pb-32 lg:pb-10" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div
+      className="min-h-screen bg-[#F0F2F5] pb-32 lg:pb-10"
+      style={{ fontFamily: "'DM Sans', sans-serif" }}
+    >
       {/* Header */}
       <div className="bg-white border-b border-gray-100 sticky top-0 z-30 shadow-sm">
         <div className="max-w-6xl mx-auto px-5 lg:px-10 py-4 flex items-center gap-4">
@@ -110,18 +125,28 @@ export default function PlansPage() {
             onClick={() => router.back()}
             className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors flex-shrink-0"
           >
-            <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg
+              className="w-4 h-4 text-gray-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-[#111827] font-bold text-lg lg:text-xl">Choose Your Meal Plan</h1>
-            <p className="text-[#9CA3AF] text-xs hidden sm:block">Flexible credits · No expiry · Cancel anytime</p>
+            <p className="text-[#9CA3AF] text-xs hidden sm:block">
+              Flexible credits · No expiry · Cancel anytime
+            </p>
           </div>
           {subscription && (
             <div className="hidden sm:flex items-center gap-2 bg-[#EBF9F4] border border-[#C8F0E4] rounded-xl px-3 py-1.5">
               <span className="w-2 h-2 rounded-full bg-[#3ECBA0]" />
-              <span className="text-[#2DAF87] text-xs font-semibold">Active: {subscription.meal_plans?.name}</span>
+              <span className="text-[#2DAF87] text-xs font-semibold">
+                Active: {subscription.meal_plans?.name}
+              </span>
             </div>
           )}
         </div>
@@ -133,17 +158,30 @@ export default function PlansPage() {
           <div className="space-y-6">
             {subscription && (
               <div className="flex items-center gap-3 bg-[#EBF9F4] border border-[#C8F0E4] rounded-2xl px-5 py-3.5">
-                <svg className="w-5 h-5 text-[#3ECBA0] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="w-5 h-5 text-[#3ECBA0] flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
                 <p className="text-[#2DAF87] text-sm font-medium">
-                  You have an active <strong>{subscription.meal_plans?.name}</strong>. Selecting a new plan will replace it.
+                  You have an active <strong>{subscription.meal_plans?.name}</strong>. Selecting a
+                  new plan will replace it.
                 </p>
               </div>
             )}
 
             <div>
-              <p className="text-xs font-bold text-[#3ECBA0] uppercase tracking-widest mb-1">Meal Plans</p>
+              <p className="text-xs font-bold text-[#3ECBA0] uppercase tracking-widest mb-1">
+                Meal Plans
+              </p>
               <h2 className="text-2xl font-bold text-[#111827]">Select the right plan for you</h2>
             </div>
 
@@ -163,14 +201,16 @@ export default function PlansPage() {
                       isSelected
                         ? 'border-[#3ECBA0] bg-white shadow-lg shadow-[#3ECBA0]/10'
                         : meta.highlight
-                        ? 'border-[#3ECBA0]/30 bg-white hover:border-[#3ECBA0]/60 hover:shadow-md'
-                        : 'border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm'
+                          ? 'border-[#3ECBA0]/30 bg-white hover:border-[#3ECBA0]/60 hover:shadow-md'
+                          : 'border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm'
                     }`}
                   >
                     {/* Badge */}
                     {meta.badge && (
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                        <span className={`text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full whitespace-nowrap ${meta.badge === 'Best Rate' ? 'bg-[#4F46E5]' : 'bg-[#3ECBA0]'}`}>
+                        <span
+                          className={`text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full whitespace-nowrap ${meta.badge === 'Best Rate' ? 'bg-[#4F46E5]' : 'bg-[#3ECBA0]'}`}
+                        >
                           {meta.badge}
                         </span>
                       </div>
@@ -179,7 +219,13 @@ export default function PlansPage() {
                     {/* Selected indicator */}
                     {isSelected && (
                       <div className="absolute top-4 right-4 w-6 h-6 bg-[#3ECBA0] rounded-full flex items-center justify-center">
-                        <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <svg
+                          className="w-3.5 h-3.5 text-white"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={3}
+                        >
                           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                         </svg>
                       </div>
@@ -187,24 +233,34 @@ export default function PlansPage() {
 
                     {isCurrentPlan && !isSelected && (
                       <div className="absolute top-4 right-4">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EBF9F4] text-[#2DAF87] uppercase tracking-wide">Active</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EBF9F4] text-[#2DAF87] uppercase tracking-wide">
+                          Active
+                        </span>
                       </div>
                     )}
 
-                    <p className="text-xs font-bold text-[#9CA3AF] uppercase tracking-widest mb-3">{plan.name}</p>
+                    <p className="text-xs font-bold text-[#9CA3AF] uppercase tracking-widest mb-3">
+                      {plan.name}
+                    </p>
                     <div className="mb-1">
-                      <span className={`text-3xl font-black ${isSelected ? 'text-[#3ECBA0]' : 'text-[#111827]'}`}>RM{plan.price_myr}</span>
+                      <span
+                        className={`text-3xl font-black ${isSelected ? 'text-[#3ECBA0]' : 'text-[#111827]'}`}
+                      >
+                        RM{plan.price_myr}
+                      </span>
                     </div>
                     <p className="text-sm font-bold text-[#374151] mb-0.5">{plan.credits} meals</p>
                     <p className="text-xs text-[#9CA3AF] mb-4">RM{perMeal} per meal</p>
                     <div className="border-t border-gray-100 pt-3">
                       <p className="text-xs text-[#6B7280] leading-relaxed">{meta.tagline}</p>
                     </div>
-                    <div className={`mt-3 w-full py-2.5 rounded-xl text-sm font-bold text-center transition-all ${
-                      isSelected
-                        ? 'bg-[#3ECBA0] text-white'
-                        : 'bg-gray-50 text-[#6B7280] group-hover:bg-gray-100'
-                    }`}>
+                    <div
+                      className={`mt-3 w-full py-2.5 rounded-xl text-sm font-bold text-center transition-all ${
+                        isSelected
+                          ? 'bg-[#3ECBA0] text-white'
+                          : 'bg-gray-50 text-[#6B7280] group-hover:bg-gray-100'
+                      }`}
+                    >
                       {isSelected ? 'Selected' : 'Select Plan'}
                     </div>
                   </button>
@@ -214,11 +270,15 @@ export default function PlansPage() {
 
             {/* How it works — mobile */}
             <div className="lg:hidden bg-white rounded-2xl border border-gray-100 p-5">
-              <p className="text-xs font-bold text-[#9CA3AF] uppercase tracking-widest mb-4">How It Works</p>
+              <p className="text-xs font-bold text-[#9CA3AF] uppercase tracking-widest mb-4">
+                How It Works
+              </p>
               <div className="grid grid-cols-2 gap-3">
                 {steps.map((step) => (
                   <div key={step.num} className="flex items-start gap-3">
-                    <span className="text-xs font-black text-[#3ECBA0] flex-shrink-0 mt-0.5">{step.num}</span>
+                    <span className="text-xs font-black text-[#3ECBA0] flex-shrink-0 mt-0.5">
+                      {step.num}
+                    </span>
                     <div>
                       <p className="text-[#111827] font-semibold text-xs">{step.title}</p>
                       <p className="text-[#9CA3AF] text-xs mt-0.5 leading-relaxed">{step.desc}</p>
@@ -233,7 +293,9 @@ export default function PlansPage() {
           <div className="hidden lg:block space-y-4">
             {/* How it works */}
             <div className="bg-white rounded-2xl border border-gray-100 p-5">
-              <p className="text-xs font-bold text-[#9CA3AF] uppercase tracking-widest mb-4">How It Works</p>
+              <p className="text-xs font-bold text-[#9CA3AF] uppercase tracking-widest mb-4">
+                How It Works
+              </p>
               <div className="space-y-4">
                 {steps.map((step, i) => (
                   <div key={step.num} className="flex items-start gap-3">
@@ -251,7 +313,9 @@ export default function PlansPage() {
 
             {/* Payment methods */}
             <div className="bg-white rounded-2xl border border-gray-100 p-5">
-              <p className="text-xs font-bold text-[#9CA3AF] uppercase tracking-widest mb-3">Accepted Payments</p>
+              <p className="text-xs font-bold text-[#9CA3AF] uppercase tracking-widest mb-3">
+                Accepted Payments
+              </p>
               <div className="space-y-2">
                 {[
                   { label: 'Visa / Mastercard', sub: 'Credit & debit cards' },
@@ -260,8 +324,18 @@ export default function PlansPage() {
                 ].map(({ label, sub }) => (
                   <div key={label} className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-xl">
                     <div className="w-8 h-8 bg-white rounded-lg border border-gray-200 flex items-center justify-center flex-shrink-0">
-                      <svg className="w-4 h-4 text-[#3ECBA0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                      <svg
+                        className="w-4 h-4 text-[#3ECBA0]"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={1.8}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                        />
                       </svg>
                     </div>
                     <div>
@@ -276,12 +350,19 @@ export default function PlansPage() {
             {/* CTA */}
             {selectedPlan && (
               <div className="bg-gradient-to-br from-[#1a3028] to-[#0d2b22] rounded-2xl p-5">
-                <p className="text-[#3ECBA0] text-xs font-bold uppercase tracking-widest mb-2">Selected Plan</p>
+                <p className="text-[#3ECBA0] text-xs font-bold uppercase tracking-widest mb-2">
+                  Selected Plan
+                </p>
                 <p className="text-white font-bold text-lg mb-0.5">{selectedPlan.name}</p>
-                <p className="text-white/50 text-sm mb-4">{selectedPlan.credits} meals · RM{(selectedPlan.price_myr / selectedPlan.credits).toFixed(2)}/meal</p>
+                <p className="text-white/50 text-sm mb-4">
+                  {selectedPlan.credits} meals · RM
+                  {(selectedPlan.price_myr / selectedPlan.credits).toFixed(2)}/meal
+                </p>
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-white/60 text-sm">Total</span>
-                  <span className="text-[#3ECBA0] font-black text-2xl">RM{selectedPlan.price_myr}</span>
+                  <span className="text-[#3ECBA0] font-black text-2xl">
+                    RM{selectedPlan.price_myr}
+                  </span>
                 </div>
                 <button
                   onClick={handleContinue}

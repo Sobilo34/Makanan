@@ -67,7 +67,7 @@ export default function HeroSection() {
           style={{ animationDelay: '0.85s' }}
         >
           <div
-            className="relative mx-auto overflow-hidden w-[min(100%,980px)] h-[60vh] md:h-full rounded-t-[28px]"
+            className="relative mx-auto overflow-hidden w-[min(100%,980px)] h-[60vh] md:aspect-[16/10] md:min-h-[320px] md:h-auto rounded-t-[28px]"
             style={{ boxShadow: '0 28px 60px rgba(15,44,34,0.12)' }}
           >
             <video
