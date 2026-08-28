@@ -1,24 +1,32 @@
 'use client';
 import React from 'react';
 
+const demoVideoUrl =
+  'https://res.cloudinary.com/jt1x1oxc/video/upload/v1787900275/lv_0_20260828123714.mp4';
 
 export default function HeroSection() {
   return (
     <section
       className="relative w-full overflow-hidden"
       id="hero"
-      style={{ background: 'linear-gradient(180deg, #E6F9F2 0%, #C8F0E4 60%, #B0E8D4 100%)', minHeight: '100vh' }}
+      style={{
+        background: 'linear-gradient(180deg, #E6F9F2 0%, #C8F0E4 60%, #B0E8D4 100%)',
+        minHeight: '100vh',
+      }}
     >
       {/* Hero Content — centered */}
       <div className="relative z-10 flex flex-col items-center text-center pt-16 pb-0 px-5 md:px-8">
-
         {/* Main headline */}
         <h1
           className="hero-headline font-700 text-near-black tracking-tight mb-3 max-w-3xl text-[37px]"
-          style={{ fontSize: 'clamp(2.2rem, 5vw, 3.2rem)', fontWeight: 700, letterSpacing: '-0.025em', animationDelay: '0.1s' }}
+          style={{
+            fontSize: 'clamp(2.2rem, 5vw, 3.2rem)',
+            fontWeight: 700,
+            letterSpacing: '-0.025em',
+            animationDelay: '0.1s',
+          }}
         >
-          A smarter way to{' '}
-          <span style={{ color: '#3ECBA0' }}>eat on campus</span>
+          A smarter way to <span style={{ color: '#3ECBA0' }}>eat on campus</span>
         </h1>
 
         {/* Subheadline */}
@@ -30,7 +38,10 @@ export default function HeroSection() {
         </p>
 
         {/* CTA Buttons */}
-        <div className="hero-cta flex flex-col sm:flex-row items-center gap-3 mb-8" style={{ animationDelay: '0.55s' }}>
+        <div
+          className="hero-cta flex flex-col sm:flex-row items-center gap-3 mb-8"
+          style={{ animationDelay: '0.55s' }}
+        >
           <a
             href="#plans"
             className="cta-primary inline-flex items-center justify-center gap-2.5 font-sans font-600 text-sm px-8 py-4 rounded-pill transition-all duration-200"
@@ -51,47 +62,32 @@ export default function HeroSection() {
           </a>
         </div>
 
-        {/* ── App Showcase / Video Placeholder ── */}
+        {/* ── App Showcase / Demo Video ── */}
         <div
-          className="hero-showcase relative w-full max-w-3xl mx-auto"
+          className="hero-showcase relative w-full max-w-4xl mx-auto"
           style={{ animationDelay: '0.85s' }}
         >
-          {/* Video placeholder container */}
           <div
-            className="relative rounded-3xl overflow-hidden shadow-2xl"
+            className="relative mx-auto overflow-hidden"
             style={{
-              background: 'linear-gradient(160deg, #3ECBA0 0%, #3ECBA0 40%, #2DAF87 100%)',
+              width: 'min(100%, 980px)',
               aspectRatio: '16/10',
-              minHeight: 340,
+              minHeight: 320,
+              borderTopLeftRadius: '28px',
+              borderTopRightRadius: '28px',
+              boxShadow: '0 28px 60px rgba(15,44,34,0.12)',
             }}
           >
-            {/* Floating badge — top left */}
-            <div className="absolute top-5 left-5 z-10">
-              <div className="inline-flex items-center gap-2 bg-white rounded-pill px-4 py-2 shadow-md">
-                <span className="w-2.5 h-2.5 rounded-full bg-primary-mint inline-block" />
-                <span className="font-sans font-500 text-near-black text-sm">Meal redeemed ✓</span>
-              </div>
-            </div>
-
-            {/* Floating badge — top right */}
-            <div className="absolute top-5 right-5 z-10">
-              <div className="inline-flex items-center bg-white/90 rounded-pill px-4 py-2 shadow-md">
-                <span className="font-sans font-600 text-near-black text-sm">38 credits left</span>
-              </div>
-            </div>
-
-            {/* Center play button */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-10">
-              <div
-                className="w-16 h-16 rounded-full flex items-center justify-center placeholder-pulse"
-                style={{ background: 'rgba(255,255,255,0.3)', backdropFilter: 'blur(8px)', border: '2px solid rgba(255,255,255,0.5)' }}
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M8 5L19 12L8 19V5Z" fill="white" />
-                </svg>
-              </div>
-              <p className="font-sans font-500 text-white/80 text-sm">App demo coming soon</p>
-            </div>
+            <video
+              src={demoVideoUrl}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              className="h-full w-full object-cover"
+              style={{ filter: 'saturate(1.05) contrast(1.04)' }}
+            />
           </div>
         </div>
       </div>

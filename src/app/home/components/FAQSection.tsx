@@ -12,7 +12,7 @@ const faqs: FAQItem[] = [
     category: 'Plans & Pricing',
     question: 'What is the difference between 40 and 60 meal plans?',
     answer:
-      '40 meals covers roughly 2 meals per weekday — ideal if you eat out or cook on weekends. 60 meals gives you 3 meals a day across the full week, so you never have to think about food. Both options are available across all three tiers: Value, Regular, and Flex.',
+      'Normal and Extra are available across all three tiers: Basic, Standard, and Premium. The difference is the meal quantity within the same price tier, so students can choose the fit that matches their routine without changing the monthly cost.',
   },
   {
     category: 'Plans & Pricing',
@@ -48,7 +48,7 @@ const faqs: FAQItem[] = [
     category: 'Account & Payments',
     question: 'Which payment methods are accepted?',
     answer:
-      'We accept all major credit and debit cards, FPX online banking, and e-wallets including Touch \'n Go and GrabPay. Payments are processed securely via Stripe. Your card details are never stored on our servers.',
+      "We accept all major credit and debit cards, FPX online banking, and e-wallets including Touch 'n Go and GrabPay. Payments are processed securely via Stripe. Your card details are never stored on our servers.",
   },
   {
     category: 'Account & Payments',
@@ -164,7 +164,12 @@ export default function FAQSection() {
   const filtered = faqs.filter((f) => f.category === activeCategory);
 
   return (
-    <section ref={sectionRef} className="py-20 md:py-28 px-5 md:px-10" style={{ background: '#F7FAF9' }} id="faq">
+    <section
+      ref={sectionRef}
+      className="py-20 md:py-28 px-5 md:px-10"
+      style={{ background: '#F7FAF9' }}
+      id="faq"
+    >
       <div className="max-w-5xl mx-auto">
         {/* Header row */}
         <div className="reveal grid md:grid-cols-2 gap-10 md:gap-16 items-start mb-14">
@@ -180,8 +185,7 @@ export default function FAQSection() {
               className="font-sans font-700 text-near-black leading-tight mb-4"
               style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', fontWeight: 700 }}
             >
-              Everything you&apos;d want to{' '}
-              <span style={{ color: '#3ECBA0' }}>know.</span>
+              Everything you&apos;d want to <span style={{ color: '#3ECBA0' }}>know.</span>
             </h2>
             <p className="font-sans text-sm leading-relaxed" style={{ color: '#6B7280' }}>
               Can&apos;t find what you&apos;re looking for? Reach us at{' '}
@@ -209,7 +213,8 @@ export default function FAQSection() {
                     fontWeight: 600,
                     background: activeCategory === cat ? '#1A1A1A' : 'white',
                     color: activeCategory === cat ? '#fff' : '#6B7280',
-                    border: activeCategory === cat ? '1px solid #1A1A1A' : '1px solid rgba(0,0,0,0.1)',
+                    border:
+                      activeCategory === cat ? '1px solid #1A1A1A' : '1px solid rgba(0,0,0,0.1)',
                     boxShadow: activeCategory === cat ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
                   }}
                 >
@@ -225,12 +230,14 @@ export default function FAQSection() {
             style={{ background: '#1A1A1A', color: '#fff' }}
           >
             <div>
-              <p className="font-sans text-xs uppercase tracking-widest mb-1" style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>
+              <p
+                className="font-sans text-xs uppercase tracking-widest mb-1"
+                style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}
+              >
                 Still have questions?
               </p>
               <p className="font-sans text-2xl font-700 leading-snug" style={{ fontWeight: 700 }}>
-                Our support team replies in under{' '}
-                <span style={{ color: '#3ECBA0' }}>2 hours.</span>
+                Our support team replies in under <span style={{ color: '#3ECBA0' }}>2 hours.</span>
               </p>
             </div>
             <div className="flex items-center gap-3 mt-6">
@@ -249,7 +256,10 @@ export default function FAQSection() {
                   />
                 ))}
               </div>
-              <p className="font-sans text-xs" style={{ color: 'rgba(255,255,255,0.55)', fontWeight: 500 }}>
+              <p
+                className="font-sans text-xs"
+                style={{ color: 'rgba(255,255,255,0.55)', fontWeight: 500 }}
+              >
                 Real humans, not bots.
               </p>
             </div>
@@ -259,7 +269,10 @@ export default function FAQSection() {
         {/* Accordion */}
         <div
           className="reveal reveal-delay-1 rounded-2xl overflow-hidden"
-          style={{ background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 8px 32px rgba(0,0,0,0.04)' }}
+          style={{
+            background: '#fff',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 8px 32px rgba(0,0,0,0.04)',
+          }}
         >
           <div className="px-6 md:px-8">
             {filtered.map((item, i) => (
