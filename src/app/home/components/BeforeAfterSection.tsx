@@ -9,6 +9,8 @@ interface PlanComparison {
   extraPrice: string;
   normalLabel: string;
   extraLabel: string;
+  normalMeals?: string;
+  extraMeals?: string;
   descNormal: string;
   descExtra: string;
   img40: string;
@@ -36,6 +38,8 @@ const comparisons: PlanComparison[] = [
     img60: 'https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=900&q=80',
     img60Alt: 'Basic plan extra option — a generous meal spread with rice, curry and vegetables',
     accentColor: '#3ECBA0',
+    normalMeals: '40 meals',
+    extraMeals: '60 meals',
     initialPosition: 45,
   },
   {
@@ -55,6 +59,8 @@ const comparisons: PlanComparison[] = [
     img60: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=900&q=80',
     img60Alt: 'Standard plan extra option — a vibrant bowl of mixed grains, protein and greens',
     accentColor: '#2BB88A',
+    normalMeals: '40 meals',
+    extraMeals: '60 meals',
     initialPosition: 50,
   },
   {
@@ -75,6 +81,8 @@ const comparisons: PlanComparison[] = [
     img60: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=900&q=80',
     img60Alt: 'Premium plan extra option — colourful fresh meal bowl with diverse ingredients',
     accentColor: '#1A9E74',
+    normalMeals: '40 meals',
+    extraMeals: '60 meals',
     initialPosition: 48,
   },
 ];
@@ -153,6 +161,9 @@ function PlanSlider({ comparison }: { comparison: PlanComparison }) {
             <p className="font-sans text-sm text-white font-700" style={{ fontWeight: 700 }}>
               {comparison.normalPrice}
             </p>
+            {comparison.normalMeals && (
+              <p className="font-sans text-[11px] text-white/80 mt-0.5">{comparison.normalMeals}</p>
+            )}
           </div>
         </div>
       </div>
@@ -177,6 +188,11 @@ function PlanSlider({ comparison }: { comparison: PlanComparison }) {
             <p className="font-sans text-sm text-near-black font-700" style={{ fontWeight: 700 }}>
               {comparison.extraPrice}
             </p>
+            {comparison.extraMeals && (
+              <p className="font-sans text-[11px] text-near-black/80 mt-0.5">
+                {comparison.extraMeals}
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -247,8 +263,8 @@ export default function BeforeAfterSection() {
           {/* Plan legend */}
           <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
             {[
-              { label: 'Normal', color: '#1A1A1A', bg: '#F5F5F5' },
-              { label: 'Extra', color: '#1A1A1A', bg: '#3ECBA0' },
+              { label: 'Normal · 40 meals', color: '#1A1A1A', bg: '#F5F5F5' },
+              { label: 'Extra · 60 meals', color: '#1A1A1A', bg: '#3ECBA0' },
             ].map((item) => (
               <div
                 key={item.label}
@@ -309,6 +325,9 @@ export default function BeforeAfterSection() {
                     >
                       {comparison.normalPrice}
                     </span>
+                    {comparison.normalMeals && (
+                      <div className="text-xs text-muted-text mt-1">{comparison.normalMeals}</div>
+                    )}
                   </div>
                   <p className="font-sans text-muted-text text-sm leading-snug">
                     {comparison.descNormal}
@@ -338,6 +357,14 @@ export default function BeforeAfterSection() {
                     >
                       {comparison.extraPrice}
                     </span>
+                    {comparison.extraMeals && (
+                      <div
+                        className="text-xs"
+                        style={{ color: comparison.accentColor, marginTop: '0.25rem' }}
+                      >
+                        {comparison.extraMeals}
+                      </div>
+                    )}
                   </div>
                   <p
                     className="font-sans text-near-black text-sm leading-snug font-500"
