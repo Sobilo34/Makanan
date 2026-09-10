@@ -161,9 +161,6 @@ function PlanSlider({ comparison }: { comparison: PlanComparison }) {
             <p className="font-sans text-sm text-white font-700" style={{ fontWeight: 700 }}>
               {comparison.normalPrice}
             </p>
-            {comparison.normalMeals && (
-              <p className="font-sans text-[11px] text-white/80 mt-0.5">{comparison.normalMeals}</p>
-            )}
           </div>
         </div>
       </div>
@@ -188,11 +185,6 @@ function PlanSlider({ comparison }: { comparison: PlanComparison }) {
             <p className="font-sans text-sm text-near-black font-700" style={{ fontWeight: 700 }}>
               {comparison.extraPrice}
             </p>
-            {comparison.extraMeals && (
-              <p className="font-sans text-[11px] text-near-black/80 mt-0.5">
-                {comparison.extraMeals}
-              </p>
-            )}
           </div>
         </div>
       </div>
@@ -325,9 +317,6 @@ export default function BeforeAfterSection() {
                     >
                       {comparison.normalPrice}
                     </span>
-                    {comparison.normalMeals && (
-                      <div className="text-xs text-muted-text mt-1">{comparison.normalMeals}</div>
-                    )}
                   </div>
                   <p className="font-sans text-muted-text text-sm leading-snug">
                     {comparison.descNormal}
@@ -357,14 +346,6 @@ export default function BeforeAfterSection() {
                     >
                       {comparison.extraPrice}
                     </span>
-                    {comparison.extraMeals && (
-                      <div
-                        className="text-xs"
-                        style={{ color: comparison.accentColor, marginTop: '0.25rem' }}
-                      >
-                        {comparison.extraMeals}
-                      </div>
-                    )}
                   </div>
                   <p
                     className="font-sans text-near-black text-sm leading-snug font-500"
