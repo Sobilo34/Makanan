@@ -51,13 +51,17 @@ export default function MealPlansPage() {
     }
   };
 
-  useEffect(() => { loadPlans(); }, []);
+  useEffect(() => {
+    loadPlans();
+  }, []);
 
   const togglePlan = async (planId: string, currentStatus: boolean) => {
     setToggling(planId);
     try {
       await supabase.from('meal_plans').update({ is_active: !currentStatus }).eq('id', planId);
-      setPlans((prev) => prev.map((p) => p.id === planId ? { ...p, is_active: !currentStatus } : p));
+      setPlans((prev) =>
+        prev.map((p) => (p.id === planId ? { ...p, is_active: !currentStatus } : p))
+      );
     } catch (err) {
       console.error('Toggle error:', err);
     } finally {
@@ -67,28 +71,91 @@ export default function MealPlansPage() {
 
   const filtered = plans.filter((p) => {
     const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === 'all' || (statusFilter === 'active' ? p.is_active : !p.is_active);
+    const matchStatus =
+      statusFilter === 'all' || (statusFilter === 'active' ? p.is_active : !p.is_active);
     return matchSearch && matchStatus;
   });
 
   // Demo data fallback
   const demoPlans: MealPlan[] = [
-    { id: 'd1', name: 'Standard RM250 Plan', tier: 'standard', price_myr: 250, credits: 60, is_active: true, created_at: new Date().toISOString(), activeStudents: 85 },
-    { id: 'd2', name: 'Eco RM250 Plan', tier: 'value', price_myr: 250, credits: 40, is_active: true, created_at: new Date().toISOString(), activeStudents: 120 },
-    { id: 'd3', name: 'Value RM300 Plan', tier: 'value', price_myr: 300, credits: 60, is_active: false, created_at: new Date().toISOString(), activeStudents: 15 },
-    { id: 'd4', name: 'Mini RM300 Plan', tier: 'standard', price_myr: 300, credits: 40, is_active: true, created_at: new Date().toISOString(), activeStudents: 90 },
-    { id: 'd5', name: 'Premium RM400 Plan', tier: 'premium', price_myr: 400, credits: 60, is_active: true, created_at: new Date().toISOString(), activeStudents: 50 },
-    { id: 'd6', name: 'Select RM400 Plan', tier: 'premium', price_myr: 400, credits: 40, is_active: true, created_at: new Date().toISOString(), activeStudents: 30 },
+    {
+      id: 'd1',
+      name: 'Standard RM250 Plan',
+      tier: 'standard',
+      price_myr: 250,
+      credits: 60,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      activeStudents: 85,
+    },
+    {
+      id: 'd2',
+      name: 'Eco RM250 Plan',
+      tier: 'value',
+      price_myr: 250,
+      credits: 40,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      activeStudents: 120,
+    },
+    {
+      id: 'd3',
+      name: 'Value RM300 Plan',
+      tier: 'value',
+      price_myr: 300,
+      credits: 60,
+      is_active: false,
+      created_at: new Date().toISOString(),
+      activeStudents: 15,
+    },
+    {
+      id: 'd4',
+      name: 'Mini RM300 Plan',
+      tier: 'standard',
+      price_myr: 300,
+      credits: 40,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      activeStudents: 90,
+    },
+    {
+      id: 'd5',
+      name: 'Premium RM400 Plan',
+      tier: 'premium',
+      price_myr: 400,
+      credits: 60,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      activeStudents: 50,
+    },
+    {
+      id: 'd6',
+      name: 'Select RM400 Plan',
+      tier: 'premium',
+      price_myr: 400,
+      credits: 40,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      activeStudents: 30,
+    },
   ];
 
-  const displayPlans = plans.length === 0 && !loading ? demoPlans.filter((p) => {
-    const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === 'all' || (statusFilter === 'active' ? p.is_active : !p.is_active);
-    return matchSearch && matchStatus;
-  }) : filtered;
+  const displayPlans =
+    plans.length === 0 && !loading
+      ? demoPlans.filter((p) => {
+          const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
+          const matchStatus =
+            statusFilter === 'all' || (statusFilter === 'active' ? p.is_active : !p.is_active);
+          return matchSearch && matchStatus;
+        })
+      : filtered;
 
   const tierColor = (tier: string) => {
-    const map: Record<string, string> = { value: '#3ECBA0', standard: '#6366F1', premium: '#F59E0B' };
+    const map: Record<string, string> = {
+      value: '#3ECBA0',
+      standard: '#6366F1',
+      premium: '#F59E0B',
+    };
     return map[tier] || '#9CA3AF';
   };
 
@@ -101,8 +168,17 @@ export default function MealPlansPage() {
             <h1 className="text-2xl font-bold text-[#111827]">Meal Plan Management</h1>
             <p className="text-[#6B7280] text-sm mt-0.5">{displayPlans.length} plans configured</p>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90" style={{ background: 'linear-gradient(135deg, #3ECBA0, #2db88d)' }}>
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <button
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
+            style={{ background: 'linear-gradient(135deg, #3ECBA0, #2db88d)' }}
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2.5}
+            >
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
             Add Plan
@@ -112,8 +188,18 @@ export default function MealPlansPage() {
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px] max-w-sm">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <svg
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
             <input
               type="text"
@@ -139,7 +225,9 @@ export default function MealPlansPage() {
           {/* Header */}
           <div className="grid grid-cols-[2.5fr_1fr_1fr_1.5fr_1fr_1fr] gap-4 px-5 py-3 border-b border-[#F3F4F6] bg-[#FAFAFA]">
             {['Plan', 'Price', 'Meals', 'Active Students', 'Status', 'Actions'].map((h) => (
-              <p key={h} className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">{h}</p>
+              <p key={h} className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">
+                {h}
+              </p>
             ))}
           </div>
 
@@ -152,27 +240,49 @@ export default function MealPlansPage() {
           ) : (
             <div className="divide-y divide-[#F9FAFB]">
               {displayPlans.map((plan) => (
-                <div key={plan.id} className="grid grid-cols-[2.5fr_1fr_1fr_1.5fr_1fr_1fr] gap-4 px-5 py-4 hover:bg-[#F9FAFB] transition-colors items-center">
+                <div
+                  key={plan.id}
+                  className="grid grid-cols-[2.5fr_1fr_1fr_1.5fr_1fr_1fr] gap-4 px-5 py-4 hover:bg-[#F9FAFB] transition-colors items-center"
+                >
                   {/* Plan name */}
                   <div className="flex items-center gap-3">
                     <div
                       className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                       style={{ background: `${tierColor(plan.tier)}15` }}
                     >
-                      <svg className="w-5 h-5" style={{ color: tierColor(plan.tier) }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      <svg
+                        className="w-5 h-5"
+                        style={{ color: tierColor(plan.tier) }}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={1.8}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                        />
                       </svg>
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-[#374151]">{plan.name}</p>
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded capitalize" style={{ background: `${tierColor(plan.tier)}15`, color: tierColor(plan.tier) }}>
+                      <span
+                        className="text-[10px] font-semibold px-1.5 py-0.5 rounded capitalize"
+                        style={{
+                          background: `${tierColor(plan.tier)}15`,
+                          color: tierColor(plan.tier),
+                        }}
+                      >
                         {plan.tier}
                       </span>
                     </div>
                   </div>
 
                   {/* Price */}
-                  <p className="text-base font-bold" style={{ color: tierColor(plan.tier) }}>RM{plan.price_myr}</p>
+                  <p className="text-base font-bold" style={{ color: tierColor(plan.tier) }}>
+                    RM{plan.price_myr}
+                  </p>
 
                   {/* Meals */}
                   <div className="flex items-center gap-1.5">
@@ -186,7 +296,9 @@ export default function MealPlansPage() {
                   {/* Active students */}
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-[#3ECBA0]/10 flex items-center justify-center">
-                      <span className="text-xs font-bold text-[#3ECBA0]">{plan.activeStudents}</span>
+                      <span className="text-xs font-bold text-[#3ECBA0]">
+                        {plan.activeStudents}
+                      </span>
                     </div>
                     <p className="text-xs text-[#9CA3AF]">students</p>
                   </div>
@@ -205,14 +317,38 @@ export default function MealPlansPage() {
                   {/* Actions */}
                   <div className="flex items-center gap-2">
                     <button className="p-1.5 rounded-lg text-[#9CA3AF] hover:text-[#374151] hover:bg-[#F3F4F6] transition-all">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={1.8}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                        />
                       </svg>
                     </button>
                     <button className="p-1.5 rounded-lg text-[#9CA3AF] hover:text-[#374151] hover:bg-[#F3F4F6] transition-all">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={1.8}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        />
                       </svg>
                     </button>
                     {/* Toggle */}

@@ -84,7 +84,9 @@ export default function WaitlistSection() {
       setCount((current) => current + 1);
     } catch (insertError: unknown) {
       const message =
-        typeof insertError === 'object' && insertError !== null && 'code' in insertError &&
+        typeof insertError === 'object' &&
+        insertError !== null &&
+        'code' in insertError &&
         (insertError as { code?: string }).code === 'PGRST205'
           ? 'The waitlist table is not set up in Supabase yet. Apply the waitlist migration before collecting signups.'
           : insertError instanceof Error
