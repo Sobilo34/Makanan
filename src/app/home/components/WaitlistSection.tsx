@@ -84,9 +84,12 @@ export default function WaitlistSection() {
       setCount((current) => current + 1);
     } catch (insertError: unknown) {
       const message =
-        insertError instanceof Error
-          ? insertError.message
-          : 'Something went wrong while joining the waitlist.';
+        typeof insertError === 'object' && insertError !== null && 'code' in insertError &&
+        (insertError as { code?: string }).code === 'PGRST205'
+          ? 'The waitlist table is not set up in Supabase yet. Apply the waitlist migration before collecting signups.'
+          : insertError instanceof Error
+            ? insertError.message
+            : 'Something went wrong while joining the waitlist.';
       setError(message);
     } finally {
       setLoading(false);

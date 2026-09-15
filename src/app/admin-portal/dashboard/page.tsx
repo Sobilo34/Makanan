@@ -281,7 +281,11 @@ export default function AdminDashboardPage() {
         setRecentActivity(mockActivity);
       }
 
-      setWaitlist(waitlistRes.data || []);
+      if (waitlistRes.error?.code === 'PGRST205') {
+        setWaitlist([]);
+      } else {
+        setWaitlist(waitlistRes.data || []);
+      }
     } catch (err) {
       console.error('Dashboard load error:', err);
     } finally {
