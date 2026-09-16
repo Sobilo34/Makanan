@@ -187,7 +187,7 @@ export default function FulfilmentPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 border-l-4 border-l-[#3ECBA0]">
                 <p className="text-xs font-medium text-[#6B7280] uppercase tracking-wide mb-2">
-                  Today's Target
+                  Today&apos;s Target
                 </p>
                 <p className="text-2xl font-bold text-[#111827]">{totalTarget}</p>
                 <p className="text-xs text-[#9CA3AF] mt-1">Meals scheduled</p>
@@ -364,7 +364,9 @@ export default function FulfilmentPage() {
             <div className="bg-white rounded-2xl border border-[#E5E7EB] overflow-hidden">
               <div className="px-6 py-4 border-b border-[#F3F4F6] flex items-center justify-between">
                 <div>
-                  <h2 className="text-base font-semibold text-[#111827]">Today's Redemptions</h2>
+                  <h2 className="text-base font-semibold text-[#111827]">
+                    Today&apos;s Redemptions
+                  </h2>
                   <p className="text-xs text-[#9CA3AF] mt-0.5">Live feed — updates in real time</p>
                 </div>
                 <div className="flex items-center gap-1.5">
