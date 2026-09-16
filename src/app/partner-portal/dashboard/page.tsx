@@ -160,29 +160,25 @@ export default function PartnerDashboardPage() {
         .reduce((sum, r) => sum + ((r.meals as any)?.price_myr || ppm), 0);
       setStats({ todayMeals, mealsRedeemed: redeemed, pending, estimatedEarnings: earnings });
       setSchedule(
-        meals
-          .slice(0, 4)
-          .map((m) => ({
-            id: m.id,
-            name: m.name,
-            servingQuantity: m.serving_quantity || 0,
-            redemptions: m.redemption_count || 0,
-            availability: m.availability || 'available',
-          }))
+        meals.slice(0, 4).map((m) => ({
+          id: m.id,
+          name: m.name,
+          servingQuantity: m.serving_quantity || 0,
+          redemptions: m.redemption_count || 0,
+          availability: m.availability || 'available',
+        }))
       );
       setRecentRedemptions(
-        redemptions
-          .slice(0, 5)
-          .map((r) => ({
-            id: r.id,
-            studentName: (r.user_profiles as any)?.full_name || 'Student',
-            mealName: (r.meals as any)?.name || 'Meal',
-            time: new Date(r.redeemed_at).toLocaleTimeString('en-MY', {
-              hour: '2-digit',
-              minute: '2-digit',
-            }),
-            status: r.status,
-          }))
+        redemptions.slice(0, 5).map((r) => ({
+          id: r.id,
+          studentName: (r.user_profiles as any)?.full_name || 'Student',
+          mealName: (r.meals as any)?.name || 'Meal',
+          time: new Date(r.redeemed_at).toLocaleTimeString('en-MY', {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+          status: r.status,
+        }))
       );
     },
     [fetchMealsData, fetchRedemptionsData]

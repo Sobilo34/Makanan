@@ -99,12 +99,12 @@ export function createClient() {
           if (typeof document === 'undefined') return;
           if (canUseCookies()) {
             cookiesToSet.forEach(({ name, value, options }) => {
-                if (value) {
-                  setCookie(name, value, options);
-                } else {
-                  deleteCookie(name);
-                }
-              });
+              if (value) {
+                setCookie(name, value, options);
+              } else {
+                deleteCookie(name);
+              }
+            });
           } else {
             cookiesToSet.forEach(({ name, value, options }) => {
               try {
