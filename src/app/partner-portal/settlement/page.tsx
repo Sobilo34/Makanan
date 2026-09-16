@@ -184,7 +184,11 @@ export default function SettlementPage() {
             },
           },
         });
-      } catch {}
+      } catch (e) {
+        // ignore notification failures to avoid blocking the payout flow
+        // eslint-disable-next-line no-console
+        console.warn('send-email invocation failed', e);
+      }
       await loadData(partnerId);
     }
     setRequesting(false);

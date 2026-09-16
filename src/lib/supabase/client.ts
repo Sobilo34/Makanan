@@ -98,16 +98,26 @@ export function createClient() {
         setAll(cookiesToSet) {
           if (typeof document === 'undefined') return;
           if (canUseCookies()) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              value ? setCookie(name, value, options) : deleteCookie(name)
-            );
+            cookiesToSet.forEach(({ name, value, options }) => {
+                if (value) {
+                  setCookie(name, value, options);
+                } else {
+                  deleteCookie(name);
+                }
+              });
           } else {
             cookiesToSet.forEach(({ name, value, options }) => {
               try {
-                value
-                  ? localStorage.setItem(`${PFX}${name}`, value)
-                  : localStorage.removeItem(`${PFX}${name}`);
-              } catch {}
+                if (value) {
+                  localStorage.setItem(`${PFX}${name}`, value);
+                } else {
+                  localStorage.removeItem(`${PFX}${name}`);
+                }
+              } catch (e) {
+                // ignore localStorage errors in restrictive environments
+                // eslint-disable-next-line no-console
+                console.warn('localStorage unavailable', e);
+              }
               if (value) setCookie(name, value, options);
             });
           }
