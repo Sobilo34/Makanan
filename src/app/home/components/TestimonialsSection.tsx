@@ -16,7 +16,8 @@ interface Testimonial {
 const testimonials: Testimonial[] = [
   {
     id: 1,
-    quote: 'I used to skip lunch because the cafeteria queue was too long. With Makanan, I just tap and collect. My grades actually improved because I stopped skipping meals.',
+    quote:
+      'I used to skip lunch because the cafeteria queue was too long. With Makanan, I just tap and collect. My grades actually improved because I stopped skipping meals.',
     emphasis: 'My grades actually improved',
     name: 'Ahmad Faris',
     role: 'Year 2, Business Admin — AIU',
@@ -27,8 +28,9 @@ const testimonials: Testimonial[] = [
   },
   {
     id: 2,
-    quote: 'As a student on a tight budget, RM250 for 40 meals is genuinely the best deal I\'ve found. The food is fresh, the portions are generous, and I never go hungry.',
-    emphasis: 'the best deal I\'ve found',
+    quote:
+      "As a student on a tight budget, RM250 for 40 meals is genuinely the best deal I've found. The food is fresh, the portions are generous, and I never go hungry.",
+    emphasis: "the best deal I've found",
     name: 'Haziq Ramli',
     role: 'Final Year, Computer Science — AIU',
     location: 'Petaling Jaya',
@@ -38,7 +40,8 @@ const testimonials: Testimonial[] = [
   },
   {
     id: 3,
-    quote: 'My parents were worried about me eating properly away from home. I showed them Makanan and they subscribed me to the Regular Plan immediately. Best decision ever.',
+    quote:
+      'My parents were worried about me eating properly away from home. I showed them Makanan and they subscribed me to the Regular Plan immediately. Best decision ever.',
     emphasis: 'Best decision ever',
     name: 'Omar Khalid',
     role: 'Year 1, Engineering — AIU',
@@ -49,7 +52,8 @@ const testimonials: Testimonial[] = [
   },
   {
     id: 4,
-    quote: 'The Flex plan is perfect for my schedule. I can order whenever I want and the food is always hot and fresh. Worth every ringgit — I recommend it to everyone in my block.',
+    quote:
+      'The Flex plan is perfect for my schedule. I can order whenever I want and the food is always hot and fresh. Worth every ringgit — I recommend it to everyone in my block.',
     emphasis: 'Worth every ringgit',
     name: 'Yusuf Ibrahim',
     role: 'Year 3, Law — AIU',
@@ -83,7 +87,9 @@ function QuoteText({ quote, emphasis }: { quote: string; emphasis: string }) {
         <React.Fragment key={pi}>
           {part}
           {pi < parts.length - 1 && (
-            <em className="not-italic font-700" style={{ color: '#3ECBA0', fontWeight: 700 }}>{emphasis}</em>
+            <em className="not-italic font-700" style={{ color: '#3ECBA0', fontWeight: 700 }}>
+              {emphasis}
+            </em>
           )}
         </React.Fragment>
       ))}
@@ -104,7 +110,10 @@ export default function TestimonialsSection() {
 
   useEffect(() => {
     const observer = new IntersectionObserver(
-      (entries) => entries.forEach((e) => { if (e.isIntersecting) e.target.classList.add('visible'); }),
+      (entries) =>
+        entries.forEach((e) => {
+          if (e.isIntersecting) e.target.classList.add('visible');
+        }),
       { threshold: 0.12 }
     );
     sectionRef.current?.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
@@ -112,14 +121,23 @@ export default function TestimonialsSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-20 md:py-28 px-5 md:px-10 overflow-hidden" style={{ background: '#F7F7F5' }} id="stories">
+    <section
+      ref={sectionRef}
+      className="py-20 md:py-28 px-5 md:px-10 overflow-hidden"
+      style={{ background: '#F7F7F5' }}
+      id="stories"
+    >
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="reveal flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-14">
           <div>
             <span className="section-label">Student Stories</span>
-            <h2 className="font-sans font-700 text-near-black leading-tight" style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', fontWeight: 700 }}>
-              What students say<br />
+            <h2
+              className="font-sans font-700 text-near-black leading-tight"
+              style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', fontWeight: 700 }}
+            >
+              What students say
+              <br />
               <span style={{ color: '#3ECBA0' }}>when they eat with ease</span>
             </h2>
           </div>
@@ -132,7 +150,13 @@ export default function TestimonialsSection() {
               aria-label="Previous"
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                <path
+                  d="M9 2L4 7l5 5"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </button>
             <button
@@ -142,7 +166,13 @@ export default function TestimonialsSection() {
               aria-label="Next"
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M5 2l5 5-5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                <path
+                  d="M5 2l5 5-5 5"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </button>
           </div>
@@ -171,14 +201,26 @@ export default function TestimonialsSection() {
                   <StarRating count={item.rating} />
                   <QuoteText quote={item.quote} emphasis={item.emphasis} />
                 </div>
-                <div className="flex items-center justify-between pt-4" style={{ borderTop: '1px solid #F0F0F0' }}>
+                <div
+                  className="flex items-center justify-between pt-4"
+                  style={{ borderTop: '1px solid #F0F0F0' }}
+                >
                   <div>
-                    <p className="font-sans font-700 text-near-black text-sm" style={{ fontWeight: 700 }}>{item.name}</p>
+                    <p
+                      className="font-sans font-700 text-near-black text-sm"
+                      style={{ fontWeight: 700 }}
+                    >
+                      {item.name}
+                    </p>
                     <p className="font-sans text-xs text-muted-text">{item.role}</p>
                   </div>
                   <span
                     className="font-sans text-[10px] font-600 px-2.5 py-1 rounded-full"
-                    style={{ background: 'rgba(62,203,160,0.1)', color: '#2BB88A', fontWeight: 600 }}
+                    style={{
+                      background: 'rgba(62,203,160,0.1)',
+                      color: '#2BB88A',
+                      fontWeight: 600,
+                    }}
                   >
                     {item.location}
                   </span>
@@ -214,10 +256,18 @@ export default function TestimonialsSection() {
                     />
                     <div
                       className="absolute inset-0"
-                      style={{ background: 'linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.55) 100%)' }}
+                      style={{
+                        background:
+                          'linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.55) 100%)',
+                      }}
                     />
                     <div className="absolute bottom-3 left-4">
-                      <p className="font-sans font-700 text-white text-sm" style={{ fontWeight: 700 }}>{item.name}</p>
+                      <p
+                        className="font-sans font-700 text-white text-sm"
+                        style={{ fontWeight: 700 }}
+                      >
+                        {item.name}
+                      </p>
                       <p className="font-sans text-xs text-white/70">{item.role}</p>
                     </div>
                   </div>
@@ -228,11 +278,18 @@ export default function TestimonialsSection() {
                       <StarRating count={item.rating} />
                       <QuoteText quote={item.quote} emphasis={item.emphasis} />
                     </div>
-                    <div className="flex items-center justify-between pt-4" style={{ borderTop: '1px solid #F0F0F0' }}>
+                    <div
+                      className="flex items-center justify-between pt-4"
+                      style={{ borderTop: '1px solid #F0F0F0' }}
+                    >
                       <p className="font-sans text-xs text-muted-text">{item.role}</p>
                       <span
                         className="font-sans text-[10px] font-600 px-2.5 py-1 rounded-full"
-                        style={{ background: 'rgba(62,203,160,0.1)', color: '#2BB88A', fontWeight: 600 }}
+                        style={{
+                          background: 'rgba(62,203,160,0.1)',
+                          color: '#2BB88A',
+                          fontWeight: 600,
+                        }}
                       >
                         {item.location}
                       </span>

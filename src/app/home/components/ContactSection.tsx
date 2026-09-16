@@ -3,11 +3,7 @@ import React from 'react';
 
 export default function ContactSection() {
   return (
-    <section
-      className="w-full py-10 px-5 md:px-8"
-      style={{ background: '#1A1A1A' }}
-      id="contact"
-    >
+    <section className="w-full py-10 px-5 md:px-8" style={{ background: '#1A1A1A' }} id="contact">
       <div className="max-w-md mx-auto">
         <div className="bg-white rounded-2xl p-8 shadow-xl text-center">
           {/* Label */}
@@ -27,7 +23,16 @@ export default function ContactSection() {
               style={{ background: '#F5F0EB' }}
               aria-label="Instagram"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1A1A1A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#1A1A1A"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
                 <circle cx="12" cy="12" r="4" />
                 <circle cx="17.5" cy="6.5" r="0.5" fill="#1A1A1A" />
@@ -59,7 +64,10 @@ export default function ContactSection() {
           </div>
 
           {/* CTA text */}
-          <p className="font-sans font-600 text-near-black text-base mb-5" style={{ fontWeight: 600 }}>
+          <p
+            className="font-sans font-600 text-near-black text-base mb-5"
+            style={{ fontWeight: 600 }}
+          >
             Want to partner or just say hi?
           </p>
 

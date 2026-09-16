@@ -82,23 +82,31 @@ export default function OrdersPage() {
     const supabase = createClient();
     const channel = supabase
       .channel(`student-orders-${user.id}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'redemptions',
-        filter: `user_id=eq.${user.id}`,
-      }, (payload) => {
-        if (payload.eventType === 'INSERT') {
-          setRedemptions((prev) => [payload.new as any, ...prev]);
-        } else if (payload.eventType === 'UPDATE') {
-          setRedemptions((prev) =>
-            prev.map((r) => r.id === (payload.new as any).id ? { ...r, status: (payload.new as any).status } : r)
-          );
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'redemptions',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setRedemptions((prev) => [payload.new as any, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setRedemptions((prev) =>
+              prev.map((r) =>
+                r.id === (payload.new as any).id ? { ...r, status: (payload.new as any).status } : r
+              )
+            );
+          }
         }
-      })
+      )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const isToday = (dateStr: string) => {
@@ -109,7 +117,9 @@ export default function OrdersPage() {
 
   const formatOrderDate = (dateStr: string) => {
     const d = new Date(dateStr);
-    return d.toLocaleDateString('en-MY', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
+    return d
+      .toLocaleDateString('en-MY', { year: 'numeric', month: '2-digit', day: '2-digit' })
+      .replace(/\//g, '-');
   };
 
   const todayRedemptions = redemptions.filter((r) => isToday(r.redeemed_at));
@@ -158,7 +168,10 @@ export default function OrdersPage() {
             {loading ? (
               <div className="space-y-3">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="bg-white rounded-2xl p-4 border border-gray-100 h-24 animate-pulse" />
+                  <div
+                    key={i}
+                    className="bg-white rounded-2xl p-4 border border-gray-100 h-24 animate-pulse"
+                  />
                 ))}
               </div>
             ) : activeTab === 'active' ? (
@@ -169,8 +182,18 @@ export default function OrdersPage() {
                   {todayRedemptions.length === 0 ? (
                     <div className="bg-white rounded-2xl p-8 text-center border border-gray-100">
                       <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <svg className="w-7 h-7 text-[#D0D0D0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                        <svg
+                          className="w-7 h-7 text-[#D0D0D0]"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={1.5}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                          />
                         </svg>
                       </div>
                       <p className="text-[#1A1A1A] font-semibold mb-1">No redemption today</p>
@@ -180,19 +203,33 @@ export default function OrdersPage() {
                     <div className="space-y-3">
                       {todayRedemptions.map((r) => {
                         const st = statusConfig[r.status] || statusConfig.confirmed;
-                        const cat = categoryColor[r.meals?.category] || { bg: '#F5F6FA', text: '#6B7280' };
+                        const cat = categoryColor[r.meals?.category] || {
+                          bg: '#F5F6FA',
+                          text: '#6B7280',
+                        };
                         return (
-                          <div key={r.id} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+                          <div
+                            key={r.id}
+                            className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm"
+                          >
                             <div className="flex items-start gap-3 mb-3">
                               <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-gray-50">
                                 {r.meals?.image_url ? (
-                                  <img src={r.meals.image_url} alt={r.meals?.name} className="w-full h-full object-cover" />
+                                  <img
+                                    src={r.meals.image_url}
+                                    alt={r.meals?.name}
+                                    className="w-full h-full object-cover"
+                                  />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-2xl">🍽️</div>
+                                  <div className="w-full h-full flex items-center justify-center text-2xl">
+                                    🍽️
+                                  </div>
                                 )}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-[#1A1A1A] font-bold text-base">{r.meals?.name}</p>
+                                <p className="text-[#1A1A1A] font-bold text-base">
+                                  {r.meals?.name}
+                                </p>
                                 <p className="text-[#6B7280] text-sm">{r.partners?.name}</p>
                                 <span
                                   className="inline-block mt-1.5 text-xs font-bold px-3 py-1 rounded-full"
@@ -204,9 +241,15 @@ export default function OrdersPage() {
                             </div>
                             <div className="flex items-start gap-3 pt-3 border-t border-gray-100">
                               <div className="flex-1">
-                                <p className="text-[#6B7280] text-xs mb-1">Show this redemption confirmation at the cafeteria.</p>
-                                <p className="text-[#1A1A1A] font-mono font-bold text-xs">{r.qr_code}</p>
-                                <p className="text-[#9CA3AF] text-xs mt-0.5">Valid for this meal.</p>
+                                <p className="text-[#6B7280] text-xs mb-1">
+                                  Show this redemption confirmation at the cafeteria.
+                                </p>
+                                <p className="text-[#1A1A1A] font-mono font-bold text-xs">
+                                  {r.qr_code}
+                                </p>
+                                <p className="text-[#9CA3AF] text-xs mt-0.5">
+                                  Valid for this meal.
+                                </p>
                               </div>
                               {r.qr_code && <QRDisplay code={r.qr_code} />}
                             </div>
@@ -229,8 +272,18 @@ export default function OrdersPage() {
                   {historyRedemptions.length === 0 ? (
                     <div className="bg-white rounded-2xl p-10 text-center border border-gray-100">
                       <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <svg className="w-8 h-8 text-[#D0D0D0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                        <svg
+                          className="w-8 h-8 text-[#D0D0D0]"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={1.5}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                          />
                         </svg>
                       </div>
                       <p className="text-[#1A1A1A] font-semibold mb-1">No meal history yet.</p>
@@ -240,8 +293,14 @@ export default function OrdersPage() {
                     <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
                       {historyRedemptions.map((r, idx) => {
                         const st = statusConfig[r.status] || statusConfig.confirmed;
-                        const cat = categoryColor[r.meals?.category] || { bg: '#F5F6FA', text: '#6B7280' };
-                        const catLabel = categoryLabel[r.meals?.category] || r.meals?.category?.toUpperCase() || 'MEAL';
+                        const cat = categoryColor[r.meals?.category] || {
+                          bg: '#F5F6FA',
+                          text: '#6B7280',
+                        };
+                        const catLabel =
+                          categoryLabel[r.meals?.category] ||
+                          r.meals?.category?.toUpperCase() ||
+                          'MEAL';
                         return (
                           <div
                             key={r.id}
@@ -287,15 +346,21 @@ export default function OrdersPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[#6B7280] text-sm">Redeemed</span>
-                  <span className="text-[#2DAF87] font-bold">{redemptions.filter((r) => r.status === 'confirmed').length}</span>
+                  <span className="text-[#2DAF87] font-bold">
+                    {redemptions.filter((r) => r.status === 'confirmed').length}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[#6B7280] text-sm">Pending</span>
-                  <span className="text-[#D97706] font-bold">{redemptions.filter((r) => r.status === 'pending').length}</span>
+                  <span className="text-[#D97706] font-bold">
+                    {redemptions.filter((r) => r.status === 'pending').length}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[#6B7280] text-sm">Cancelled</span>
-                  <span className="text-[#DC2626] font-bold">{redemptions.filter((r) => r.status === 'cancelled').length}</span>
+                  <span className="text-[#DC2626] font-bold">
+                    {redemptions.filter((r) => r.status === 'cancelled').length}
+                  </span>
                 </div>
               </div>
             </div>

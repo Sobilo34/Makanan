@@ -76,8 +76,19 @@ function PaymentSuccessContent() {
         <div className="text-center">
           <div className="w-16 h-16 bg-[#EBF9F4] rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-[#3ECBA0] animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
             </svg>
           </div>
           <h2 className="text-[#1A1A1A] font-bold text-xl mb-2">Activating your plan...</h2>
@@ -120,7 +131,10 @@ function PaymentSuccessContent() {
                 'top-2 right-2 translate-x-1 -translate-y-1',
                 'bottom-2 left-2 -translate-x-1 translate-y-1',
               ].map((pos, i) => (
-                <div key={i} className={`absolute ${pos} w-1.5 h-1.5 bg-[#3ECBA0] rounded-full opacity-60`} />
+                <div
+                  key={i}
+                  className={`absolute ${pos} w-1.5 h-1.5 bg-[#3ECBA0] rounded-full opacity-60`}
+                />
               ))}
             </div>
           </div>
@@ -129,13 +143,17 @@ function PaymentSuccessContent() {
             <h2 className="text-[#1A1A1A] font-bold text-3xl mb-2">You&apos;re all set!</h2>
             <p className="text-[#6B7280] text-base">Your meal plan is now active.</p>
             {verifyError && (
-              <p className="text-amber-600 text-sm mt-2 bg-amber-50 rounded-xl px-3 py-2">{verifyError}</p>
+              <p className="text-amber-600 text-sm mt-2 bg-amber-50 rounded-xl px-3 py-2">
+                {verifyError}
+              </p>
             )}
           </div>
 
           {/* Plan summary card */}
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm mb-8">
-            <h3 className="text-[#1A1A1A] font-bold text-base text-center mb-4">Meal Plan Summary</h3>
+            <h3 className="text-[#1A1A1A] font-bold text-base text-center mb-4">
+              Meal Plan Summary
+            </h3>
             <div className="flex items-center justify-center gap-8 mb-4">
               <div className="text-center">
                 <p className="text-[#9CA3AF] text-xs mb-1">Amount Paid</p>
@@ -150,10 +168,18 @@ function PaymentSuccessContent() {
             <div className="border-t border-gray-100 pt-4 text-center">
               <p className="text-[#6B7280] text-sm">{planName}</p>
               <div className="flex items-center justify-center gap-1 mt-1">
-                <svg className="w-3.5 h-3.5 text-[#3ECBA0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <svg
+                  className="w-3.5 h-3.5 text-[#3ECBA0]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-[#3ECBA0] text-xs font-semibold">Credits added to wallet</span>
+                <span className="text-[#3ECBA0] text-xs font-semibold">
+                  Credits added to wallet
+                </span>
               </div>
             </div>
           </div>

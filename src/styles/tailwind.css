@@ -4,20 +4,20 @@
 @tailwind utilities;
 
 :root {
-  --primary-mint: #3ECBA0;
-  --primary-mint-dark: #2DAF87;
-  --primary-mint-light: #C8F0E4;
-  --near-black: #1A1A1A;
-  --soft-teal: #2DAF87;
-  --light-bg: #F2FBF7;
-  --very-light-mint: #E6F9F2;
-  --main-bg: #FFFFFF;
-  --soft-grey: #F5F5F5;
-  --muted-text: #6B7280;
-  --border-light: #D0F0E4;
-  --success: #4CAF70;
-  --warning: #F4B054;
-  --error: #EE7373;
+  --primary-mint: #3ecba0;
+  --primary-mint-dark: #2daf87;
+  --primary-mint-light: #c8f0e4;
+  --near-black: #1a1a1a;
+  --soft-teal: #2daf87;
+  --light-bg: #f2fbf7;
+  --very-light-mint: #e6f9f2;
+  --main-bg: #ffffff;
+  --soft-grey: #f5f5f5;
+  --muted-text: #6b7280;
+  --border-light: #d0f0e4;
+  --success: #4caf70;
+  --warning: #f4b054;
+  --error: #ee7373;
 }
 
 html {
@@ -36,7 +36,9 @@ body {
 .reveal {
   opacity: 0;
   transform: translateY(24px);
-  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .reveal.visible {
@@ -44,10 +46,18 @@ body {
   transform: translateY(0);
 }
 
-.reveal-delay-1 { transition-delay: 0.1s; }
-.reveal-delay-2 { transition-delay: 0.2s; }
-.reveal-delay-3 { transition-delay: 0.35s; }
-.reveal-delay-4 { transition-delay: 0.5s; }
+.reveal-delay-1 {
+  transition-delay: 0.1s;
+}
+.reveal-delay-2 {
+  transition-delay: 0.2s;
+}
+.reveal-delay-3 {
+  transition-delay: 0.35s;
+}
+.reveal-delay-4 {
+  transition-delay: 0.5s;
+}
 
 /* ── Hero animations ── */
 .hero-headline {
@@ -64,8 +74,14 @@ body {
 }
 
 @keyframes heroFade {
-  0%   { opacity: 0; transform: translateY(20px); }
-  100% { opacity: 1; transform: translateY(0); }
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ── Before/After Slider ── */
@@ -136,7 +152,9 @@ body {
 
 /* ── Card hover lift ── */
 .card-lift {
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .card-lift:hover {
@@ -145,8 +163,13 @@ body {
 }
 
 /* ── Horizontal scroll no-scrollbar ── */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
 /* ── Makanan input style ── */
 .makanan-input {
@@ -154,7 +177,9 @@ body {
   border: 1px solid var(--border-light);
   color: var(--near-black);
   font-family: 'Poppins', sans-serif;
-  transition: border-color 0.2s, background 0.2s;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
 }
 
 .makanan-input:focus {
@@ -170,7 +195,9 @@ body {
 /* ── Primary CTA pulse ── */
 .cta-primary {
   box-shadow: 0 4px 20px rgba(62, 203, 160, 0.45);
-  transition: box-shadow 0.3s, transform 0.2s;
+  transition:
+    box-shadow 0.3s,
+    transform 0.2s;
 }
 
 .cta-primary:hover {
@@ -180,8 +207,13 @@ body {
 
 /* ── Video placeholder pulse ── */
 @keyframes placeholderPulse {
-  0%, 100% { opacity: 0.6; }
-  50%       { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 .placeholder-pulse {
@@ -204,7 +236,9 @@ body {
   border: 1px solid var(--border-light);
   color: var(--near-black);
   font-family: 'Poppins', sans-serif;
-  transition: border-color 0.2s, background 0.2s;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
 }
 
 .nosh-input:focus {
@@ -224,13 +258,17 @@ body {
 
 /* ── Skeleton shimmer animation ── */
 @keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position:  200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 /* ── Skeleton bone base ── */
 .skeleton-bone {
-  background: linear-gradient(90deg, #E8F7EF 25%, #CDEFD9 50%, #E8F7EF 75%);
+  background: linear-gradient(90deg, #e8f7ef 25%, #cdefd9 50%, #e8f7ef 75%);
   background-size: 200% 100%;
   animation: shimmer 2s linear infinite;
   border-radius: 0.5rem;
@@ -238,8 +276,8 @@ body {
 
 /* ── Status badge system ── */
 .badge-success {
-  background: #E8F7EF;
-  color: #2DAF87;
+  background: #e8f7ef;
+  color: #2daf87;
   font-family: 'Poppins', sans-serif;
   font-size: 0.75rem;
   font-weight: 600;
@@ -251,8 +289,8 @@ body {
 }
 
 .badge-pending {
-  background: #FFF8E6;
-  color: #B45309;
+  background: #fff8e6;
+  color: #b45309;
   font-family: 'Poppins', sans-serif;
   font-size: 0.75rem;
   font-weight: 600;
@@ -264,8 +302,8 @@ body {
 }
 
 .badge-error {
-  background: #FEF2F2;
-  color: #E57373;
+  background: #fef2f2;
+  color: #e57373;
   font-family: 'Poppins', sans-serif;
   font-size: 0.75rem;
   font-weight: 600;
@@ -278,16 +316,16 @@ body {
 
 /* ── Makanan card standard ── */
 .makanan-card {
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
   border-radius: 1rem;
-  box-shadow: 0 2px 12px rgba(26,26,26,0.07);
+  box-shadow: 0 2px 12px rgba(26, 26, 26, 0.07);
 }
 
 /* ── Makanan button primary ── */
 .btn-primary {
-  background: #3ECBA0;
-  color: #FFFFFF;
+  background: #3ecba0;
+  color: #ffffff;
   font-family: 'Poppins', sans-serif;
   font-weight: 600;
   font-size: 0.875rem;
@@ -295,29 +333,31 @@ body {
   border-radius: 0.75rem;
   border: none;
   cursor: pointer;
-  transition: background 0.2s, transform 0.15s;
-  box-shadow: 0 4px 20px rgba(62,203,160,0.3);
+  transition:
+    background 0.2s,
+    transform 0.15s;
+  box-shadow: 0 4px 20px rgba(62, 203, 160, 0.3);
 }
 
 .btn-primary:hover {
-  background: #2DAF87;
+  background: #2daf87;
   transform: translateY(-1px);
 }
 
 /* ── Makanan button secondary ── */
 .btn-secondary {
-  background: #FFFFFF;
+  background: #ffffff;
   color: #374151;
   font-family: 'Poppins', sans-serif;
   font-weight: 600;
   font-size: 0.875rem;
   padding: 0.625rem 1.25rem;
   border-radius: 0.75rem;
-  border: 1px solid #E5E7EB;
+  border: 1px solid #e5e7eb;
   cursor: pointer;
   transition: background 0.2s;
 }
 
 .btn-secondary:hover {
-  background: #F9FAFB;
+  background: #f9fafb;
 }

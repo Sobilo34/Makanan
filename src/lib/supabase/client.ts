@@ -67,9 +67,8 @@ const deleteCookie = (name: string) => {
 };
 
 const getToken = () =>
-  (canUseCookies() ? fromCookies() : fromStorage()).find((c) =>
-    c.name.includes('auth-token')
-  )?.value ?? null;
+  (canUseCookies() ? fromCookies() : fromStorage()).find((c) => c.name.includes('auth-token'))
+    ?.value ?? null;
 
 if (typeof window !== 'undefined' && !(window as any).__sb_patched__) {
   (window as any).__sb_patched__ = true;
@@ -80,8 +79,8 @@ if (typeof window !== 'undefined' && !(window as any).__sb_patched__) {
       typeof input === 'string'
         ? input
         : input instanceof URL
-        ? input.href
-        : (input as Request).url;
+          ? input.href
+          : (input as Request).url;
     if (token && (url.startsWith('/') || url.startsWith(window.location.origin))) {
       init = { ...(init || {}), headers: { ...(init?.headers || {}), 'x-sb-token': token } };
     }

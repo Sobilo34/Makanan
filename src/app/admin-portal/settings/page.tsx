@@ -29,7 +29,17 @@ function SectionCard({ title, children }: { title: string; children: React.React
   );
 }
 
-function InputField({ label, type = 'text', defaultValue, placeholder }: { label: string; type?: string; defaultValue?: string; placeholder?: string }) {
+function InputField({
+  label,
+  type = 'text',
+  defaultValue,
+  placeholder,
+}: {
+  label: string;
+  type?: string;
+  defaultValue?: string;
+  placeholder?: string;
+}) {
   return (
     <div>
       <label className="block text-xs font-semibold text-[#6B7280] mb-1.5">{label}</label>
@@ -55,8 +65,20 @@ export default function SettingsPage() {
   });
 
   const [sessions] = useState([
-    { id: 's1', device: 'Chrome on macOS', location: 'Alor Setar, MY', time: 'Active now', current: true },
-    { id: 's2', device: 'Safari on iPhone', location: 'Alor Setar, MY', time: '2 hours ago', current: false },
+    {
+      id: 's1',
+      device: 'Chrome on macOS',
+      location: 'Alor Setar, MY',
+      time: 'Active now',
+      current: true,
+    },
+    {
+      id: 's2',
+      device: 'Safari on iPhone',
+      location: 'Alor Setar, MY',
+      time: '2 hours ago',
+      current: false,
+    },
   ]);
 
   const handleSave = () => {
@@ -86,7 +108,9 @@ export default function SettingsPage() {
               key={t.key}
               onClick={() => setActiveTab(t.key)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                activeTab === t.key ? 'bg-[#3ECBA0] text-white shadow-sm' : 'text-[#6B7280] hover:text-[#374151]'
+                activeTab === t.key
+                  ? 'bg-[#3ECBA0] text-white shadow-sm'
+                  : 'text-[#6B7280] hover:text-[#374151]'
               }`}
             >
               {t.label}
@@ -100,7 +124,10 @@ export default function SettingsPage() {
             <SectionCard title="Account Information">
               <div className="space-y-4">
                 <div className="flex items-center gap-4 pb-4 border-b border-[#F3F4F6]">
-                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold text-[#3ECBA0]" style={{ background: 'linear-gradient(135deg, #E8F8F1, #C6F0E0)' }}>
+                  <div
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold text-[#3ECBA0]"
+                    style={{ background: 'linear-gradient(135deg, #E8F8F1, #C6F0E0)' }}
+                  >
                     A
                   </div>
                   <div>
@@ -134,10 +161,26 @@ export default function SettingsPage() {
           <SectionCard title="Notification Preferences">
             <div className="space-y-5">
               {[
-                { key: 'emailNotifications' as const, label: 'Email Notifications', desc: 'Receive general updates and announcements via email' },
-                { key: 'redemptionAlerts' as const, label: 'Redemption Alerts', desc: 'Get notified when redemption anomalies are detected' },
-                { key: 'paymentAlerts' as const, label: 'Payment Alerts', desc: 'Receive alerts for failed or pending payments' },
-                { key: 'partnerAlerts' as const, label: 'Partner Alerts', desc: 'Notifications for new partner applications and status changes' },
+                {
+                  key: 'emailNotifications' as const,
+                  label: 'Email Notifications',
+                  desc: 'Receive general updates and announcements via email',
+                },
+                {
+                  key: 'redemptionAlerts' as const,
+                  label: 'Redemption Alerts',
+                  desc: 'Get notified when redemption anomalies are detected',
+                },
+                {
+                  key: 'paymentAlerts' as const,
+                  label: 'Payment Alerts',
+                  desc: 'Receive alerts for failed or pending payments',
+                },
+                {
+                  key: 'partnerAlerts' as const,
+                  label: 'Partner Alerts',
+                  desc: 'Notifications for new partner applications and status changes',
+                },
               ].map((item) => (
                 <div key={item.key} className="flex items-center justify-between gap-4">
                   <div>
@@ -168,9 +211,17 @@ export default function SettingsPage() {
           <div className="space-y-4">
             <SectionCard title="Change Password">
               <div className="space-y-4">
-                <InputField label="Current Password" type="password" placeholder="Enter current password" />
+                <InputField
+                  label="Current Password"
+                  type="password"
+                  placeholder="Enter current password"
+                />
                 <InputField label="New Password" type="password" placeholder="Enter new password" />
-                <InputField label="Confirm New Password" type="password" placeholder="Confirm new password" />
+                <InputField
+                  label="Confirm New Password"
+                  type="password"
+                  placeholder="Confirm new password"
+                />
                 <div className="flex justify-end pt-1">
                   <button
                     onClick={handleSave}
@@ -186,22 +237,41 @@ export default function SettingsPage() {
             <SectionCard title="Session Management">
               <div className="space-y-3">
                 {sessions.map((s) => (
-                  <div key={s.id} className="flex items-center justify-between p-3 rounded-xl bg-[#FAFAFA] border border-[#F3F4F6]">
+                  <div
+                    key={s.id}
+                    className="flex items-center justify-between p-3 rounded-xl bg-[#FAFAFA] border border-[#F3F4F6]"
+                  >
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-[#3ECBA0]/10 flex items-center justify-center">
-                        <svg className="w-4 h-4 text-[#3ECBA0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        <svg
+                          className="w-4 h-4 text-[#3ECBA0]"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                          />
                         </svg>
                       </div>
                       <div>
                         <p className="text-sm font-medium text-[#374151]">{s.device}</p>
-                        <p className="text-xs text-[#9CA3AF]">{s.location} · {s.time}</p>
+                        <p className="text-xs text-[#9CA3AF]">
+                          {s.location} · {s.time}
+                        </p>
                       </div>
                     </div>
                     {s.current ? (
-                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#E8F8F1] text-[#4CAF7D]">Current</span>
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#E8F8F1] text-[#4CAF7D]">
+                        Current
+                      </span>
                     ) : (
-                      <button className="text-xs font-semibold text-[#E57373] hover:underline">Revoke</button>
+                      <button className="text-xs font-semibold text-[#E57373] hover:underline">
+                        Revoke
+                      </button>
                     )}
                   </div>
                 ))}

@@ -35,17 +35,23 @@ export default function PaymentsPage() {
     try {
       const { data } = await supabase
         .from('payments')
-        .select(`
+        .select(
+          `
           id, amount_myr, payment_method, status, created_at,
           user_profiles:user_id(full_name),
           meal_plans:meal_plan_id(name, price_myr, credits)
-        `)
+        `
+        )
         .order('created_at', { ascending: false })
         .limit(100);
 
       const mapped: Transaction[] = (data || []).map((p: any) => ({
         id: p.id,
-        date: new Date(p.created_at).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' }),
+        date: new Date(p.created_at).toLocaleDateString('en-MY', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        }),
         student: p.user_profiles?.full_name || 'Unknown',
         plan: p.meal_plans?.name || 'Meal Plan',
         amount: `RM ${parseFloat(p.amount_myr || 0).toFixed(2)}`,
@@ -70,16 +76,22 @@ export default function PaymentsPage() {
   useEffect(() => {
     const channel = supabase
       .channel('admin-payments-live')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'payments',
-      }, () => {
-        loadPayments();
-      })
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'payments',
+        },
+        () => {
+          loadPayments();
+        }
+      )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [supabase, loadPayments]);
 
   function formatMethod(m: string) {
@@ -99,15 +111,44 @@ export default function PaymentsPage() {
   }, 0);
 
   const kpis = [
-    { label: 'Total Revenue', value: `RM ${totalRevenue.toLocaleString('en-MY', { minimumFractionDigits: 2 })}`, icon: '💰', color: '#3ECBA0', sub: 'Completed payments' },
-    { label: 'Successful', value: completed.length, icon: '✅', color: '#4CAF7D', sub: `${transactions.length > 0 ? Math.round((completed.length / transactions.length) * 100) : 0}% of total` },
-    { label: 'Pending', value: pending.length, icon: '⏳', color: '#F2C94C', sub: 'Awaiting confirmation' },
-    { label: 'Failed', value: failed.length, icon: '❌', color: '#E57373', sub: 'Requires attention' },
+    {
+      label: 'Total Revenue',
+      value: `RM ${totalRevenue.toLocaleString('en-MY', { minimumFractionDigits: 2 })}`,
+      icon: '💰',
+      color: '#3ECBA0',
+      sub: 'Completed payments',
+    },
+    {
+      label: 'Successful',
+      value: completed.length,
+      icon: '✅',
+      color: '#4CAF7D',
+      sub: `${transactions.length > 0 ? Math.round((completed.length / transactions.length) * 100) : 0}% of total`,
+    },
+    {
+      label: 'Pending',
+      value: pending.length,
+      icon: '⏳',
+      color: '#F2C94C',
+      sub: 'Awaiting confirmation',
+    },
+    {
+      label: 'Failed',
+      value: failed.length,
+      icon: '❌',
+      color: '#E57373',
+      sub: 'Requires attention',
+    },
   ];
 
   const filtered = transactions.filter((t) => {
     if (statusFilter !== 'All' && t.status !== statusFilter.toLowerCase()) return false;
-    if (search && !t.student.toLowerCase().includes(search.toLowerCase()) && !t.plan.toLowerCase().includes(search.toLowerCase())) return false;
+    if (
+      search &&
+      !t.student.toLowerCase().includes(search.toLowerCase()) &&
+      !t.plan.toLowerCase().includes(search.toLowerCase())
+    )
+      return false;
     return true;
   });
 
@@ -130,7 +171,10 @@ export default function PaymentsPage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {kpis.map((k) => (
             <div key={k.label} className="bg-white rounded-2xl border border-[#F3F4F6] p-5">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg mb-3" style={{ background: `${k.color}18` }}>
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-lg mb-3"
+                style={{ background: `${k.color}18` }}
+              >
                 {k.icon}
               </div>
               <p className="text-xs text-[#9CA3AF] font-medium mb-1">{k.label}</p>
@@ -144,8 +188,18 @@ export default function PaymentsPage() {
         <div className="bg-white rounded-2xl border border-[#F3F4F6] p-4">
           <div className="flex flex-wrap gap-3 items-center">
             <div className="relative flex-1 min-w-[180px] max-w-xs">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              <svg
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
               </svg>
               <input
                 type="text"
@@ -161,7 +215,9 @@ export default function PaymentsPage() {
                   key={s}
                   onClick={() => setStatusFilter(s)}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                    statusFilter === s ? 'bg-white text-[#111827] shadow-sm' : 'text-[#6B7280] hover:text-[#374151]'
+                    statusFilter === s
+                      ? 'bg-white text-[#111827] shadow-sm'
+                      : 'text-[#6B7280] hover:text-[#374151]'
                   }`}
                 >
                   {s}
@@ -175,7 +231,9 @@ export default function PaymentsPage() {
         <div className="bg-white rounded-2xl border border-[#F3F4F6] overflow-hidden">
           <div className="grid grid-cols-[1.5fr_2fr_2fr_1.5fr_1.5fr_1fr] gap-3 px-5 py-3 border-b border-[#F3F4F6] bg-[#FAFAFA]">
             {['Date', 'Student', 'Plan', 'Amount', 'Payment Method', 'Status'].map((h) => (
-              <p key={h} className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">{h}</p>
+              <p key={h} className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">
+                {h}
+              </p>
             ))}
           </div>
 
@@ -185,20 +243,30 @@ export default function PaymentsPage() {
             </div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-16 text-[#9CA3AF] text-sm">
-              {transactions.length === 0 ? 'No payment records yet. Payments will appear here after students subscribe.' : 'No transactions match the current filters.'}
+              {transactions.length === 0
+                ? 'No payment records yet. Payments will appear here after students subscribe.'
+                : 'No transactions match the current filters.'}
             </div>
           ) : (
             <div className="divide-y divide-[#F9FAFB]">
               {filtered.map((tx) => {
                 const ss = statusStyle(tx.status);
                 return (
-                  <div key={tx.id} className="grid grid-cols-[1.5fr_2fr_2fr_1.5fr_1.5fr_1fr] gap-3 px-5 py-3.5 hover:bg-[#F9FAFB] transition-colors items-center">
+                  <div
+                    key={tx.id}
+                    className="grid grid-cols-[1.5fr_2fr_2fr_1.5fr_1.5fr_1fr] gap-3 px-5 py-3.5 hover:bg-[#F9FAFB] transition-colors items-center"
+                  >
                     <p className="text-sm text-[#9CA3AF]">{tx.date}</p>
                     <p className="text-sm font-medium text-[#374151] truncate">{tx.student}</p>
                     <p className="text-sm text-[#6B7280] truncate">{tx.plan}</p>
                     <p className="text-sm font-semibold text-[#374151]">{tx.amount}</p>
                     <p className="text-sm text-[#6B7280]">{tx.method}</p>
-                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full w-fit" style={{ background: ss.bg, color: ss.text }}>{ss.label}</span>
+                    <span
+                      className="text-xs font-semibold px-2.5 py-1 rounded-full w-fit"
+                      style={{ background: ss.bg, color: ss.text }}
+                    >
+                      {ss.label}
+                    </span>
                   </div>
                 );
               })}
@@ -206,7 +274,9 @@ export default function PaymentsPage() {
           )}
         </div>
 
-        <p className="text-xs text-[#9CA3AF] text-right">Showing {filtered.length} of {transactions.length} transactions</p>
+        <p className="text-xs text-[#9CA3AF] text-right">
+          Showing {filtered.length} of {transactions.length} transactions
+        </p>
       </div>
     </AdminLayout>
   );

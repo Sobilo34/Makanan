@@ -19,7 +19,11 @@ interface NotificationCenterProps {
   recipientType: 'student' | 'partner' | 'admin';
 }
 
-export default function NotificationCenter({ userId, partnerId, recipientType }: NotificationCenterProps) {
+export default function NotificationCenter({
+  userId,
+  partnerId,
+  recipientType,
+}: NotificationCenterProps) {
   const supabase = createClient();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -58,7 +62,7 @@ export default function NotificationCenter({ userId, partnerId, recipientType }:
 
   const markRead = async (id: string) => {
     await supabase.from('notifications').update({ is_read: true }).eq('id', id);
-    setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, is_read: true } : n));
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
   };
 
   useEffect(() => {
@@ -70,18 +74,24 @@ export default function NotificationCenter({ userId, partnerId, recipientType }:
     if (!userId && !partnerId) return;
     const channel = supabase
       .channel('notifications_realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
-        const n = payload.new as Notification;
-        const isForMe =
-          (recipientType === 'student' && n.user_id === userId) ||
-          (recipientType === 'partner' && n.partner_id === partnerId) ||
-          (recipientType === 'admin' && n.recipient_type === 'admin');
-        if (isForMe) {
-          setNotifications((prev) => [n, ...prev]);
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications' },
+        (payload) => {
+          const n = payload.new as Notification;
+          const isForMe =
+            (recipientType === 'student' && n.user_id === userId) ||
+            (recipientType === 'partner' && n.partner_id === partnerId) ||
+            (recipientType === 'admin' && n.recipient_type === 'admin');
+          if (isForMe) {
+            setNotifications((prev) => [n, ...prev]);
+          }
         }
-      })
+      )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [userId, partnerId]);
 
   // Close on outside click
@@ -99,32 +109,74 @@ export default function NotificationCenter({ userId, partnerId, recipientType }:
     const icons: Record<string, React.ReactNode> = {
       subscription_confirmed: (
         <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-          <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <svg
+            className="w-4 h-4 text-emerald-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
           </svg>
         </div>
       ),
       redemption_confirmed: (
         <div className="w-8 h-8 rounded-full bg-[#3ECBA0]/15 flex items-center justify-center flex-shrink-0">
-          <svg className="w-4 h-4 text-[#3ECBA0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          <svg
+            className="w-4 h-4 text-[#3ECBA0]"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+            />
           </svg>
         </div>
       ),
       settlement_paid: (
         <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
-          <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <svg
+            className="w-4 h-4 text-amber-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
           </svg>
         </div>
       ),
     };
-    return icons[type] || (
-      <div className="w-8 h-8 rounded-full bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
-        <svg className="w-4 h-4 text-[#6B7280]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-        </svg>
-      </div>
+    return (
+      icons[type] || (
+        <div className="w-8 h-8 rounded-full bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
+          <svg
+            className="w-4 h-4 text-[#6B7280]"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+            />
+          </svg>
+        </div>
+      )
     );
   };
 
@@ -141,11 +193,24 @@ export default function NotificationCenter({ userId, partnerId, recipientType }:
   return (
     <div className="relative" ref={panelRef}>
       <button
-        onClick={() => { setOpen(!open); if (!open) loadNotifications(); }}
+        onClick={() => {
+          setOpen(!open);
+          if (!open) loadNotifications();
+        }}
         className="relative p-2 rounded-xl text-[#6B7280] hover:bg-[#F3F4F6] transition-colors"
       >
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.8}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+          />
         </svg>
         {unreadCount > 0 && (
           <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
@@ -160,9 +225,7 @@ export default function NotificationCenter({ userId, partnerId, recipientType }:
           <div className="px-4 py-3 border-b border-[#F3F4F6] flex items-center justify-between">
             <div>
               <h3 className="text-sm font-semibold text-[#111827]">Notifications</h3>
-              {unreadCount > 0 && (
-                <p className="text-xs text-[#9CA3AF]">{unreadCount} unread</p>
-              )}
+              {unreadCount > 0 && <p className="text-xs text-[#9CA3AF]">{unreadCount} unread</p>}
             </div>
             {unreadCount > 0 && (
               <button
@@ -183,8 +246,18 @@ export default function NotificationCenter({ userId, partnerId, recipientType }:
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 text-center px-4">
                 <div className="w-10 h-10 rounded-xl bg-[#F3F4F6] flex items-center justify-center mb-2">
-                  <svg className="w-5 h-5 text-[#9CA3AF]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  <svg
+                    className="w-5 h-5 text-[#9CA3AF]"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                    />
                   </svg>
                 </div>
                 <p className="text-sm font-medium text-[#374151]">All caught up!</p>
@@ -200,10 +273,18 @@ export default function NotificationCenter({ userId, partnerId, recipientType }:
                   {getIcon(n.type)}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <p className={`text-xs font-semibold leading-tight ${!n.is_read ? 'text-[#111827]' : 'text-[#374151]'}`}>{n.title}</p>
-                      {!n.is_read && <span className="w-2 h-2 rounded-full bg-[#3ECBA0] flex-shrink-0 mt-0.5" />}
+                      <p
+                        className={`text-xs font-semibold leading-tight ${!n.is_read ? 'text-[#111827]' : 'text-[#374151]'}`}
+                      >
+                        {n.title}
+                      </p>
+                      {!n.is_read && (
+                        <span className="w-2 h-2 rounded-full bg-[#3ECBA0] flex-shrink-0 mt-0.5" />
+                      )}
                     </div>
-                    <p className="text-xs text-[#6B7280] mt-0.5 leading-relaxed line-clamp-2">{n.message}</p>
+                    <p className="text-xs text-[#6B7280] mt-0.5 leading-relaxed line-clamp-2">
+                      {n.message}
+                    </p>
                     <p className="text-[10px] text-[#9CA3AF] mt-1">{timeAgo(n.created_at)}</p>
                   </div>
                 </button>

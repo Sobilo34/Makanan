@@ -37,7 +37,13 @@ function generateQRCells(text: string): boolean[] {
   });
 }
 
-export default function RedemptionModal({ meal, subscription, creditsRemaining, onClose, onSuccess }: Props) {
+export default function RedemptionModal({
+  meal,
+  subscription,
+  creditsRemaining,
+  onClose,
+  onSuccess,
+}: Props) {
   const { user } = useAuth();
   const [step, setStep] = useState<'confirm' | 'success'>('confirm');
   const [loading, setLoading] = useState(false);
@@ -105,7 +111,15 @@ export default function RedemptionModal({ meal, subscription, creditsRemaining, 
                 onClick={onClose}
                 className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center"
               >
-                <svg className="w-4 h-4 text-[#1A1A1A]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                <svg
+                  className="w-4 h-4 text-[#1A1A1A]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
 
@@ -114,7 +128,9 @@ export default function RedemptionModal({ meal, subscription, creditsRemaining, 
 
               <div className="bg-[#F7F8FA] rounded-2xl p-4 mb-5 border border-[#EBEBEB]">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="bg-[#E8F9F2] text-[#2DAF87] text-xs font-bold px-2.5 py-1 rounded-full capitalize">{meal.category}</span>
+                  <span className="bg-[#E8F9F2] text-[#2DAF87] text-xs font-bold px-2.5 py-1 rounded-full capitalize">
+                    {meal.category}
+                  </span>
                   <span className="text-[#9CA3AF] text-xs">·</span>
                   <span className="text-[#1A1A1A] font-semibold text-sm">{meal.name}</span>
                 </div>
@@ -127,7 +143,19 @@ export default function RedemptionModal({ meal, subscription, creditsRemaining, 
 
               {error && (
                 <div className="bg-red-50 border border-red-100 rounded-xl px-3 py-2.5 text-red-600 text-sm mb-4 flex items-center gap-2">
-                  <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <svg
+                    className="w-4 h-4 flex-shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
                   {error}
                 </div>
               )}
@@ -139,10 +167,26 @@ export default function RedemptionModal({ meal, subscription, creditsRemaining, 
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
-                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
+                    </svg>
                     Processing...
                   </span>
-                ) : 'Confirm Redemption'}
+                ) : (
+                  'Confirm Redemption'
+                )}
               </button>
               <button
                 onClick={onClose}
@@ -155,32 +199,59 @@ export default function RedemptionModal({ meal, subscription, creditsRemaining, 
         ) : (
           <div className="p-6">
             <div className="flex items-center gap-3 mb-5">
-              <button onClick={onClose} className="text-[#9CA3AF] hover:text-[#1A1A1A] transition-colors">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+              <button
+                onClick={onClose}
+                className="text-[#9CA3AF] hover:text-[#1A1A1A] transition-colors"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
               </button>
               <h2 className="text-[#1A1A1A] font-bold text-lg flex-1">Redemption Requested!</h2>
             </div>
 
-            <div className="rounded-2xl overflow-hidden mb-5" style={{ background: 'linear-gradient(135deg, #0d2b22 0%, #1a3a2e 100%)' }}>
+            <div
+              className="rounded-2xl overflow-hidden mb-5"
+              style={{ background: 'linear-gradient(135deg, #0d2b22 0%, #1a3a2e 100%)' }}
+            >
               <div className="p-5 text-center">
                 <div className="w-12 h-12 bg-[#3ECBA0] rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg shadow-[#3ECBA0]/30">
-                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <svg
+                    className="w-6 h-6 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
                 <h3 className="text-white font-bold text-lg mb-1">QR Code Generated!</h3>
-                <p className="text-white/50 text-xs mb-4">Show this to the partner to confirm your meal</p>
+                <p className="text-white/50 text-xs mb-4">
+                  Show this to the partner to confirm your meal
+                </p>
 
                 <div className="bg-white rounded-2xl p-4 inline-block mb-3">
                   <div className="grid grid-cols-7 gap-0.5 w-28 h-28">
                     {qrCells.map((filled, i) => (
-                      <div key={i} className={`aspect-square rounded-sm ${filled ? 'bg-[#1A1A1A]' : 'bg-transparent'}`} />
+                      <div
+                        key={i}
+                        className={`aspect-square rounded-sm ${filled ? 'bg-[#1A1A1A]' : 'bg-transparent'}`}
+                      />
                     ))}
                   </div>
                 </div>
 
                 <p className="text-[#3ECBA0] font-mono text-xs font-bold mb-1">{qrCode}</p>
-                <p className="text-white/40 text-xs">Valid for: <span className="text-white/70 font-medium">{meal.name}</span></p>
+                <p className="text-white/40 text-xs">
+                  Valid for: <span className="text-white/70 font-medium">{meal.name}</span>
+                </p>
                 <div className="mt-3 flex items-center justify-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
                   <p className="text-amber-300 text-xs">Awaiting partner confirmation</p>

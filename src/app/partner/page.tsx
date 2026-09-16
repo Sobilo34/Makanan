@@ -30,7 +30,8 @@ export default function PartnerVerificationPage() {
       // Look up redemption by QR code
       const { data: redemption, error } = await supabase
         .from('redemptions')
-        .select(`
+        .select(
+          `
           id,
           status,
           redeemed_at,
@@ -40,14 +41,18 @@ export default function PartnerVerificationPage() {
           meals(name),
           partners(name),
           subscriptions(credits_total, credits_used)
-        `)
+        `
+        )
         .eq('qr_code', qrInput.trim())
         .maybeSingle();
 
       if (error) throw error;
 
       if (!redemption) {
-        setResult({ valid: false, message: 'QR code not found. Please check the code and try again.' });
+        setResult({
+          valid: false,
+          message: 'QR code not found. Please check the code and try again.',
+        });
         return;
       }
 
@@ -62,9 +67,10 @@ export default function PartnerVerificationPage() {
         creditsRemaining,
         redeemedAt: redemption.redeemed_at,
         status: redemption.status,
-        message: redemption.status !== 'confirmed'
-          ? `This redemption has status: ${redemption.status}`
-          : undefined,
+        message:
+          redemption.status !== 'confirmed'
+            ? `This redemption has status: ${redemption.status}`
+            : undefined,
       });
     } catch (err: any) {
       setResult({ valid: false, message: err.message || 'Verification failed. Please try again.' });
@@ -98,12 +104,16 @@ export default function PartnerVerificationPage() {
             📱
           </div>
           <h2 className="text-[#1A1A1A] font-bold text-xl mb-1">Verify Meal Code</h2>
-          <p className="text-[#9CA3AF] text-sm">Enter the QR code shown on the student&apos;s screen to verify their meal entitlement</p>
+          <p className="text-[#9CA3AF] text-sm">
+            Enter the QR code shown on the student&apos;s screen to verify their meal entitlement
+          </p>
         </div>
 
         {/* Input */}
         <div className="w-full bg-white rounded-2xl border border-[#EBEBEB] p-5 mb-4">
-          <label className="text-[#6B7280] text-xs font-semibold uppercase tracking-wide mb-2 block">Meal Code</label>
+          <label className="text-[#6B7280] text-xs font-semibold uppercase tracking-wide mb-2 block">
+            Meal Code
+          </label>
           <div className="flex gap-2">
             <input
               type="text"
@@ -118,7 +128,13 @@ export default function PartnerVerificationPage() {
                 onClick={handleClear}
                 className="w-10 h-10 bg-[#F7F8FA] rounded-xl flex items-center justify-center border border-[#EBEBEB] hover:bg-[#F0F0F0] transition-colors flex-shrink-0"
               >
-                <svg className="w-4 h-4 text-[#9CA3AF]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg
+                  className="w-4 h-4 text-[#9CA3AF]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -133,8 +149,19 @@ export default function PartnerVerificationPage() {
             {verifying ? (
               <span className="flex items-center justify-center gap-2">
                 <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
                 </svg>
                 Verifying...
               </span>
@@ -146,18 +173,31 @@ export default function PartnerVerificationPage() {
 
         {/* Result */}
         {result && (
-          <div className={`w-full rounded-2xl overflow-hidden border-2 ${result.valid ? 'border-[#3ECBA0]' : 'border-red-200'}`}>
+          <div
+            className={`w-full rounded-2xl overflow-hidden border-2 ${result.valid ? 'border-[#3ECBA0]' : 'border-red-200'}`}
+          >
             {result.valid ? (
               <>
-                <div className="p-5" style={{ background: 'linear-gradient(135deg, #0d2b22 0%, #1a3a2e 100%)' }}>
+                <div
+                  className="p-5"
+                  style={{ background: 'linear-gradient(135deg, #0d2b22 0%, #1a3a2e 100%)' }}
+                >
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 bg-[#3ECBA0] rounded-full flex items-center justify-center shadow-lg shadow-[#3ECBA0]/30">
-                      <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <svg
+                        className="w-6 h-6 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                      >
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
                     <div>
-                      <p className="text-[#3ECBA0] font-bold text-lg leading-tight">Valid Redemption</p>
+                      <p className="text-[#3ECBA0] font-bold text-lg leading-tight">
+                        Valid Redemption
+                      </p>
                       <p className="text-white/50 text-xs">Entitlement confirmed</p>
                     </div>
                   </div>
@@ -177,21 +217,34 @@ export default function PartnerVerificationPage() {
                     <div className="flex justify-between">
                       <span className="text-white/50 text-sm">Redeemed at</span>
                       <span className="text-white font-semibold text-sm">
-                        {result.redeemedAt ? new Date(result.redeemedAt).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' }) : '—'}
+                        {result.redeemedAt
+                          ? new Date(result.redeemedAt).toLocaleTimeString('en-MY', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })
+                          : '—'}
                       </span>
                     </div>
                   </div>
                 </div>
                 <div className="bg-white px-5 py-3 flex items-center justify-between">
                   <span className="text-[#9CA3AF] text-sm">Credits remaining after</span>
-                  <span className="text-[#3ECBA0] font-bold text-xl">{result.creditsRemaining}</span>
+                  <span className="text-[#3ECBA0] font-bold text-xl">
+                    {result.creditsRemaining}
+                  </span>
                 </div>
               </>
             ) : (
               <div className="bg-white p-5">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center flex-shrink-0">
-                    <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <svg
+                      className="w-6 h-6 text-red-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </div>
@@ -200,7 +253,9 @@ export default function PartnerVerificationPage() {
                     <p className="text-[#9CA3AF] text-xs">Do not serve this meal</p>
                   </div>
                 </div>
-                <p className="text-[#6B7280] text-sm bg-red-50 rounded-xl px-4 py-3">{result.message}</p>
+                <p className="text-[#6B7280] text-sm bg-red-50 rounded-xl px-4 py-3">
+                  {result.message}
+                </p>
               </div>
             )}
           </div>
@@ -217,7 +272,9 @@ export default function PartnerVerificationPage() {
               'Red result = invalid, do not serve',
             ].map((step, i) => (
               <div key={i} className="flex items-start gap-2">
-                <span className="w-5 h-5 bg-[#E8F9F2] rounded-full text-[#3ECBA0] text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
+                <span className="w-5 h-5 bg-[#E8F9F2] rounded-full text-[#3ECBA0] text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                  {i + 1}
+                </span>
                 <span className="text-[#6B7280] text-xs">{step}</span>
               </div>
             ))}

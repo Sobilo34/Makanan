@@ -38,7 +38,13 @@ function groupByDate(items: Redemption[]) {
     let label: string;
     if (d.toDateString() === today.toDateString()) label = 'Today';
     else if (d.toDateString() === yesterday.toDateString()) label = 'Yesterday';
-    else label = d.toLocaleDateString('en-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    else
+      label = d.toLocaleDateString('en-MY', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
 
     if (!groups[label]) groups[label] = [];
     groups[label].push(item);
@@ -75,7 +81,10 @@ export default function OrderHistoryPage() {
 
   const filtered = redemptions.filter((r) => {
     const matchFilter = filter === 'all' || r.status === filter;
-    const matchSearch = !search.trim() || r.meals?.name?.toLowerCase().includes(search.toLowerCase()) || r.partners?.name?.toLowerCase().includes(search.toLowerCase());
+    const matchSearch =
+      !search.trim() ||
+      r.meals?.name?.toLowerCase().includes(search.toLowerCase()) ||
+      r.partners?.name?.toLowerCase().includes(search.toLowerCase());
     return matchFilter && matchSearch;
   });
 
@@ -94,7 +103,12 @@ export default function OrderHistoryPage() {
       <div className="bg-white border-b border-gray-100 px-6 lg:px-8 py-5">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-[#111827] font-bold text-2xl" style={{ fontFamily: "'DM Sans', sans-serif" }}>Order History</h1>
+            <h1
+              className="text-[#111827] font-bold text-2xl"
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
+            >
+              Order History
+            </h1>
             <p className="text-[#9CA3AF] text-sm mt-0.5">All your meal redemptions in one place</p>
           </div>
           <div className="hidden sm:flex items-center gap-2 text-sm text-[#9CA3AF]">
@@ -111,8 +125,13 @@ export default function OrderHistoryPage() {
             { label: 'Redeemed', value: stats.confirmed, color: '#2DAF87', bg: '#D1FAE5' },
             { label: 'Pending', value: stats.pending, color: '#D97706', bg: '#FFF8E6' },
           ].map(({ label, value, color, bg }) => (
-            <div key={label} className="bg-white rounded-2xl p-4 border border-gray-100 text-center">
-              <p className="text-2xl font-black" style={{ color }}>{value}</p>
+            <div
+              key={label}
+              className="bg-white rounded-2xl p-4 border border-gray-100 text-center"
+            >
+              <p className="text-2xl font-black" style={{ color }}>
+                {value}
+              </p>
               <p className="text-[#9CA3AF] text-xs mt-0.5">{label}</p>
             </div>
           ))}
@@ -121,8 +140,18 @@ export default function OrderHistoryPage() {
         {/* Search + filter */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2.5 flex-1 focus-within:border-[#3ECBA0] transition-colors">
-            <svg className="w-4 h-4 text-[#9CA3AF] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <svg
+              className="w-4 h-4 text-[#9CA3AF] flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
             <input
               type="text"
@@ -153,14 +182,27 @@ export default function OrderHistoryPage() {
         {loading ? (
           <div className="space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl p-4 border border-gray-100 h-20 animate-pulse" />
+              <div
+                key={i}
+                className="bg-white rounded-2xl p-4 border border-gray-100 h-20 animate-pulse"
+              />
             ))}
           </div>
         ) : filtered.length === 0 ? (
           <div className="bg-white rounded-2xl p-12 text-center border border-gray-100">
             <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              <svg
+                className="w-8 h-8 text-gray-300"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                />
               </svg>
             </div>
             <p className="text-[#111827] font-bold text-base mb-1">No orders found</p>
@@ -175,39 +217,69 @@ export default function OrderHistoryPage() {
                 <div className="flex items-center gap-3 mb-3">
                   <p className="text-[#111827] font-bold text-sm">{dateLabel}</p>
                   <div className="flex-1 h-px bg-gray-200" />
-                  <span className="text-[#9CA3AF] text-xs">{grouped[dateLabel].length} order{grouped[dateLabel].length !== 1 ? 's' : ''}</span>
+                  <span className="text-[#9CA3AF] text-xs">
+                    {grouped[dateLabel].length} order{grouped[dateLabel].length !== 1 ? 's' : ''}
+                  </span>
                 </div>
                 <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden divide-y divide-gray-50">
                   {grouped[dateLabel].map((r) => {
                     const st = statusConfig[r.status] || statusConfig.confirmed;
-                    const cat = categoryColors[r.meals?.category] || { bg: '#F5F6FA', text: '#6B7280' };
-                    const time = new Date(r.redeemed_at).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit', hour12: true });
+                    const cat = categoryColors[r.meals?.category] || {
+                      bg: '#F5F6FA',
+                      text: '#6B7280',
+                    };
+                    const time = new Date(r.redeemed_at).toLocaleTimeString('en-MY', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: true,
+                    });
                     return (
-                      <div key={r.id} className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50/50 transition-colors">
+                      <div
+                        key={r.id}
+                        className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50/50 transition-colors"
+                      >
                         {/* Meal image */}
                         <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
                           {r.meals?.image_url ? (
-                            <img src={r.meals.image_url} alt={r.meals?.name} className="w-full h-full object-cover" />
+                            <img
+                              src={r.meals.image_url}
+                              alt={r.meals?.name}
+                              className="w-full h-full object-cover"
+                            />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-xl">🍽️</div>
+                            <div className="w-full h-full flex items-center justify-center text-xl">
+                              🍽️
+                            </div>
                           )}
                         </div>
 
                         {/* Info */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-[#111827] font-semibold text-sm truncate">{r.meals?.name || 'Meal'}</p>
-                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: cat.bg, color: cat.text }}>
+                            <p className="text-[#111827] font-semibold text-sm truncate">
+                              {r.meals?.name || 'Meal'}
+                            </p>
+                            <span
+                              className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                              style={{ background: cat.bg, color: cat.text }}
+                            >
                               {r.meals?.category?.toUpperCase() || 'MEAL'}
                             </span>
                           </div>
-                          <p className="text-[#9CA3AF] text-xs mt-0.5">{r.partners?.name} · {time}</p>
+                          <p className="text-[#9CA3AF] text-xs mt-0.5">
+                            {r.partners?.name} · {time}
+                          </p>
                         </div>
 
                         {/* Status */}
                         <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: st.dot }} />
-                          <span className="text-xs font-semibold" style={{ color: st.text }}>{st.label}</span>
+                          <span
+                            className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                            style={{ background: st.dot }}
+                          />
+                          <span className="text-xs font-semibold" style={{ color: st.text }}>
+                            {st.label}
+                          </span>
                         </div>
                       </div>
                     );

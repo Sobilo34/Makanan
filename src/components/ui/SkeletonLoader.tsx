@@ -114,7 +114,9 @@ export function DashboardSkeleton() {
       </div>
       {/* KPI row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map((i) => <KpiCardSkeleton key={i} />)}
+        {[1, 2, 3, 4].map((i) => (
+          <KpiCardSkeleton key={i} />
+        ))}
       </div>
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -134,7 +136,9 @@ export function MealsSkeleton() {
         <Bone className="h-10 w-28 rounded-xl" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => <MealCardSkeleton key={i} />)}
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+          <MealCardSkeleton key={i} />
+        ))}
       </div>
     </div>
   );
@@ -166,7 +170,10 @@ export function OrdersSkeleton() {
       <Bone className="h-6 w-24" />
       <div className="space-y-3">
         {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="bg-white rounded-2xl border border-[#E5E7EB] p-5 flex items-center gap-4">
+          <div
+            key={i}
+            className="bg-white rounded-2xl border border-[#E5E7EB] p-5 flex items-center gap-4"
+          >
             <Bone className="h-12 w-12 rounded-xl flex-shrink-0" />
             <div className="flex-1 space-y-2">
               <Bone className="h-4 w-40" />
@@ -203,7 +210,9 @@ export function PartnerDashboardSkeleton() {
         <Bone className="h-4 w-36" />
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map((i) => <KpiCardSkeleton key={i} />)}
+        {[1, 2, 3, 4].map((i) => (
+          <KpiCardSkeleton key={i} />
+        ))}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <TableSkeleton rows={4} cols={3} />
@@ -218,7 +227,9 @@ export function AdminDashboardSkeleton() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map((i) => <KpiCardSkeleton key={i} />)}
+        {[1, 2, 3, 4].map((i) => (
+          <KpiCardSkeleton key={i} />
+        ))}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
@@ -240,7 +251,9 @@ export function PageSkeleton() {
         <Bone className="h-4 w-64" />
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map((i) => <KpiCardSkeleton key={i} />)}
+        {[1, 2, 3, 4].map((i) => (
+          <KpiCardSkeleton key={i} />
+        ))}
       </div>
       <TableSkeleton rows={8} cols={5} />
     </div>
@@ -248,20 +261,41 @@ export function PageSkeleton() {
 }
 
 /* ── Default export: named variants ── */
-export default function SkeletonLoader({ variant }: {
+export default function SkeletonLoader({
+  variant,
+}: {
   variant:
-    | 'dashboard' |'meals' |'meal-detail' |'orders' |'wallet' |'partner-dashboard' |'admin-dashboard' |'table' |'chart' |'page';
+    | 'dashboard'
+    | 'meals'
+    | 'meal-detail'
+    | 'orders'
+    | 'wallet'
+    | 'partner-dashboard'
+    | 'admin-dashboard'
+    | 'table'
+    | 'chart'
+    | 'page';
 }) {
   switch (variant) {
-    case 'dashboard': return <DashboardSkeleton />;
-    case 'meals': return <MealsSkeleton />;
-    case 'meal-detail': return <MealDetailSkeleton />;
-    case 'orders': return <OrdersSkeleton />;
-    case 'wallet': return <WalletSkeleton />;
-    case 'partner-dashboard': return <PartnerDashboardSkeleton />;
-    case 'admin-dashboard': return <AdminDashboardSkeleton />;
-    case 'table': return <TableSkeleton />;
-    case 'chart': return <ChartSkeleton />;
-    default: return <PageSkeleton />;
+    case 'dashboard':
+      return <DashboardSkeleton />;
+    case 'meals':
+      return <MealsSkeleton />;
+    case 'meal-detail':
+      return <MealDetailSkeleton />;
+    case 'orders':
+      return <OrdersSkeleton />;
+    case 'wallet':
+      return <WalletSkeleton />;
+    case 'partner-dashboard':
+      return <PartnerDashboardSkeleton />;
+    case 'admin-dashboard':
+      return <AdminDashboardSkeleton />;
+    case 'table':
+      return <TableSkeleton />;
+    case 'chart':
+      return <ChartSkeleton />;
+    default:
+      return <PageSkeleton />;
   }
 }

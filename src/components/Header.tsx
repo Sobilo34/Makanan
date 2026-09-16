@@ -78,9 +78,19 @@ export default function Header() {
             >
               <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
                 {menuOpen ? (
-                  <path d="M5 5L17 17M17 5L5 17" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                  <path
+                    d="M5 5L17 17M17 5L5 17"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
                 ) : (
-                  <path d="M3 6h16M3 11h16M3 16h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                  <path
+                    d="M3 6h16M3 11h16M3 16h16"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
                 )}
               </svg>
             </button>

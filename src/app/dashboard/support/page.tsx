@@ -62,8 +62,17 @@ export default function SupportPage() {
       const supabase = createClient();
       try {
         const [ticketsRes, redemptionsRes] = await Promise.all([
-          supabase.from('support_tickets').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-          supabase.from('redemptions').select('id, redeemed_at, meals(name), partners(name)').eq('user_id', user.id).order('redeemed_at', { ascending: false }).limit(10),
+          supabase
+            .from('support_tickets')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('redemptions')
+            .select('id, redeemed_at, meals(name), partners(name)')
+            .eq('user_id', user.id)
+            .order('redeemed_at', { ascending: false })
+            .limit(10),
         ]);
         setTickets(ticketsRes.data || []);
         setRecentRedemptions(redemptionsRes.data || []);
@@ -83,11 +92,17 @@ export default function SupportPage() {
     try {
       const supabase = createClient();
       await supabase.from('feedback').insert({
-        user_id: user.id, redemption_id: selectedRedemption || null,
-        meal_id: null, partner_id: null, rating: String(rating) as any, comment: feedbackComment || null,
+        user_id: user.id,
+        redemption_id: selectedRedemption || null,
+        meal_id: null,
+        partner_id: null,
+        rating: String(rating) as any,
+        comment: feedbackComment || null,
       });
       setFeedbackSuccess(true);
-      setRating(0); setFeedbackComment(''); setSelectedRedemption('');
+      setRating(0);
+      setFeedbackComment('');
+      setSelectedRedemption('');
       setTimeout(() => setFeedbackSuccess(false), 3000);
     } catch (err: any) {
       setFormError(err.message || 'Failed to submit feedback');
@@ -107,12 +122,24 @@ export default function SupportPage() {
       const supabase = createClient();
       const { data: newTicket } = await supabase
         .from('support_tickets')
-        .insert({ user_id: user.id, category: ticketCategory as any, subject: ticketSubject, description: ticketDescription, status: 'open' })
-        .select().single();
+        .insert({
+          user_id: user.id,
+          category: ticketCategory as any,
+          subject: ticketSubject,
+          description: ticketDescription,
+          status: 'open',
+        })
+        .select()
+        .single();
       if (newTicket) setTickets([newTicket, ...tickets]);
       setTicketSuccess(true);
-      setTicketSubject(''); setTicketDescription(''); setTicketCategory('other');
-      setTimeout(() => { setTicketSuccess(false); setActiveTab('tickets'); }, 2000);
+      setTicketSubject('');
+      setTicketDescription('');
+      setTicketCategory('other');
+      setTimeout(() => {
+        setTicketSuccess(false);
+        setActiveTab('tickets');
+      }, 2000);
     } catch (err: any) {
       setFormError(err.message || 'Failed to submit ticket');
     } finally {
@@ -152,7 +179,15 @@ export default function SupportPage() {
             <div className="space-y-4">
               {feedbackSuccess && (
                 <div className="bg-[#EBF9F4] border border-[#C8F0E4] rounded-2xl px-4 py-3 text-[#2DAF87] text-sm font-semibold flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
                   Thank you for your feedback!
                 </div>
               )}
@@ -160,24 +195,46 @@ export default function SupportPage() {
               <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-100">
                   <h3 className="text-[#1A1A1A] font-bold text-sm">Rate Your Meal Experience</h3>
-                  <p className="text-[#9CA3AF] text-xs mt-0.5">Help us improve by sharing your experience</p>
+                  <p className="text-[#9CA3AF] text-xs mt-0.5">
+                    Help us improve by sharing your experience
+                  </p>
                 </div>
                 <div className="p-6 space-y-5">
                   <div>
-                    <label className="text-[#6B7280] text-xs font-semibold uppercase tracking-wide mb-2 block">Your Rating *</label>
+                    <label className="text-[#6B7280] text-xs font-semibold uppercase tracking-wide mb-2 block">
+                      Your Rating *
+                    </label>
                     <div className="flex gap-2">
                       {[1, 2, 3, 4, 5].map((star) => (
-                        <button key={star} onClick={() => setRating(star)} onMouseEnter={() => setHoverRating(star)} onMouseLeave={() => setHoverRating(0)} className="text-3xl transition-transform hover:scale-110">
-                          <span className={star <= (hoverRating || rating) ? 'text-[#F59E0B]' : 'text-gray-200'}>★</span>
+                        <button
+                          key={star}
+                          onClick={() => setRating(star)}
+                          onMouseEnter={() => setHoverRating(star)}
+                          onMouseLeave={() => setHoverRating(0)}
+                          className="text-3xl transition-transform hover:scale-110"
+                        >
+                          <span
+                            className={
+                              star <= (hoverRating || rating) ? 'text-[#F59E0B]' : 'text-gray-200'
+                            }
+                          >
+                            ★
+                          </span>
                         </button>
                       ))}
                     </div>
-                    {rating > 0 && <p className="text-[#9CA3AF] text-xs mt-1">{['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][rating]}</p>}
+                    {rating > 0 && (
+                      <p className="text-[#9CA3AF] text-xs mt-1">
+                        {['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][rating]}
+                      </p>
+                    )}
                   </div>
 
                   {recentRedemptions.length > 0 && (
                     <div>
-                      <label className="text-[#6B7280] text-xs font-semibold uppercase tracking-wide mb-2 block">Related Meal (Optional)</label>
+                      <label className="text-[#6B7280] text-xs font-semibold uppercase tracking-wide mb-2 block">
+                        Related Meal (Optional)
+                      </label>
                       <select
                         value={selectedRedemption}
                         onChange={(e) => setSelectedRedemption(e.target.value)}
@@ -186,7 +243,12 @@ export default function SupportPage() {
                         <option value="">Select a recent meal...</option>
                         {recentRedemptions.map((r) => (
                           <option key={r.id} value={r.id}>
-                            {r.meals?.name} — {r.partners?.name} ({new Date(r.redeemed_at).toLocaleDateString('en-MY', { day: 'numeric', month: 'short' })})
+                            {r.meals?.name} — {r.partners?.name} (
+                            {new Date(r.redeemed_at).toLocaleDateString('en-MY', {
+                              day: 'numeric',
+                              month: 'short',
+                            })}
+                            )
                           </option>
                         ))}
                       </select>
@@ -194,7 +256,9 @@ export default function SupportPage() {
                   )}
 
                   <div>
-                    <label className="text-[#6B7280] text-xs font-semibold uppercase tracking-wide mb-2 block">Comments (Optional)</label>
+                    <label className="text-[#6B7280] text-xs font-semibold uppercase tracking-wide mb-2 block">
+                      Comments (Optional)
+                    </label>
                     <textarea
                       value={feedbackComment}
                       onChange={(e) => setFeedbackComment(e.target.value)}
@@ -220,7 +284,15 @@ export default function SupportPage() {
             <div className="space-y-4">
               {ticketSuccess && (
                 <div className="bg-[#EBF9F4] border border-[#C8F0E4] rounded-2xl px-4 py-3 text-[#2DAF87] text-sm font-semibold flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
                   Ticket submitted! We will get back to you soon.
                 </div>
               )}
@@ -231,23 +303,51 @@ export default function SupportPage() {
                 </div>
                 <div className="p-6 space-y-4">
                   <div>
-                    <label className="text-[#6B7280] text-xs font-semibold uppercase tracking-wide mb-2 block">Category *</label>
-                    <select value={ticketCategory} onChange={(e) => setTicketCategory(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#3ECBA0] transition-colors">
+                    <label className="text-[#6B7280] text-xs font-semibold uppercase tracking-wide mb-2 block">
+                      Category *
+                    </label>
+                    <select
+                      value={ticketCategory}
+                      onChange={(e) => setTicketCategory(e.target.value)}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#3ECBA0] transition-colors"
+                    >
                       {Object.entries(categoryLabels).map(([val, label]) => (
-                        <option key={val} value={val}>{label}</option>
+                        <option key={val} value={val}>
+                          {label}
+                        </option>
                       ))}
                     </select>
                   </div>
                   <div>
-                    <label className="text-[#6B7280] text-xs font-semibold uppercase tracking-wide mb-2 block">Subject *</label>
-                    <input type="text" value={ticketSubject} onChange={(e) => setTicketSubject(e.target.value)} placeholder="Brief description of the issue" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-[#1A1A1A] placeholder-[#9CA3AF] focus:outline-none focus:border-[#3ECBA0] transition-colors" />
+                    <label className="text-[#6B7280] text-xs font-semibold uppercase tracking-wide mb-2 block">
+                      Subject *
+                    </label>
+                    <input
+                      type="text"
+                      value={ticketSubject}
+                      onChange={(e) => setTicketSubject(e.target.value)}
+                      placeholder="Brief description of the issue"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-[#1A1A1A] placeholder-[#9CA3AF] focus:outline-none focus:border-[#3ECBA0] transition-colors"
+                    />
                   </div>
                   <div>
-                    <label className="text-[#6B7280] text-xs font-semibold uppercase tracking-wide mb-2 block">Description *</label>
-                    <textarea value={ticketDescription} onChange={(e) => setTicketDescription(e.target.value)} placeholder="Describe the issue in detail..." rows={4} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-[#1A1A1A] placeholder-[#9CA3AF] focus:outline-none focus:border-[#3ECBA0] transition-colors resize-none" />
+                    <label className="text-[#6B7280] text-xs font-semibold uppercase tracking-wide mb-2 block">
+                      Description *
+                    </label>
+                    <textarea
+                      value={ticketDescription}
+                      onChange={(e) => setTicketDescription(e.target.value)}
+                      placeholder="Describe the issue in detail..."
+                      rows={4}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-[#1A1A1A] placeholder-[#9CA3AF] focus:outline-none focus:border-[#3ECBA0] transition-colors resize-none"
+                    />
                   </div>
                   {formError && <p className="text-red-500 text-xs">{formError}</p>}
-                  <button onClick={handleSubmitTicket} disabled={submittingTicket} className="w-full bg-[#3ECBA0] text-white font-bold py-3 rounded-xl text-sm disabled:opacity-40 hover:bg-[#2DAF87] transition-colors">
+                  <button
+                    onClick={handleSubmitTicket}
+                    disabled={submittingTicket}
+                    className="w-full bg-[#3ECBA0] text-white font-bold py-3 rounded-xl text-sm disabled:opacity-40 hover:bg-[#2DAF87] transition-colors"
+                  >
                     {submittingTicket ? 'Submitting...' : 'Submit Ticket'}
                   </button>
                 </div>
@@ -261,12 +361,29 @@ export default function SupportPage() {
                     {tickets.map((ticket) => {
                       const st = statusConfig[ticket.status] || statusConfig.open;
                       return (
-                        <div key={ticket.id} className="bg-white rounded-2xl p-4 border border-gray-100">
+                        <div
+                          key={ticket.id}
+                          className="bg-white rounded-2xl p-4 border border-gray-100"
+                        >
                           <div className="flex items-start justify-between gap-3 mb-1">
-                            <p className="text-[#1A1A1A] font-semibold text-sm flex-1 min-w-0 truncate">{ticket.subject}</p>
-                            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full flex-shrink-0" style={{ background: st.bg, color: st.text }}>{st.label}</span>
+                            <p className="text-[#1A1A1A] font-semibold text-sm flex-1 min-w-0 truncate">
+                              {ticket.subject}
+                            </p>
+                            <span
+                              className="text-xs font-semibold px-2.5 py-0.5 rounded-full flex-shrink-0"
+                              style={{ background: st.bg, color: st.text }}
+                            >
+                              {st.label}
+                            </span>
                           </div>
-                          <p className="text-[#9CA3AF] text-xs">{categoryLabels[ticket.category]} · {new Date(ticket.created_at).toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                          <p className="text-[#9CA3AF] text-xs">
+                            {categoryLabels[ticket.category]} ·{' '}
+                            {new Date(ticket.created_at).toLocaleDateString('en-MY', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </p>
                         </div>
                       );
                     })}
@@ -287,7 +404,10 @@ export default function SupportPage() {
                 { icon: '📧', label: 'Email Support', desc: 'support@makanan.app' },
                 { icon: '📞', label: 'Phone', desc: '+60 3-1234 5678' },
               ].map((c) => (
-                <div key={c.label} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer">
+                <div
+                  key={c.label}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
+                >
                   <span className="text-xl">{c.icon}</span>
                   <div>
                     <p className="text-[#374151] font-semibold text-sm">{c.label}</p>
@@ -307,8 +427,19 @@ export default function SupportPage() {
                 'Can I change my plan?',
                 'How do I report a wrong charge?',
               ].map((q) => (
-                <button key={q} className="w-full text-left flex items-center gap-2 text-[#6B7280] text-xs hover:text-[#374151] transition-colors">
-                  <svg className="w-3.5 h-3.5 text-[#3ECBA0] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                <button
+                  key={q}
+                  className="w-full text-left flex items-center gap-2 text-[#6B7280] text-xs hover:text-[#374151] transition-colors"
+                >
+                  <svg
+                    className="w-3.5 h-3.5 text-[#3ECBA0] flex-shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
                   {q}
                 </button>
               ))}

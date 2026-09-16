@@ -19,7 +19,15 @@ const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
 
 type ActiveTab = 'business' | 'hours' | 'payment' | 'password' | 'preferences';
 
-function SectionCard({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+function SectionCard({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="bg-white rounded-2xl border border-[#E5E7EB] overflow-hidden">
       <div className="px-6 py-5 border-b border-[#F3F4F6]">
@@ -53,7 +61,9 @@ function InputField({
       <label className="block text-sm font-medium text-[#374151] mb-1.5">{label}</label>
       <div className="relative flex items-center">
         {prefix && (
-          <span className="absolute left-3.5 text-sm text-[#6B7280] font-medium select-none">{prefix}</span>
+          <span className="absolute left-3.5 text-sm text-[#6B7280] font-medium select-none">
+            {prefix}
+          </span>
         )}
         <input
           type={type}
@@ -68,7 +78,15 @@ function InputField({
   );
 }
 
-function SaveButton({ loading, onClick, label = 'Save Changes' }: { loading: boolean; onClick: () => void; label?: string }) {
+function SaveButton({
+  loading,
+  onClick,
+  label = 'Save Changes',
+}: {
+  loading: boolean;
+  onClick: () => void;
+  label?: string;
+}) {
   return (
     <button
       onClick={onClick}
@@ -79,7 +97,13 @@ function SaveButton({ loading, onClick, label = 'Save Changes' }: { loading: boo
       {loading ? (
         <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
       ) : (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2.5}
+        >
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
         </svg>
       )}
@@ -96,11 +120,23 @@ function Toast({ message, type }: { message: string; type: 'success' | 'error' }
       }`}
     >
       {type === 'success' ? (
-        <svg className="w-4 h-4 text-[#3ECBA0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <svg
+          className="w-4 h-4 text-[#3ECBA0]"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2.5}
+        >
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
         </svg>
       ) : (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2.5}
+        >
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
         </svg>
       )}
@@ -127,7 +163,13 @@ export default function PartnerSettingsPage() {
   // Operating hours
   const [openTime, setOpenTime] = useState('08:00');
   const [closeTime, setCloseTime] = useState('20:00');
-  const [operatingDays, setOperatingDays] = useState<string[]>(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']);
+  const [operatingDays, setOperatingDays] = useState<string[]>([
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+  ]);
   const [hoursSaving, setHoursSaving] = useState(false);
 
   // Payment
@@ -156,7 +198,9 @@ export default function PartnerSettingsPage() {
 
   useEffect(() => {
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
       const { data } = await supabase
         .from('partners')
@@ -181,7 +225,13 @@ export default function PartnerSettingsPage() {
     setBizSaving(true);
     const { error } = await supabase
       .from('partners')
-      .update({ name: bizName, email: bizEmail, phone: bizPhone, location: bizLocation, description: bizDescription })
+      .update({
+        name: bizName,
+        email: bizEmail,
+        phone: bizPhone,
+        location: bizLocation,
+        description: bizDescription,
+      })
       .eq('id', partner.id);
     setBizSaving(false);
     if (error) showToast('Failed to save business info.', 'error');
@@ -249,8 +299,18 @@ export default function PartnerSettingsPage() {
       id: 'business',
       label: 'Business Info',
       icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.8}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+          />
         </svg>
       ),
     },
@@ -258,8 +318,18 @@ export default function PartnerSettingsPage() {
       id: 'hours',
       label: 'Operating Hours',
       icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.8}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
         </svg>
       ),
     },
@@ -267,8 +337,18 @@ export default function PartnerSettingsPage() {
       id: 'payment',
       label: 'Payment Details',
       icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.8}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+          />
         </svg>
       ),
     },
@@ -276,8 +356,18 @@ export default function PartnerSettingsPage() {
       id: 'password',
       label: 'Password',
       icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.8}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+          />
         </svg>
       ),
     },
@@ -285,8 +375,18 @@ export default function PartnerSettingsPage() {
       id: 'preferences',
       label: 'Preferences',
       icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.8}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+          />
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       ),
@@ -304,7 +404,12 @@ export default function PartnerSettingsPage() {
   }
 
   const initials = partner?.name
-    ? partner.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
+    ? partner.name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
     : 'P';
 
   return (
@@ -313,7 +418,9 @@ export default function PartnerSettingsPage() {
         {/* Page header */}
         <div>
           <h1 className="text-2xl font-bold text-[#111827]">Settings</h1>
-          <p className="text-[#6B7280] text-sm mt-0.5">Manage your business profile, hours, and account preferences</p>
+          <p className="text-[#6B7280] text-sm mt-0.5">
+            Manage your business profile, hours, and account preferences
+          </p>
         </div>
 
         {/* Profile summary card */}
@@ -322,9 +429,13 @@ export default function PartnerSettingsPage() {
             <span className="text-[#3ECBA0] text-xl font-bold">{initials}</span>
           </div>
           <div className="min-w-0">
-            <p className="text-lg font-bold text-[#111827] truncate">{partner?.name || 'Partner'}</p>
+            <p className="text-lg font-bold text-[#111827] truncate">
+              {partner?.name || 'Partner'}
+            </p>
             <p className="text-sm text-[#6B7280] truncate">{partner?.email || '—'}</p>
-            <p className="text-xs text-[#9CA3AF] mt-0.5">{partner?.location || 'No location set'}</p>
+            <p className="text-xs text-[#9CA3AF] mt-0.5">
+              {partner?.location || 'No location set'}
+            </p>
           </div>
           <div className="ml-auto flex-shrink-0">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">
@@ -385,7 +496,9 @@ export default function PartnerSettingsPage() {
                 placeholder="e.g. Block A, Cafeteria 1"
               />
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-[#374151] mb-1.5">Business Description</label>
+                <label className="block text-sm font-medium text-[#374151] mb-1.5">
+                  Business Description
+                </label>
                 <textarea
                   value={bizDescription}
                   onChange={(e) => setBizDescription(e.target.value)}
@@ -409,7 +522,9 @@ export default function PartnerSettingsPage() {
             <div className="space-y-5">
               {/* Days */}
               <div>
-                <label className="block text-sm font-medium text-[#374151] mb-2">Operating Days</label>
+                <label className="block text-sm font-medium text-[#374151] mb-2">
+                  Operating Days
+                </label>
                 <div className="flex flex-wrap gap-2">
                   {DAYS.map((day) => {
                     const active = operatingDays.includes(day);
@@ -433,7 +548,9 @@ export default function PartnerSettingsPage() {
               {/* Time range */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#374151] mb-1.5">Opening Time</label>
+                  <label className="block text-sm font-medium text-[#374151] mb-1.5">
+                    Opening Time
+                  </label>
                   <input
                     type="time"
                     value={openTime}
@@ -442,7 +559,9 @@ export default function PartnerSettingsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#374151] mb-1.5">Closing Time</label>
+                  <label className="block text-sm font-medium text-[#374151] mb-1.5">
+                    Closing Time
+                  </label>
                   <input
                     type="time"
                     value={closeTime}
@@ -455,12 +574,25 @@ export default function PartnerSettingsPage() {
               {/* Summary */}
               {operatingDays.length > 0 && (
                 <div className="bg-[#F9FAFB] rounded-xl px-4 py-3 flex items-center gap-3">
-                  <svg className="w-4 h-4 text-[#3ECBA0] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <svg
+                    className="w-4 h-4 text-[#3ECBA0] flex-shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
                   </svg>
                   <p className="text-sm text-[#374151]">
-                    Open <span className="font-semibold">{openTime} – {closeTime}</span> on{' '}
-                    <span className="font-semibold">{operatingDays.join(', ')}</span>
+                    Open{' '}
+                    <span className="font-semibold">
+                      {openTime} – {closeTime}
+                    </span>{' '}
+                    on <span className="font-semibold">{operatingDays.join(', ')}</span>
                   </p>
                 </div>
               )}
@@ -498,7 +630,9 @@ export default function PartnerSettingsPage() {
 
               {/* Bank details */}
               <div>
-                <h3 className="text-sm font-semibold text-[#374151] mb-3">Bank Account for Settlements</h3>
+                <h3 className="text-sm font-semibold text-[#374151] mb-3">
+                  Bank Account for Settlements
+                </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <InputField
                     label="Bank Name"
@@ -525,10 +659,23 @@ export default function PartnerSettingsPage() {
 
               {/* Info note */}
               <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 flex gap-3">
-                <svg className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                <svg
+                  className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
                 </svg>
-                <p className="text-xs text-amber-700">Bank details are used by the Makanan admin team for monthly settlements. Ensure accuracy before saving.</p>
+                <p className="text-xs text-amber-700">
+                  Bank details are used by the Makanan admin team for monthly settlements. Ensure
+                  accuracy before saving.
+                </p>
               </div>
             </div>
             <div className="mt-5 flex justify-end">
@@ -559,23 +706,42 @@ export default function PartnerSettingsPage() {
               />
               {newPassword && confirmPassword && newPassword !== confirmPassword && (
                 <p className="text-xs text-red-500 flex items-center gap-1.5">
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                   Passwords do not match
                 </p>
               )}
-              {newPassword && confirmPassword && newPassword === confirmPassword && newPassword.length >= 6 && (
-                <p className="text-xs text-emerald-600 flex items-center gap-1.5">
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                  Passwords match
-                </p>
-              )}
+              {newPassword &&
+                confirmPassword &&
+                newPassword === confirmPassword &&
+                newPassword.length >= 6 && (
+                  <p className="text-xs text-emerald-600 flex items-center gap-1.5">
+                    <svg
+                      className="w-3.5 h-3.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Passwords match
+                  </p>
+                )}
             </div>
             <div className="mt-5 flex justify-end">
-              <SaveButton loading={passwordSaving} onClick={handleSavePassword} label="Update Password" />
+              <SaveButton
+                loading={passwordSaving}
+                onClick={handleSavePassword}
+                label="Update Password"
+              />
             </div>
           </SectionCard>
         )}
@@ -606,7 +772,10 @@ export default function PartnerSettingsPage() {
                   onChange: setWeeklyReport,
                 },
               ].map((pref) => (
-                <div key={pref.label} className="flex items-center justify-between py-3 border-b border-[#F3F4F6] last:border-0">
+                <div
+                  key={pref.label}
+                  className="flex items-center justify-between py-3 border-b border-[#F3F4F6] last:border-0"
+                >
                   <div>
                     <p className="text-sm font-medium text-[#111827]">{pref.label}</p>
                     <p className="text-xs text-[#9CA3AF] mt-0.5">{pref.description}</p>
@@ -632,7 +801,9 @@ export default function PartnerSettingsPage() {
                 <div className="bg-[#F9FAFB] rounded-xl px-4 py-3 flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-[#111827]">Portal Access</p>
-                    <p className="text-xs text-[#9CA3AF] mt-0.5">Your account is active and accepting redemptions</p>
+                    <p className="text-xs text-[#9CA3AF] mt-0.5">
+                      Your account is active and accepting redemptions
+                    </p>
                   </div>
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
@@ -642,7 +813,11 @@ export default function PartnerSettingsPage() {
               </div>
             </div>
             <div className="mt-5 flex justify-end">
-              <SaveButton loading={prefSaving} onClick={handleSavePreferences} label="Save Preferences" />
+              <SaveButton
+                loading={prefSaving}
+                onClick={handleSavePreferences}
+                label="Save Preferences"
+              />
             </div>
           </SectionCard>
         )}

@@ -32,9 +32,15 @@ export default function VerifyMealPage() {
 
   useEffect(() => {
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
-      const { data: partner } = await supabase.from('partners').select('id').eq('user_id', user.id).single();
+      const { data: partner } = await supabase
+        .from('partners')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
       if (partner) setPartnerId(partner.id);
     };
     load();
@@ -66,14 +72,16 @@ export default function VerifyMealPage() {
     try {
       const { data: redemption, error: rErr } = await supabase
         .from('redemptions')
-        .select(`
+        .select(
+          `
           id, status, subscription_id, meal_id, partner_id, user_id,
           user_profiles:user_id(full_name),
           meals:meal_id(name),
           subscriptions:subscription_id(
             meal_plans:meal_plan_id(name)
           )
-        `)
+        `
+        )
         .eq('qr_code', qrCode.trim())
         .maybeSingle();
 
@@ -156,7 +164,9 @@ export default function VerifyMealPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-[#111827]">Verify Meal</h1>
-          <p className="text-[#6B7280] text-sm mt-0.5">Scan or enter a student&apos;s redemption code to confirm their meal.</p>
+          <p className="text-[#6B7280] text-sm mt-0.5">
+            Scan or enter a student&apos;s redemption code to confirm their meal.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -189,8 +199,18 @@ export default function VerifyMealPage() {
                 {scanning ? (
                   <>
                     <div className="w-16 h-16 rounded-xl bg-white/10 flex items-center justify-center">
-                      <svg className="w-8 h-8 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8H3m2 8H3m18-8h-2M5 4H3m2 16H3m18-4h-2M5 12H3" />
+                      <svg
+                        className="w-8 h-8 text-white/40"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={1.5}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8H3m2 8H3m18-8h-2M5 4H3m2 16H3m18-4h-2M5 12H3"
+                        />
                       </svg>
                     </div>
                     <p className="text-sm text-white/60">Scanning...</p>
@@ -203,8 +223,18 @@ export default function VerifyMealPage() {
                 ) : confirmed ? (
                   <>
                     <div className="w-16 h-16 rounded-xl bg-white/10 flex items-center justify-center">
-                      <svg className="w-8 h-8 text-[#3ECBA0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        className="w-8 h-8 text-[#3ECBA0]"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                     </div>
                     <p className="text-sm text-[#3ECBA0]">Meal Confirmed</p>
@@ -212,16 +242,36 @@ export default function VerifyMealPage() {
                 ) : result?.valid ? (
                   <>
                     <div className="w-16 h-16 rounded-xl bg-white/10 flex items-center justify-center">
-                      <svg className="w-8 h-8 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        className="w-8 h-8 text-amber-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                     </div>
                     <p className="text-sm text-amber-400">Awaiting Confirmation</p>
                   </>
                 ) : (
                   <>
-                    <svg className="w-12 h-12 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8H3m2 8H3m18-8h-2M5 4H3m2 16H3m18-4h-2M5 12H3" />
+                    <svg
+                      className="w-12 h-12 text-white/20"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={1.5}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8H3m2 8H3m18-8h-2M5 4H3m2 16H3m18-4h-2M5 12H3"
+                      />
                     </svg>
                     <p className="text-sm text-white/40">Tap to open scanner</p>
                     <p className="text-xs text-white/25">or enter code manually below</p>
@@ -268,12 +318,24 @@ export default function VerifyMealPage() {
             {!result && !verifying && (
               <div className="flex flex-col items-center justify-center h-48 text-center">
                 <div className="w-14 h-14 rounded-2xl bg-[#F3F4F6] flex items-center justify-center mb-3">
-                  <svg className="w-7 h-7 text-[#9CA3AF]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  <svg
+                    className="w-7 h-7 text-[#9CA3AF]"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                    />
                   </svg>
                 </div>
                 <p className="text-[#374151] font-semibold text-sm">No code scanned yet</p>
-                <p className="text-[#9CA3AF] text-xs mt-1">Scan or enter a redemption code to verify</p>
+                <p className="text-[#9CA3AF] text-xs mt-1">
+                  Scan or enter a redemption code to verify
+                </p>
               </div>
             )}
 
@@ -290,7 +352,13 @@ export default function VerifyMealPage() {
                 {confirmed ? (
                   <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-100">
                     <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
-                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <svg
+                        className="w-5 h-5 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                      >
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
@@ -302,8 +370,18 @@ export default function VerifyMealPage() {
                 ) : result.alreadyConfirmed ? (
                   <div className="flex items-center gap-3 p-4 rounded-xl bg-blue-50 border border-blue-100">
                     <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
-                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        className="w-5 h-5 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                     </div>
                     <div>
@@ -314,20 +392,44 @@ export default function VerifyMealPage() {
                 ) : result.valid ? (
                   <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-50 border border-amber-100">
                     <div className="w-10 h-10 rounded-full bg-amber-400 flex items-center justify-center flex-shrink-0">
-                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        className="w-5 h-5 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                     </div>
                     <div>
-                      <p className="text-amber-700 font-bold text-sm">Valid — Awaiting Confirmation</p>
-                      <p className="text-amber-600 text-xs">Tap Confirm to complete the redemption</p>
+                      <p className="text-amber-700 font-bold text-sm">
+                        Valid — Awaiting Confirmation
+                      </p>
+                      <p className="text-amber-600 text-xs">
+                        Tap Confirm to complete the redemption
+                      </p>
                     </div>
                   </div>
                 ) : (
                   <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-100">
                     <div className="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
-                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      <svg
+                        className="w-5 h-5 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M6 18L18 6M6 6l12 12"
+                        />
                       </svg>
                     </div>
                     <div>
@@ -342,22 +444,40 @@ export default function VerifyMealPage() {
                   <div className="bg-[#F9FAFB] rounded-xl p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-[#9CA3AF] font-medium">Student</span>
-                      <span className="text-sm font-semibold text-[#111827]">{result.studentName}</span>
+                      <span className="text-sm font-semibold text-[#111827]">
+                        {result.studentName}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-[#9CA3AF] font-medium">Meal</span>
-                      <span className="text-sm font-semibold text-[#111827]">{result.mealName}</span>
+                      <span className="text-sm font-semibold text-[#111827]">
+                        {result.mealName}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-[#9CA3AF] font-medium">Plan</span>
-                      <span className="text-sm font-semibold text-[#111827]">{result.planName}</span>
+                      <span className="text-sm font-semibold text-[#111827]">
+                        {result.planName}
+                      </span>
                     </div>
                   </div>
                 )}
 
                 {error && (
                   <div className="bg-red-50 border border-red-100 rounded-xl px-3 py-2.5 text-red-600 text-sm flex items-center gap-2">
-                    <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <svg
+                      className="w-4 h-4 flex-shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
                     {error}
                   </div>
                 )}
@@ -372,10 +492,26 @@ export default function VerifyMealPage() {
                     >
                       {confirming ? (
                         <span className="flex items-center justify-center gap-2">
-                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                            />
+                          </svg>
                           Confirming...
                         </span>
-                      ) : 'Confirm Meal'}
+                      ) : (
+                        'Confirm Meal'
+                      )}
                     </button>
                   )}
                   <button
@@ -405,11 +541,13 @@ function RecentConfirmations({ partnerId }: { partnerId: string }) {
     if (!partnerId) return;
     const { data } = await supabase
       .from('redemptions')
-      .select(`
+      .select(
+        `
         id, status, redeemed_at,
         user_profiles:user_id(full_name),
         meals:meal_id(name)
-      `)
+      `
+      )
       .eq('partner_id', partnerId)
       .order('redeemed_at', { ascending: false })
       .limit(5);
@@ -422,17 +560,23 @@ function RecentConfirmations({ partnerId }: { partnerId: string }) {
 
     const channel = supabase
       .channel(`verify-recent-${partnerId}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'redemptions',
-        filter: `partner_id=eq.${partnerId}`,
-      }, () => {
-        loadRecent();
-      })
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'redemptions',
+          filter: `partner_id=eq.${partnerId}`,
+        },
+        () => {
+          loadRecent();
+        }
+      )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [partnerId]);
 
   if (recent.length === 0) return null;
@@ -455,15 +599,27 @@ function RecentConfirmations({ partnerId }: { partnerId: string }) {
           };
           const s = statusMap[r.status] || statusMap.pending;
           return (
-            <div key={r.id} className="flex items-center justify-between py-2.5 border-b border-[#F3F4F6] last:border-0">
+            <div
+              key={r.id}
+              className="flex items-center justify-between py-2.5 border-b border-[#F3F4F6] last:border-0"
+            >
               <div>
-                <p className="text-sm font-medium text-[#374151]">{(r.user_profiles as any)?.full_name || 'Student'}</p>
+                <p className="text-sm font-medium text-[#374151]">
+                  {(r.user_profiles as any)?.full_name || 'Student'}
+                </p>
                 <p className="text-xs text-[#9CA3AF]">{(r.meals as any)?.name || 'Meal'}</p>
               </div>
               <div className="text-right">
-                <span className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full ${s.bg} ${s.text}`}>{s.label}</span>
+                <span
+                  className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full ${s.bg} ${s.text}`}
+                >
+                  {s.label}
+                </span>
                 <p className="text-xs text-[#9CA3AF] mt-1">
-                  {new Date(r.redeemed_at).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(r.redeemed_at).toLocaleTimeString('en-MY', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
                 </p>
               </div>
             </div>

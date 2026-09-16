@@ -25,15 +25,16 @@ interface Transaction {
 }
 
 const txnIcon = (desc: string, delta: number) => {
-  if (desc.toLowerCase().includes('subscription') || desc.toLowerCase().includes('subscribed')) return '📋';
-  if (desc.toLowerCase().includes('cancelled') || desc.toLowerCase().includes('refund')) return '↩️';
+  if (desc.toLowerCase().includes('subscription') || desc.toLowerCase().includes('subscribed'))
+    return '📋';
+  if (desc.toLowerCase().includes('cancelled') || desc.toLowerCase().includes('refund'))
+    return '↩️';
   if (delta < 0) return '🍽️';
   if (desc.toLowerCase().includes('top') || desc.toLowerCase().includes('balance')) return '💳';
   return '✨';
 };
 
-const txnIconBg = (delta: number) =>
-  delta < 0 ? 'bg-red-50' : 'bg-[#EBF9F4]';
+const txnIconBg = (delta: number) => (delta < 0 ? 'bg-red-50' : 'bg-[#EBF9F4]');
 
 // ── Cancel Confirmation Modal ──────────────────────────────────────────────
 interface CancelModalProps {
@@ -45,27 +46,51 @@ interface CancelModalProps {
   cancelError: string;
 }
 
-function CancelModal({ subscription, creditsRemaining, onConfirm, onClose, cancelling, cancelError }: CancelModalProps) {
+function CancelModal({
+  subscription,
+  creditsRemaining,
+  onConfirm,
+  onClose,
+  cancelling,
+  cancelError,
+}: CancelModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={!cancelling ? onClose : undefined} />
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={!cancelling ? onClose : undefined}
+      />
       {/* Modal */}
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 z-10">
         {/* Icon */}
         <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <svg className="w-7 h-7 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          <svg
+            className="w-7 h-7 text-red-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+            />
           </svg>
         </div>
 
         <h2 className="text-[#1A1A1A] font-bold text-lg text-center mb-1">Cancel Subscription?</h2>
         <p className="text-[#6B7280] text-sm text-center mb-5 leading-relaxed">
-          You are about to cancel your <span className="font-semibold text-[#1A1A1A]">{subscription.meal_plans?.name}</span> plan.
+          You are about to cancel your{' '}
+          <span className="font-semibold text-[#1A1A1A]">{subscription.meal_plans?.name}</span>{' '}
+          plan.
         </p>
 
         {/* Refund info */}
-        <div className={`rounded-xl p-4 mb-5 border ${creditsRemaining > 0 ? 'bg-[#EBF9F4] border-[#C8F0E4]' : 'bg-gray-50 border-gray-200'}`}>
+        <div
+          className={`rounded-xl p-4 mb-5 border ${creditsRemaining > 0 ? 'bg-[#EBF9F4] border-[#C8F0E4]' : 'bg-gray-50 border-gray-200'}`}
+        >
           <div className="flex items-center gap-3">
             <span className="text-2xl">{creditsRemaining > 0 ? '💰' : 'ℹ️'}</span>
             <div>
@@ -73,13 +98,18 @@ function CancelModal({ subscription, creditsRemaining, onConfirm, onClose, cance
                 <>
                   <p className="text-[#2DAF87] font-bold text-sm">Instant Wallet Refund</p>
                   <p className="text-[#5A7A6A] text-xs mt-0.5">
-                    <span className="font-bold text-[#1A1A1A]">{creditsRemaining} unused meal credit{creditsRemaining !== 1 ? 's' : ''}</span> will be credited to your wallet immediately.
+                    <span className="font-bold text-[#1A1A1A]">
+                      {creditsRemaining} unused meal credit{creditsRemaining !== 1 ? 's' : ''}
+                    </span>{' '}
+                    will be credited to your wallet immediately.
                   </p>
                 </>
               ) : (
                 <>
                   <p className="text-[#6B7280] font-bold text-sm">No Credits to Refund</p>
-                  <p className="text-[#9CA3AF] text-xs mt-0.5">All meal credits have already been used.</p>
+                  <p className="text-[#9CA3AF] text-xs mt-0.5">
+                    All meal credits have already been used.
+                  </p>
                 </>
               )}
             </div>
@@ -88,8 +118,18 @@ function CancelModal({ subscription, creditsRemaining, onConfirm, onClose, cance
 
         {cancelError && (
           <div className="mb-4 bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-red-600 text-sm flex items-center gap-2">
-            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="w-4 h-4 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
             {cancelError}
           </div>
@@ -111,8 +151,19 @@ function CancelModal({ subscription, creditsRemaining, onConfirm, onClose, cance
             {cancelling ? (
               <>
                 <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
                 </svg>
                 Cancelling...
               </>
@@ -127,7 +178,13 @@ function CancelModal({ subscription, creditsRemaining, onConfirm, onClose, cance
 }
 
 // ── Success Toast ──────────────────────────────────────────────────────────
-function SuccessToast({ creditsRefunded, onClose }: { creditsRefunded: number; onClose: () => void }) {
+function SuccessToast({
+  creditsRefunded,
+  onClose,
+}: {
+  creditsRefunded: number;
+  onClose: () => void;
+}) {
   useEffect(() => {
     const t = setTimeout(onClose, 4000);
     return () => clearTimeout(t);
@@ -137,18 +194,32 @@ function SuccessToast({ creditsRefunded, onClose }: { creditsRefunded: number; o
     <div className="fixed top-5 inset-x-0 flex justify-center z-50 px-4">
       <div className="bg-[#1A1A1A] text-white rounded-2xl px-5 py-3.5 flex items-center gap-3 shadow-xl max-w-sm w-full">
         <div className="w-8 h-8 bg-[#3ECBA0] rounded-full flex items-center justify-center flex-shrink-0">
-          <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <svg
+            className="w-4 h-4 text-white"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2.5}
+          >
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </div>
         <div className="flex-1">
           <p className="font-bold text-sm">Subscription Cancelled</p>
           {creditsRefunded > 0 && (
-            <p className="text-[#9CA3AF] text-xs mt-0.5">{creditsRefunded} credit{creditsRefunded !== 1 ? 's' : ''} refunded to your wallet</p>
+            <p className="text-[#9CA3AF] text-xs mt-0.5">
+              {creditsRefunded} credit{creditsRefunded !== 1 ? 's' : ''} refunded to your wallet
+            </p>
           )}
         </div>
         <button onClick={onClose} className="text-[#9CA3AF] hover:text-white transition-colors">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
@@ -205,30 +276,40 @@ export default function WalletPage() {
     const supabase = createClient();
     const channel = supabase
       .channel(`student-wallet-${user.id}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'subscriptions',
-        filter: `user_id=eq.${user.id}`,
-      }, (payload) => {
-        if (payload.new && (payload.new as any).status !== 'active') {
-          // Subscription was cancelled/expired — remove from state
-          setSubscription(null);
-        } else if (payload.new) {
-          setSubscription((prev) => prev ? { ...prev, ...(payload.new as any) } : null);
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'subscriptions',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          if (payload.new && (payload.new as any).status !== 'active') {
+            // Subscription was cancelled/expired — remove from state
+            setSubscription(null);
+          } else if (payload.new) {
+            setSubscription((prev) => (prev ? { ...prev, ...(payload.new as any) } : null));
+          }
         }
-      })
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'wallet_transactions',
-        filter: `user_id=eq.${user.id}`,
-      }, (payload) => {
-        setTransactions((prev) => [payload.new as any, ...prev.slice(0, 19)]);
-      })
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'wallet_transactions',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          setTransactions((prev) => [payload.new as any, ...prev.slice(0, 19)]);
+        }
+      )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const creditsRemaining = subscription
@@ -251,7 +332,8 @@ export default function WalletPage() {
       month: 'short',
       year: 'numeric',
     }) +
-    ' • ' + new Date(dateStr).toLocaleTimeString('en-MY', {
+    ' • ' +
+    new Date(dateStr).toLocaleTimeString('en-MY', {
       hour: '2-digit',
       minute: '2-digit',
     });
@@ -316,7 +398,10 @@ export default function WalletPage() {
           subscription={subscription}
           creditsRemaining={creditsRemaining}
           onConfirm={handleCancelConfirm}
-          onClose={() => { setShowCancelModal(false); setCancelError(''); }}
+          onClose={() => {
+            setShowCancelModal(false);
+            setCancelError('');
+          }}
           cancelling={cancelling}
           cancelError={cancelError}
         />
@@ -326,8 +411,18 @@ export default function WalletPage() {
       <div className="lg:hidden flex items-center justify-between px-5 pt-6 pb-4">
         <h1 className="text-[#1A1A1A] font-bold text-2xl">Wallet</h1>
         <button className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center relative shadow-sm">
-          <svg className="w-5 h-5 text-[#6B7280]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          <svg
+            className="w-5 h-5 text-[#6B7280]"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.8}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+            />
           </svg>
           <span className="absolute top-2 right-2 w-2 h-2 bg-[#3ECBA0] rounded-full border-2 border-white" />
         </button>
@@ -343,7 +438,13 @@ export default function WalletPage() {
           onClick={() => router.push('/dashboard/plans')}
           className="flex items-center gap-2 bg-[#3ECBA0] text-white font-semibold text-sm px-5 py-2.5 rounded-xl hover:bg-[#2DAF87] transition-colors shadow-sm"
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2.5}
+          >
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
           </svg>
           Add Balance
@@ -355,7 +456,6 @@ export default function WalletPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* ── Left + Center (main content) ── */}
           <div className="lg:col-span-2 space-y-5">
-
             {/* Available Balance Card */}
             <div className="bg-[#EBF9F4] rounded-2xl p-5 flex items-center justify-between overflow-hidden relative">
               <div className="absolute right-0 top-0 bottom-0 w-36 opacity-30 pointer-events-none select-none flex items-center justify-center">
@@ -366,13 +466,21 @@ export default function WalletPage() {
                 <p className="text-[#2DAF87] font-bold text-4xl leading-none mb-2">
                   RM<span className="text-2xl">0.00</span>
                 </p>
-                <p className="text-[#5A7A6A] text-xs mb-4">Add balance to pay for meal plans and more.</p>
+                <p className="text-[#5A7A6A] text-xs mb-4">
+                  Add balance to pay for meal plans and more.
+                </p>
                 <button
                   onClick={() => router.push('/dashboard/plans')}
                   className="flex items-center gap-2 bg-[#3ECBA0] text-white font-semibold text-sm px-4 py-2 rounded-xl hover:bg-[#2DAF87] transition-colors"
                 >
                   Add Balance
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                   </svg>
                 </button>
@@ -388,9 +496,18 @@ export default function WalletPage() {
             <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-[#1A1A1A] font-bold text-base">Meal Plan</h3>
-                <Link href="/dashboard/plans" className="text-[#3ECBA0] text-sm font-medium flex items-center gap-1 hover:text-[#2DAF87]">
+                <Link
+                  href="/dashboard/plans"
+                  className="text-[#3ECBA0] text-sm font-medium flex items-center gap-1 hover:text-[#2DAF87]"
+                >
                   View Plan Details
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                   </svg>
                 </Link>
@@ -429,7 +546,13 @@ export default function WalletPage() {
                   <div className="grid grid-cols-3 gap-3 pt-3 border-t border-[#D4F0E4]">
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 bg-[#EBF9F4] rounded-lg flex items-center justify-center flex-shrink-0">
-                        <svg className="w-3.5 h-3.5 text-[#3ECBA0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <svg
+                          className="w-3.5 h-3.5 text-[#3ECBA0]"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
                           <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                           <line x1="16" y1="2" x2="16" y2="6" />
                           <line x1="8" y1="2" x2="8" y2="6" />
@@ -445,7 +568,13 @@ export default function WalletPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 bg-[#EBF9F4] rounded-lg flex items-center justify-center flex-shrink-0">
-                        <svg className="w-3.5 h-3.5 text-[#3ECBA0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <svg
+                          className="w-3.5 h-3.5 text-[#3ECBA0]"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
                           <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                           <line x1="16" y1="2" x2="16" y2="6" />
                           <line x1="8" y1="2" x2="8" y2="6" />
@@ -461,8 +590,18 @@ export default function WalletPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 bg-[#EBF9F4] rounded-lg flex items-center justify-center flex-shrink-0">
-                        <svg className="w-3.5 h-3.5 text-[#3ECBA0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <svg
+                          className="w-3.5 h-3.5 text-[#3ECBA0]"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
                         </svg>
                       </div>
                       <div>
@@ -475,11 +614,24 @@ export default function WalletPage() {
                   {/* Cancel subscription button */}
                   <div className="mt-4 pt-4 border-t border-[#D4F0E4]">
                     <button
-                      onClick={() => { setCancelError(''); setShowCancelModal(true); }}
+                      onClick={() => {
+                        setCancelError('');
+                        setShowCancelModal(true);
+                      }}
                       className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-red-200 text-red-500 font-semibold text-sm hover:bg-red-50 transition-colors"
                     >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M6 18L18 6M6 6l12 12"
+                        />
                       </svg>
                       Cancel Subscription
                     </button>
@@ -491,7 +643,9 @@ export default function WalletPage() {
                     <span className="text-2xl">🍜</span>
                   </div>
                   <p className="text-[#1A1A1A] font-bold mb-1">No active plan</p>
-                  <p className="text-[#9CA3AF] text-sm mb-4">Subscribe to a meal plan to get started</p>
+                  <p className="text-[#9CA3AF] text-sm mb-4">
+                    Subscribe to a meal plan to get started
+                  </p>
                   <Link
                     href="/dashboard/plans"
                     className="inline-flex items-center gap-2 bg-[#3ECBA0] text-white font-semibold text-sm px-5 py-2.5 rounded-xl hover:bg-[#2DAF87] transition-colors"
@@ -506,7 +660,9 @@ export default function WalletPage() {
             <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-[#1A1A1A] font-bold text-base">Transaction History</h3>
-                <button className="text-[#3ECBA0] text-sm font-medium hover:text-[#2DAF87]">View All</button>
+                <button className="text-[#3ECBA0] text-sm font-medium hover:text-[#2DAF87]">
+                  View All
+                </button>
               </div>
 
               {transactions.length === 0 ? (
@@ -517,16 +673,25 @@ export default function WalletPage() {
                 <div className="space-y-3">
                   {transactions.map((txn) => (
                     <div key={txn.id} className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${txnIconBg(txn.credits_delta)}`}>
-                        <span className="text-lg">{txnIcon(txn.description, txn.credits_delta)}</span>
+                      <div
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${txnIconBg(txn.credits_delta)}`}
+                      >
+                        <span className="text-lg">
+                          {txnIcon(txn.description, txn.credits_delta)}
+                        </span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[#1A1A1A] text-sm font-semibold truncate">{txn.description}</p>
+                        <p className="text-[#1A1A1A] text-sm font-semibold truncate">
+                          {txn.description}
+                        </p>
                         <p className="text-[#9CA3AF] text-xs">{formatTxnDate(txn.created_at)}</p>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className={`font-bold text-sm ${txn.credits_delta < 0 ? 'text-[#DC2626]' : 'text-[#3ECBA0]'}`}>
-                          {txn.credits_delta > 0 ? '+' : ''}{txn.credits_delta} credits
+                        <p
+                          className={`font-bold text-sm ${txn.credits_delta < 0 ? 'text-[#DC2626]' : 'text-[#3ECBA0]'}`}
+                        >
+                          {txn.credits_delta > 0 ? '+' : ''}
+                          {txn.credits_delta} credits
                         </p>
                         <span className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full bg-[#EBF9F4] text-[#2DAF87]">
                           Completed
@@ -542,7 +707,9 @@ export default function WalletPage() {
             <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-[#1A1A1A] font-bold text-base">Payment Methods</h3>
-                <button className="text-[#3ECBA0] text-sm font-medium hover:text-[#2DAF87]">Manage</button>
+                <button className="text-[#3ECBA0] text-sm font-medium hover:text-[#2DAF87]">
+                  Manage
+                </button>
               </div>
 
               <div className="space-y-3">
@@ -556,8 +723,16 @@ export default function WalletPage() {
                     <p className="text-[#9CA3AF] text-xs">Expires 08/28</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#EBF9F4] text-[#2DAF87]">Default</span>
-                    <svg className="w-4 h-4 text-[#9CA3AF]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#EBF9F4] text-[#2DAF87]">
+                      Default
+                    </span>
+                    <svg
+                      className="w-4 h-4 text-[#9CA3AF]"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
@@ -575,7 +750,13 @@ export default function WalletPage() {
                     <p className="text-[#1A1A1A] font-semibold text-sm">Mastercard •••• 8787</p>
                     <p className="text-[#9CA3AF] text-xs">Expires 11/27</p>
                   </div>
-                  <svg className="w-4 h-4 text-[#9CA3AF]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg
+                    className="w-4 h-4 text-[#9CA3AF]"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
@@ -583,11 +764,19 @@ export default function WalletPage() {
                 {/* Add New */}
                 <button className="w-full flex items-center gap-3 p-3.5 rounded-xl border border-dashed border-[#3ECBA0]/50 hover:border-[#3ECBA0] hover:bg-[#F7FDF9] transition-colors">
                   <div className="w-8 h-8 rounded-full border-2 border-[#3ECBA0] flex items-center justify-center flex-shrink-0">
-                    <svg className="w-4 h-4 text-[#3ECBA0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <svg
+                      className="w-4 h-4 text-[#3ECBA0]"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                     </svg>
                   </div>
-                  <span className="text-[#3ECBA0] font-semibold text-sm">Add New Payment Method</span>
+                  <span className="text-[#3ECBA0] font-semibold text-sm">
+                    Add New Payment Method
+                  </span>
                 </button>
               </div>
             </div>
@@ -607,7 +796,9 @@ export default function WalletPage() {
                   ].map((s) => (
                     <div key={s.label} className="flex items-center justify-between">
                       <span className="text-[#6B7280] text-sm">{s.label}</span>
-                      <span className="font-bold text-sm" style={{ color: s.color }}>{s.value}</span>
+                      <span className="font-bold text-sm" style={{ color: s.color }}>
+                        {s.value}
+                      </span>
                     </div>
                   ))}
                   <div className="pt-2 border-t border-gray-100">
@@ -617,7 +808,9 @@ export default function WalletPage() {
                         style={{ width: `${progressPct}%` }}
                       />
                     </div>
-                    <p className="text-[#9CA3AF] text-xs mt-1.5 text-right">{progressPct}% remaining</p>
+                    <p className="text-[#9CA3AF] text-xs mt-1.5 text-right">
+                      {progressPct}% remaining
+                    </p>
                   </div>
                 </div>
               </div>
@@ -633,7 +826,13 @@ export default function WalletPage() {
                 >
                   <span className="text-lg">📦</span>
                   <span className="text-[#374151] text-sm font-medium flex-1">Browse Plans</span>
-                  <svg className="w-4 h-4 text-[#D0D0D0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg
+                    className="w-4 h-4 text-[#D0D0D0]"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                   </svg>
                 </Link>
@@ -643,7 +842,13 @@ export default function WalletPage() {
                 >
                   <span className="text-lg">🍽️</span>
                   <span className="text-[#374151] text-sm font-medium flex-1">Redeem Meal</span>
-                  <svg className="w-4 h-4 text-[#D0D0D0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg
+                    className="w-4 h-4 text-[#D0D0D0]"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                   </svg>
                 </Link>
@@ -653,7 +858,13 @@ export default function WalletPage() {
                 >
                   <span className="text-lg">📋</span>
                   <span className="text-[#374151] text-sm font-medium flex-1">View Orders</span>
-                  <svg className="w-4 h-4 text-[#D0D0D0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg
+                    className="w-4 h-4 text-[#D0D0D0]"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                   </svg>
                 </Link>
@@ -664,7 +875,8 @@ export default function WalletPage() {
             <div className="bg-[#EBF9F4] rounded-2xl p-5 border border-[#C8F0E4]">
               <p className="text-[#2DAF87] font-bold text-sm mb-1">💡 Tip</p>
               <p className="text-[#2DAF87]/80 text-xs leading-relaxed">
-                Your meal credits never expire within the plan period. Use them at any partner cafeteria.
+                Your meal credits never expire within the plan period. Use them at any partner
+                cafeteria.
               </p>
             </div>
           </div>

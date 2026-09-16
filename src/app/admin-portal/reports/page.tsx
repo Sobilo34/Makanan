@@ -2,7 +2,20 @@
 
 import { useState } from 'react';
 import AdminLayout from '../components/AdminLayout';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell,  } from 'recharts';
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts';
 
 const studentGrowthData = [
   { month: 'Mar', students: 180 },
@@ -89,7 +102,9 @@ export default function ReportsPage() {
                 key={d.key}
                 onClick={() => setDateRange(d.key)}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                  dateRange === d.key ? 'bg-[#3ECBA0] text-white shadow-sm' : 'text-[#6B7280] hover:text-[#374151]'
+                  dateRange === d.key
+                    ? 'bg-[#3ECBA0] text-white shadow-sm'
+                    : 'text-[#6B7280] hover:text-[#374151]'
                 }`}
               >
                 {d.label}
@@ -104,7 +119,10 @@ export default function ReportsPage() {
             <div key={c.label} className="bg-white rounded-2xl border border-[#F3F4F6] p-5">
               <p className="text-xs text-[#9CA3AF] font-medium mb-2">{c.label}</p>
               <p className="text-2xl font-bold text-[#111827]">{c.value}</p>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full mt-2 inline-block" style={{ background: '#E8F8F1', color: '#4CAF7D' }}>
+              <span
+                className="text-xs font-semibold px-2 py-0.5 rounded-full mt-2 inline-block"
+                style={{ background: '#E8F8F1', color: '#4CAF7D' }}
+              >
                 {c.trend} vs last period
               </span>
             </div>
@@ -117,12 +135,27 @@ export default function ReportsPage() {
           <div className="lg:col-span-2 bg-white rounded-2xl border border-[#F3F4F6] p-5">
             <h2 className="text-sm font-semibold text-[#374151] mb-4">Student Growth</h2>
             <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={studentGrowthData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+              <LineChart
+                data={studentGrowthData}
+                margin={{ top: 5, right: 10, left: -20, bottom: 0 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
-                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fontSize: 11, fill: '#9CA3AF' }}
+                  axisLine={false}
+                  tickLine={false}
+                />
                 <YAxis tick={{ fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
                 <Tooltip content={<CustomTooltip />} />
-                <Line type="monotone" dataKey="students" stroke="#A8E6C1" strokeWidth={2.5} dot={{ fill: '#A8E6C1', r: 4 }} activeDot={{ r: 6 }} />
+                <Line
+                  type="monotone"
+                  dataKey="students"
+                  stroke="#A8E6C1"
+                  strokeWidth={2.5}
+                  dot={{ fill: '#A8E6C1', r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -132,7 +165,15 @@ export default function ReportsPage() {
             <h2 className="text-sm font-semibold text-[#374151] mb-4">Subscription Distribution</h2>
             <ResponsiveContainer width="100%" height={160}>
               <PieChart>
-                <Pie data={subscriptionData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
+                <Pie
+                  data={subscriptionData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={45}
+                  outerRadius={70}
+                  paddingAngle={3}
+                  dataKey="value"
+                >
                   {subscriptionData.map((_, i) => (
                     <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />
                   ))}
@@ -144,7 +185,10 @@ export default function ReportsPage() {
               {subscriptionData.map((d, i) => (
                 <div key={d.name} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: DONUT_COLORS[i] }} />
+                    <div
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{ background: DONUT_COLORS[i] }}
+                    />
                     <span className="text-xs text-[#6B7280]">{d.name}</span>
                   </div>
                   <span className="text-xs font-semibold text-[#374151]">{d.value}%</span>
@@ -160,9 +204,17 @@ export default function ReportsPage() {
           <div className="bg-white rounded-2xl border border-[#F3F4F6] p-5">
             <h2 className="text-sm font-semibold text-[#374151] mb-4">Meal Redemption Trends</h2>
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={redemptionTrendData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+              <BarChart
+                data={redemptionTrendData}
+                margin={{ top: 5, right: 10, left: -20, bottom: 0 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
-                <XAxis dataKey="week" tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
+                <XAxis
+                  dataKey="week"
+                  tick={{ fontSize: 10, fill: '#9CA3AF' }}
+                  axisLine={false}
+                  tickLine={false}
+                />
                 <YAxis tick={{ fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
                 <Tooltip content={<CustomTooltip />} />
                 <Bar dataKey="redemptions" fill="#A8E6C1" radius={[6, 6, 0, 0]} />
@@ -174,10 +226,26 @@ export default function ReportsPage() {
           <div className="bg-white rounded-2xl border border-[#F3F4F6] p-5">
             <h2 className="text-sm font-semibold text-[#374151] mb-4">Partner Performance</h2>
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={partnerPerformanceData} layout="vertical" margin={{ top: 5, right: 10, left: 10, bottom: 0 }}>
+              <BarChart
+                data={partnerPerformanceData}
+                layout="vertical"
+                margin={{ top: 5, right: 10, left: 10, bottom: 0 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey="partner" tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} width={90} />
+                <XAxis
+                  type="number"
+                  tick={{ fontSize: 11, fill: '#9CA3AF' }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="partner"
+                  tick={{ fontSize: 11, fill: '#6B7280' }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={90}
+                />
                 <Tooltip content={<CustomTooltip />} />
                 <Bar dataKey="redemptions" fill="#CDEFD9" radius={[0, 6, 6, 0]} />
               </BarChart>
@@ -189,15 +257,37 @@ export default function ReportsPage() {
         <div className="bg-white rounded-2xl border border-[#F3F4F6] p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-[#374151]">Revenue Overview</h2>
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: '#E8F8F1', color: '#4CAF7D' }}>+18% vs last period</span>
+            <span
+              className="text-xs font-semibold px-2.5 py-1 rounded-full"
+              style={{ background: '#E8F8F1', color: '#4CAF7D' }}
+            >
+              +18% vs last period
+            </span>
           </div>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={revenueData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} tickFormatter={(v) => `RM ${(v / 1000).toFixed(0)}k`} />
+              <XAxis
+                dataKey="month"
+                tick={{ fontSize: 11, fill: '#9CA3AF' }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 11, fill: '#9CA3AF' }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => `RM ${(v / 1000).toFixed(0)}k`}
+              />
               <Tooltip formatter={(v: number) => [`RM ${v.toLocaleString()}`, 'Revenue']} />
-              <Line type="monotone" dataKey="revenue" stroke="#3ECBA0" strokeWidth={2.5} dot={{ fill: '#3ECBA0', r: 4 }} activeDot={{ r: 6 }} />
+              <Line
+                type="monotone"
+                dataKey="revenue"
+                stroke="#3ECBA0"
+                strokeWidth={2.5}
+                dot={{ fill: '#3ECBA0', r: 4 }}
+                activeDot={{ r: 6 }}
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>

@@ -3,7 +3,15 @@
 import { useState, useEffect } from 'react';
 import PartnerLayout from '../components/PartnerLayout';
 import { createClient } from '@/lib/supabase/client';
-import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import {
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+} from 'recharts';
 
 type PeriodFilter = 'week' | 'month' | 'quarter';
 
@@ -38,7 +46,9 @@ function StatusBadge({ status }: { status: string }) {
   };
   const s = map[status] || map.pending;
   return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${s.bg} ${s.text}`}>
+    <span
+      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${s.bg} ${s.text}`}
+    >
       {s.label}
     </span>
   );
@@ -71,7 +81,12 @@ const CustomTooltipEarnings = ({ active, payload, label }: any) => {
 export default function EarningsPage() {
   const supabase = createClient();
   const [period, setPeriod] = useState<PeriodFilter>('month');
-  const [kpis, setKpis] = useState<KPIs>({ currentPeriodEarnings: 0, totalMealsServed: 0, totalEarnings: 0, pendingSettlement: 0 });
+  const [kpis, setKpis] = useState<KPIs>({
+    currentPeriodEarnings: 0,
+    totalMealsServed: 0,
+    totalEarnings: 0,
+    pendingSettlement: 0,
+  });
   const [chartData, setChartData] = useState<ChartPoint[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,8 +96,13 @@ export default function EarningsPage() {
   const getPeriodStart = (p: PeriodFilter) => {
     const d = new Date();
     if (p === 'week') d.setDate(d.getDate() - 7);
-    else if (p === 'month') { d.setDate(1); d.setHours(0, 0, 0, 0); }
-    else { d.setMonth(d.getMonth() - 3); d.setHours(0, 0, 0, 0); }
+    else if (p === 'month') {
+      d.setDate(1);
+      d.setHours(0, 0, 0, 0);
+    } else {
+      d.setMonth(d.getMonth() - 3);
+      d.setHours(0, 0, 0, 0);
+    }
     return d.toISOString();
   };
 
@@ -105,7 +125,11 @@ export default function EarningsPage() {
       buckets[key].earnings += (r.meals as any)?.price_myr || ppm;
     });
 
-    return Object.entries(buckets).map(([label, v]) => ({ label, meals: v.meals, earnings: v.earnings }));
+    return Object.entries(buckets).map(([label, v]) => ({
+      label,
+      meals: v.meals,
+      earnings: v.earnings,
+    }));
   };
 
   const loadData = async (pid: string, ppm: number, p: PeriodFilter) => {
@@ -146,7 +170,11 @@ export default function EarningsPage() {
 
     const txns: Transaction[] = pr.slice(0, 50).map((r) => ({
       id: r.id,
-      date: new Date(r.redeemed_at).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' }),
+      date: new Date(r.redeemed_at).toLocaleDateString('en-MY', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }),
       meal: (r.meals as any)?.name || 'Unknown Meal',
       mealsServed: 1,
       amount: (r.meals as any)?.price_myr || ppm,
@@ -158,9 +186,15 @@ export default function EarningsPage() {
 
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
-      const { data: partner } = await supabase.from('partners').select('id, price_per_meal').eq('user_id', user.id).single();
+      const { data: partner } = await supabase
+        .from('partners')
+        .select('id, price_per_meal')
+        .eq('user_id', user.id)
+        .single();
       if (!partner) return;
       setPartnerId(partner.id);
       setPricePerMeal(partner.price_per_meal || 15);
@@ -184,8 +218,18 @@ export default function EarningsPage() {
       label: 'Current Period',
       value: `RM ${kpis.currentPeriodEarnings.toFixed(2)}`,
       icon: (
-        <svg className="w-5 h-5 text-[#3ECBA0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        <svg
+          className="w-5 h-5 text-[#3ECBA0]"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.8}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+          />
         </svg>
       ),
       sub: 'Earnings this period',
@@ -195,8 +239,18 @@ export default function EarningsPage() {
       label: 'Total Meals Served',
       value: kpis.totalMealsServed.toLocaleString(),
       icon: (
-        <svg className="w-5 h-5 text-[#3ECBA0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        <svg
+          className="w-5 h-5 text-[#3ECBA0]"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.8}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+          />
         </svg>
       ),
       sub: 'All-time confirmed meals',
@@ -206,8 +260,18 @@ export default function EarningsPage() {
       label: 'Total Earnings',
       value: `RM ${kpis.totalEarnings.toFixed(2)}`,
       icon: (
-        <svg className="w-5 h-5 text-[#3ECBA0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <svg
+          className="w-5 h-5 text-[#3ECBA0]"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.8}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
         </svg>
       ),
       sub: 'Lifetime earnings',
@@ -217,8 +281,18 @@ export default function EarningsPage() {
       label: 'Pending Settlement',
       value: `RM ${kpis.pendingSettlement.toFixed(2)}`,
       icon: (
-        <svg className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <svg
+          className="w-5 h-5 text-amber-500"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.8}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
         </svg>
       ),
       sub: 'Awaiting confirmation',
@@ -232,8 +306,15 @@ export default function EarningsPage() {
         {/* Header */}
         <div className="flex items-start justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-[#111827]" style={{ fontFamily: "'Poppins', sans-serif" }}>Earnings</h1>
-            <p className="text-[#6B7280] text-sm mt-0.5">Track your revenue and meal redemption performance.</p>
+            <h1
+              className="text-2xl font-bold text-[#111827]"
+              style={{ fontFamily: "'Poppins', sans-serif" }}
+            >
+              Earnings
+            </h1>
+            <p className="text-[#6B7280] text-sm mt-0.5">
+              Track your revenue and meal redemption performance.
+            </p>
           </div>
           {/* Period filter */}
           <div className="flex items-center bg-[#F3F4F6] rounded-xl p-1 gap-1">
@@ -257,16 +338,22 @@ export default function EarningsPage() {
           /* Skeleton */
           <div className="space-y-6">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {[1,2,3,4].map((i) => (
-                <div key={i} className="bg-white rounded-2xl border border-[#E5E7EB] p-5 h-28 animate-pulse">
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className="bg-white rounded-2xl border border-[#E5E7EB] p-5 h-28 animate-pulse"
+                >
                   <div className="h-3 bg-[#E8F7EF] rounded w-2/3 mb-3" />
                   <div className="h-7 bg-[#CDEFD9] rounded w-1/2" />
                 </div>
               ))}
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {[1,2].map((i) => (
-                <div key={i} className="bg-white rounded-2xl border border-[#E5E7EB] p-6 h-64 animate-pulse">
+              {[1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="bg-white rounded-2xl border border-[#E5E7EB] p-6 h-64 animate-pulse"
+                >
                   <div className="h-4 bg-[#E8F7EF] rounded w-1/3 mb-4" />
                   <div className="h-40 bg-[#E8F7EF] rounded-xl" />
                 </div>
@@ -283,12 +370,19 @@ export default function EarningsPage() {
                   className={`bg-white rounded-2xl border border-[#E5E7EB] p-5 border-l-4 ${card.accent} shadow-sm`}
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-xs font-semibold text-[#6B7280] uppercase tracking-wide">{card.label}</p>
+                    <p className="text-xs font-semibold text-[#6B7280] uppercase tracking-wide">
+                      {card.label}
+                    </p>
                     <div className="w-8 h-8 rounded-xl bg-[#F2FBF7] flex items-center justify-center">
                       {card.icon}
                     </div>
                   </div>
-                  <p className="text-2xl font-bold text-[#111827]" style={{ fontFamily: "'Poppins', sans-serif" }}>{card.value}</p>
+                  <p
+                    className="text-2xl font-bold text-[#111827]"
+                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                  >
+                    {card.value}
+                  </p>
                   <p className="text-xs text-[#9CA3AF] mt-1">{card.sub}</p>
                 </div>
               ))}
@@ -299,18 +393,35 @@ export default function EarningsPage() {
               {/* Meals Redeemed Over Time */}
               <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6">
                 <div className="mb-5">
-                  <h3 className="text-sm font-bold text-[#111827]" style={{ fontFamily: "'Poppins', sans-serif" }}>Meals Redeemed Over Time</h3>
+                  <h3
+                    className="text-sm font-bold text-[#111827]"
+                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                  >
+                    Meals Redeemed Over Time
+                  </h3>
                   <p className="text-xs text-[#9CA3AF] mt-0.5">Confirmed redemptions per day</p>
                 </div>
                 {chartData.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-48 text-center">
                     <div className="w-12 h-12 rounded-2xl bg-[#F2FBF7] flex items-center justify-center mb-3">
-                      <svg className="w-6 h-6 text-[#3ECBA0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      <svg
+                        className="w-6 h-6 text-[#3ECBA0]"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={1.8}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                        />
                       </svg>
                     </div>
                     <p className="text-sm font-semibold text-[#374151]">No data yet</p>
-                    <p className="text-xs text-[#9CA3AF] mt-1">Redemptions will appear here once confirmed.</p>
+                    <p className="text-xs text-[#9CA3AF] mt-1">
+                      Redemptions will appear here once confirmed.
+                    </p>
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height={200}>
@@ -322,10 +433,28 @@ export default function EarningsPage() {
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
-                      <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#9CA3AF', fontFamily: 'Poppins' }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fontSize: 11, fill: '#9CA3AF', fontFamily: 'Poppins' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fontSize: 11, fill: '#9CA3AF', fontFamily: 'Poppins' }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 11, fill: '#9CA3AF', fontFamily: 'Poppins' }}
+                        axisLine={false}
+                        tickLine={false}
+                        allowDecimals={false}
+                      />
                       <Tooltip content={<CustomTooltipMeals />} />
-                      <Area type="monotone" dataKey="meals" stroke="#3ECBA0" strokeWidth={2.5} fill="url(#mealsGrad)" dot={{ fill: '#3ECBA0', r: 3, strokeWidth: 0 }} activeDot={{ r: 5, fill: '#3ECBA0' }} />
+                      <Area
+                        type="monotone"
+                        dataKey="meals"
+                        stroke="#3ECBA0"
+                        strokeWidth={2.5}
+                        fill="url(#mealsGrad)"
+                        dot={{ fill: '#3ECBA0', r: 3, strokeWidth: 0 }}
+                        activeDot={{ r: 5, fill: '#3ECBA0' }}
+                      />
                     </AreaChart>
                   </ResponsiveContainer>
                 )}
@@ -334,18 +463,37 @@ export default function EarningsPage() {
               {/* Earnings Over Time */}
               <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6">
                 <div className="mb-5">
-                  <h3 className="text-sm font-bold text-[#111827]" style={{ fontFamily: "'Poppins', sans-serif" }}>Earnings Over Time</h3>
-                  <p className="text-xs text-[#9CA3AF] mt-0.5">Revenue from confirmed redemptions (RM)</p>
+                  <h3
+                    className="text-sm font-bold text-[#111827]"
+                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                  >
+                    Earnings Over Time
+                  </h3>
+                  <p className="text-xs text-[#9CA3AF] mt-0.5">
+                    Revenue from confirmed redemptions (RM)
+                  </p>
                 </div>
                 {chartData.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-48 text-center">
                     <div className="w-12 h-12 rounded-2xl bg-[#F2FBF7] flex items-center justify-center mb-3">
-                      <svg className="w-6 h-6 text-[#3ECBA0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        className="w-6 h-6 text-[#3ECBA0]"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={1.8}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                     </div>
                     <p className="text-sm font-semibold text-[#374151]">No earnings yet</p>
-                    <p className="text-xs text-[#9CA3AF] mt-1">Earnings will appear once meals are confirmed.</p>
+                    <p className="text-xs text-[#9CA3AF] mt-1">
+                      Earnings will appear once meals are confirmed.
+                    </p>
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height={200}>
@@ -357,10 +505,27 @@ export default function EarningsPage() {
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
-                      <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#9CA3AF', fontFamily: 'Poppins' }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fontSize: 11, fill: '#9CA3AF', fontFamily: 'Poppins' }} axisLine={false} tickLine={false} />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fontSize: 11, fill: '#9CA3AF', fontFamily: 'Poppins' }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 11, fill: '#9CA3AF', fontFamily: 'Poppins' }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
                       <Tooltip content={<CustomTooltipEarnings />} />
-                      <Area type="monotone" dataKey="earnings" stroke="#3ECBA0" strokeWidth={2.5} fill="url(#earningsGrad)" dot={{ fill: '#3ECBA0', r: 3, strokeWidth: 0 }} activeDot={{ r: 5, fill: '#3ECBA0' }} />
+                      <Area
+                        type="monotone"
+                        dataKey="earnings"
+                        stroke="#3ECBA0"
+                        strokeWidth={2.5}
+                        fill="url(#earningsGrad)"
+                        dot={{ fill: '#3ECBA0', r: 3, strokeWidth: 0 }}
+                        activeDot={{ r: 5, fill: '#3ECBA0' }}
+                      />
                     </AreaChart>
                   </ResponsiveContainer>
                 )}
@@ -371,20 +536,39 @@ export default function EarningsPage() {
             <div className="bg-white rounded-2xl border border-[#E5E7EB] overflow-hidden">
               <div className="px-6 py-4 border-b border-[#F3F4F6] flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-[#111827]" style={{ fontFamily: "'Poppins', sans-serif" }}>Transactions</h3>
-                  <p className="text-xs text-[#9CA3AF] mt-0.5">{transactions.length} records for selected period</p>
+                  <h3
+                    className="text-sm font-bold text-[#111827]"
+                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                  >
+                    Transactions
+                  </h3>
+                  <p className="text-xs text-[#9CA3AF] mt-0.5">
+                    {transactions.length} records for selected period
+                  </p>
                 </div>
               </div>
 
               {transactions.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                   <div className="w-14 h-14 rounded-2xl bg-[#F2FBF7] flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-7 h-7 text-[#3ECBA0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    <svg
+                      className="w-7 h-7 text-[#3ECBA0]"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={1.5}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                      />
                     </svg>
                   </div>
                   <p className="text-[#374151] font-semibold mb-1">No transactions</p>
-                  <p className="text-[#9CA3AF] text-sm">No payment records found for this period.</p>
+                  <p className="text-[#9CA3AF] text-sm">
+                    No payment records found for this period.
+                  </p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -392,7 +576,10 @@ export default function EarningsPage() {
                     <thead>
                       <tr className="bg-[#F9FAFB]">
                         {['Date', 'Meal', 'Meals Served', 'Amount', 'Status'].map((h) => (
-                          <th key={h} className="px-6 py-3 text-left text-xs font-semibold text-[#6B7280] uppercase tracking-wide">
+                          <th
+                            key={h}
+                            className="px-6 py-3 text-left text-xs font-semibold text-[#6B7280] uppercase tracking-wide"
+                          >
                             {h}
                           </th>
                         ))}
@@ -401,10 +588,16 @@ export default function EarningsPage() {
                     <tbody className="divide-y divide-[#F3F4F6]">
                       {transactions.map((tx) => (
                         <tr key={tx.id} className="hover:bg-[#F9FAFB] transition-colors">
-                          <td className="px-6 py-4 text-sm text-[#374151] whitespace-nowrap">{tx.date}</td>
-                          <td className="px-6 py-4 text-sm font-medium text-[#111827]">{tx.meal}</td>
+                          <td className="px-6 py-4 text-sm text-[#374151] whitespace-nowrap">
+                            {tx.date}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium text-[#111827]">
+                            {tx.meal}
+                          </td>
                           <td className="px-6 py-4 text-sm text-[#374151]">{tx.mealsServed}</td>
-                          <td className="px-6 py-4 text-sm font-semibold text-[#111827]">RM {tx.amount.toFixed(2)}</td>
+                          <td className="px-6 py-4 text-sm font-semibold text-[#111827]">
+                            RM {tx.amount.toFixed(2)}
+                          </td>
                           <td className="px-6 py-4">
                             <StatusBadge status={tx.status} />
                           </td>

@@ -36,7 +36,9 @@ function StatusBadge({ status }: { status: string }) {
   };
   const s = map[status] || map.pending;
   return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${s.bg} ${s.text}`}>
+    <span
+      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${s.bg} ${s.text}`}
+    >
       {s.label}
     </span>
   );
@@ -45,7 +47,12 @@ function StatusBadge({ status }: { status: string }) {
 export default function SettlementPage() {
   const supabase = createClient();
   const [settlements, setSettlements] = useState<Settlement[]>([]);
-  const [kpis, setKpis] = useState<SummaryKPIs>({ totalPaid: 0, pendingAmount: 0, totalRedemptions: 0, lastPaidDate: null });
+  const [kpis, setKpis] = useState<SummaryKPIs>({
+    totalPaid: 0,
+    pendingAmount: 0,
+    totalRedemptions: 0,
+    lastPaidDate: null,
+  });
   const [loading, setLoading] = useState(true);
   const [requesting, setRequesting] = useState(false);
   const [partnerId, setPartnerId] = useState('');
@@ -78,7 +85,9 @@ export default function SettlementPage() {
 
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
       const { data: partner } = await supabase
         .from('partners')
@@ -99,11 +108,22 @@ export default function SettlementPage() {
     if (!partnerId) return;
     const channel = supabase
       .channel('settlements_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'settlements', filter: `partner_id=eq.${partnerId}` }, () => {
-        loadData(partnerId);
-      })
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'settlements',
+          filter: `partner_id=eq.${partnerId}`,
+        },
+        () => {
+          loadData(partnerId);
+        }
+      )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [partnerId]);
 
   const handleRequestPayout = async () => {
@@ -125,9 +145,15 @@ export default function SettlementPage() {
       return;
     }
 
-    const totalAmount = redemptions.reduce((sum, r) => sum + Number((r.meals as any)?.price_myr || 0), 0);
+    const totalAmount = redemptions.reduce(
+      (sum, r) => sum + Number((r.meals as any)?.price_myr || 0),
+      0
+    );
     const now = new Date().toISOString();
-    const periodStart = redemptions.reduce((min, r) => r.redeemed_at < min ? r.redeemed_at : min, redemptions[0].redeemed_at);
+    const periodStart = redemptions.reduce(
+      (min, r) => (r.redeemed_at < min ? r.redeemed_at : min),
+      redemptions[0].redeemed_at
+    );
 
     const { error } = await supabase.from('settlements').insert({
       partner_id: partnerId,
@@ -166,7 +192,11 @@ export default function SettlementPage() {
 
   const formatDate = (d: string | null) => {
     if (!d) return '—';
-    return new Date(d).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
+    return new Date(d).toLocaleDateString('en-MY', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
   };
 
   const kpiCards = [
@@ -174,8 +204,18 @@ export default function SettlementPage() {
       label: 'Total Paid Out',
       value: `RM ${kpis.totalPaid.toFixed(2)}`,
       icon: (
-        <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <svg
+          className="w-5 h-5 text-emerald-500"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.8}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
         </svg>
       ),
       sub: 'Lifetime settled',
@@ -185,8 +225,18 @@ export default function SettlementPage() {
       label: 'Pending Amount',
       value: `RM ${kpis.pendingAmount.toFixed(2)}`,
       icon: (
-        <svg className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <svg
+          className="w-5 h-5 text-amber-500"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.8}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
         </svg>
       ),
       sub: 'Awaiting payout',
@@ -196,8 +246,18 @@ export default function SettlementPage() {
       label: 'Total Redemptions',
       value: kpis.totalRedemptions.toLocaleString(),
       icon: (
-        <svg className="w-5 h-5 text-[#3ECBA0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        <svg
+          className="w-5 h-5 text-[#3ECBA0]"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.8}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+          />
         </svg>
       ),
       sub: 'All-time settled',
@@ -207,8 +267,18 @@ export default function SettlementPage() {
       label: 'Last Paid',
       value: kpis.lastPaidDate ? formatDate(kpis.lastPaidDate) : 'Never',
       icon: (
-        <svg className="w-5 h-5 text-[#6B7280]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        <svg
+          className="w-5 h-5 text-[#6B7280]"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.8}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+          />
         </svg>
       ),
       sub: 'Most recent payout',
@@ -223,7 +293,9 @@ export default function SettlementPage() {
         <div className="flex items-start justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold text-[#111827]">Settlement</h1>
-            <p className="text-[#6B7280] text-sm mt-0.5">Track your payout history and request settlements.</p>
+            <p className="text-[#6B7280] text-sm mt-0.5">
+              Track your payout history and request settlements.
+            </p>
           </div>
           <button
             onClick={handleRequestPayout}
@@ -233,8 +305,18 @@ export default function SettlementPage() {
             {requesting ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             )}
             Request Payout
@@ -244,16 +326,36 @@ export default function SettlementPage() {
         {/* Alerts */}
         {successMsg && (
           <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-sm">
-            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="w-4 h-4 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
             {successMsg}
           </div>
         )}
         {errorMsg && (
           <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
-            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="w-4 h-4 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
             {errorMsg}
           </div>
@@ -262,9 +364,14 @@ export default function SettlementPage() {
         {/* KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {kpiCards.map((card) => (
-            <div key={card.label} className={`bg-white rounded-2xl border border-[#E5E7EB] p-5 border-l-4 ${card.accent}`}>
+            <div
+              key={card.label}
+              className={`bg-white rounded-2xl border border-[#E5E7EB] p-5 border-l-4 ${card.accent}`}
+            >
               <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-medium text-[#6B7280] uppercase tracking-wide">{card.label}</p>
+                <p className="text-xs font-medium text-[#6B7280] uppercase tracking-wide">
+                  {card.label}
+                </p>
                 <div className="w-8 h-8 rounded-lg bg-[#F9FAFB] flex items-center justify-center">
                   {card.icon}
                 </div>
@@ -289,42 +396,80 @@ export default function SettlementPage() {
           ) : settlements.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center px-6">
               <div className="w-14 h-14 rounded-2xl bg-[#F3F4F6] flex items-center justify-center mb-4">
-                <svg className="w-7 h-7 text-[#9CA3AF]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="w-7 h-7 text-[#9CA3AF]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               </div>
               <p className="text-[#374151] font-semibold text-sm">No settlements yet</p>
-              <p className="text-[#9CA3AF] text-xs mt-1">Request your first payout once you have confirmed redemptions.</p>
+              <p className="text-[#9CA3AF] text-xs mt-1">
+                Request your first payout once you have confirmed redemptions.
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="bg-[#F9FAFB]">
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-[#6B7280] uppercase tracking-wide">Period</th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-[#6B7280] uppercase tracking-wide">Redemptions</th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-[#6B7280] uppercase tracking-wide">Amount</th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-[#6B7280] uppercase tracking-wide">Rate/Meal</th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-[#6B7280] uppercase tracking-wide">Status</th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-[#6B7280] uppercase tracking-wide">Paid Date</th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-[#6B7280] uppercase tracking-wide">Reference</th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-[#6B7280] uppercase tracking-wide">
+                      Period
+                    </th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-[#6B7280] uppercase tracking-wide">
+                      Redemptions
+                    </th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-[#6B7280] uppercase tracking-wide">
+                      Amount
+                    </th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-[#6B7280] uppercase tracking-wide">
+                      Rate/Meal
+                    </th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-[#6B7280] uppercase tracking-wide">
+                      Status
+                    </th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-[#6B7280] uppercase tracking-wide">
+                      Paid Date
+                    </th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-[#6B7280] uppercase tracking-wide">
+                      Reference
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#F3F4F6]">
                   {settlements.map((s) => (
                     <tr key={s.id} className="hover:bg-[#F9FAFB] transition-colors">
                       <td className="px-6 py-4">
-                        <p className="text-sm font-medium text-[#111827]">{formatDate(s.period_start)}</p>
+                        <p className="text-sm font-medium text-[#111827]">
+                          {formatDate(s.period_start)}
+                        </p>
                         <p className="text-xs text-[#9CA3AF]">to {formatDate(s.period_end)}</p>
                       </td>
-                      <td className="px-6 py-4 text-sm text-[#374151] font-medium">{s.total_redemptions}</td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm font-bold text-[#3ECBA0]">RM {Number(s.total_amount_myr).toFixed(2)}</span>
+                      <td className="px-6 py-4 text-sm text-[#374151] font-medium">
+                        {s.total_redemptions}
                       </td>
-                      <td className="px-6 py-4 text-sm text-[#374151]">RM {Number(s.settlement_rate_myr).toFixed(2)}</td>
-                      <td className="px-6 py-4"><StatusBadge status={s.status} /></td>
+                      <td className="px-6 py-4">
+                        <span className="text-sm font-bold text-[#3ECBA0]">
+                          RM {Number(s.total_amount_myr).toFixed(2)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-[#374151]">
+                        RM {Number(s.settlement_rate_myr).toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4">
+                        <StatusBadge status={s.status} />
+                      </td>
                       <td className="px-6 py-4 text-sm text-[#374151]">{formatDate(s.paid_at)}</td>
-                      <td className="px-6 py-4 text-sm text-[#9CA3AF]">{s.payment_reference || '—'}</td>
+                      <td className="px-6 py-4 text-sm text-[#9CA3AF]">
+                        {s.payment_reference || '—'}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

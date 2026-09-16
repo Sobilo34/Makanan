@@ -58,10 +58,7 @@ const founders: Founder[] = [
 function FounderCard({ founder, size = 'md' }: { founder: Founder; size?: 'lg' | 'md' }) {
   const isLarge = size === 'lg';
   return (
-    <div
-      className="flex flex-col items-center text-center"
-      style={{ width: isLarge ? 260 : 200 }}
-    >
+    <div className="flex flex-col items-center text-center" style={{ width: isLarge ? 260 : 200 }}>
       {/* Avatar */}
       <div
         className="rounded-full overflow-hidden mb-4 flex-shrink-0"
@@ -69,7 +66,9 @@ function FounderCard({ founder, size = 'md' }: { founder: Founder; size?: 'lg' |
           width: isLarge ? 160 : 120,
           height: isLarge ? 160 : 120,
           border: isLarge ? '3px solid #3ECBA0' : '2px solid rgba(62,203,160,0.5)',
-          boxShadow: isLarge ? '0 0 0 8px rgba(62,203,160,0.12)' : '0 0 0 4px rgba(62,203,160,0.08)',
+          boxShadow: isLarge
+            ? '0 0 0 8px rgba(62,203,160,0.12)'
+            : '0 0 0 4px rgba(62,203,160,0.08)',
         }}
       >
         {founder.img ? (
@@ -145,14 +144,18 @@ export default function FoundersSection() {
             Built by students, for students.
           </h2>
           <p className="font-sans text-muted-text text-base leading-relaxed max-w-md mx-auto">
-            Five students. One shared frustration — skipping meals because campus food was expensive, inconvenient, or simply unavailable. So they built the solution themselves.
+            Five students. One shared frustration — skipping meals because campus food was
+            expensive, inconvenient, or simply unavailable. So they built the solution themselves.
           </p>
         </div>
 
         {/* DESKTOP: Star pattern — CEO center, 4 others around */}
         <div className="hidden md:block relative" style={{ height: 620 }}>
           {/* CEO — center */}
-          <div className="absolute" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+          <div
+            className="absolute"
+            style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
+          >
             <FounderCard founder={ceo} size="lg" />
           </div>
 
@@ -197,15 +200,31 @@ export default function FoundersSection() {
                   className="w-full h-full object-cover object-top"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #2BB88A 0%, #1A9E74 100%)' }}>
-                  <span className="font-sans font-700 text-white text-3xl" style={{ fontWeight: 700 }}>{ceo.initials}</span>
+                <div
+                  className="w-full h-full flex items-center justify-center"
+                  style={{ background: 'linear-gradient(135deg, #2BB88A 0%, #1A9E74 100%)' }}
+                >
+                  <span
+                    className="font-sans font-700 text-white text-3xl"
+                    style={{ fontWeight: 700 }}
+                  >
+                    {ceo.initials}
+                  </span>
                 </div>
               )}
             </div>
-            <span className="font-sans text-[10px] font-700 px-2.5 py-0.5 rounded-full mb-2" style={{ background: '#3ECBA0', color: '#0A0A0A', fontWeight: 700 }}>
+            <span
+              className="font-sans text-[10px] font-700 px-2.5 py-0.5 rounded-full mb-2"
+              style={{ background: '#3ECBA0', color: '#0A0A0A', fontWeight: 700 }}
+            >
               {ceo.role}
             </span>
-            <h3 className="font-sans font-700 text-near-black text-base mb-1" style={{ fontWeight: 700 }}>{ceo.name}</h3>
+            <h3
+              className="font-sans font-700 text-near-black text-base mb-1"
+              style={{ fontWeight: 700 }}
+            >
+              {ceo.name}
+            </h3>
             <p className="font-sans text-muted-text text-sm max-w-xs">{ceo.bio}</p>
           </div>
 
@@ -225,17 +244,43 @@ export default function FoundersSection() {
                   style={{ width: 64, height: 64, border: '2px solid rgba(62,203,160,0.4)' }}
                 >
                   {founder.img ? (
-                    <img src={founder.img} alt={founder.name} className="w-full h-full object-cover" />
+                    <img
+                      src={founder.img}
+                      alt={founder.name}
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #2BB88A 0%, #1A9E74 100%)' }}>
-                      <span className="font-sans font-700 text-white text-lg" style={{ fontWeight: 700 }}>{founder.initials}</span>
+                    <div
+                      className="w-full h-full flex items-center justify-center"
+                      style={{ background: 'linear-gradient(135deg, #2BB88A 0%, #1A9E74 100%)' }}
+                    >
+                      <span
+                        className="font-sans font-700 text-white text-lg"
+                        style={{ fontWeight: 700 }}
+                      >
+                        {founder.initials}
+                      </span>
                     </div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <h3 className="font-sans font-700 text-near-black text-sm truncate" style={{ fontWeight: 700 }}>{founder.name}</h3>
-                    <span className="font-sans text-[9px] font-700 px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: 'rgba(62,203,160,0.12)', color: '#2BB88A', fontWeight: 700 }}>{founder.role}</span>
+                    <h3
+                      className="font-sans font-700 text-near-black text-sm truncate"
+                      style={{ fontWeight: 700 }}
+                    >
+                      {founder.name}
+                    </h3>
+                    <span
+                      className="font-sans text-[9px] font-700 px-2 py-0.5 rounded-full flex-shrink-0"
+                      style={{
+                        background: 'rgba(62,203,160,0.12)',
+                        color: '#2BB88A',
+                        fontWeight: 700,
+                      }}
+                    >
+                      {founder.role}
+                    </span>
                   </div>
                   <p className="font-sans text-muted-text text-xs leading-snug">{founder.bio}</p>
                 </div>

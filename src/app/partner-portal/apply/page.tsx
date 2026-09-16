@@ -26,8 +26,18 @@ interface FormData {
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const CUISINE_OPTIONS = [
-  'Malaysian', 'Chinese', 'Indian', 'Western', 'Japanese', 'Korean',
-  'Thai', 'Indonesian', 'Vegetarian', 'Halal', 'Fast Food', 'Desserts & Drinks',
+  'Malaysian',
+  'Chinese',
+  'Indian',
+  'Western',
+  'Japanese',
+  'Korean',
+  'Thai',
+  'Indonesian',
+  'Vegetarian',
+  'Halal',
+  'Fast Food',
+  'Desserts & Drinks',
 ];
 
 const initialForm: FormData = {
@@ -80,21 +90,46 @@ export default function PartnerApplyPage() {
   const validateStep = (): boolean => {
     setError('');
     if (step === 1) {
-      if (!form.businessName.trim()) { setError('Business name is required.'); return false; }
-      if (!form.ownerName.trim()) { setError('Owner name is required.'); return false; }
-      if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email)) { setError('A valid email address is required.'); return false; }
-      if (!form.phone.trim()) { setError('Phone number is required.'); return false; }
-      if (!form.password || form.password.length < 8) { setError('Password must be at least 8 characters.'); return false; }
+      if (!form.businessName.trim()) {
+        setError('Business name is required.');
+        return false;
+      }
+      if (!form.ownerName.trim()) {
+        setError('Owner name is required.');
+        return false;
+      }
+      if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email)) {
+        setError('A valid email address is required.');
+        return false;
+      }
+      if (!form.phone.trim()) {
+        setError('Phone number is required.');
+        return false;
+      }
+      if (!form.password || form.password.length < 8) {
+        setError('Password must be at least 8 characters.');
+        return false;
+      }
     }
     if (step === 2) {
-      if (!form.location.trim()) { setError('Location / outlet name is required.'); return false; }
-      if (form.operatingDays.length === 0) { setError('Please select at least one operating day.'); return false; }
+      if (!form.location.trim()) {
+        setError('Location / outlet name is required.');
+        return false;
+      }
+      if (form.operatingDays.length === 0) {
+        setError('Please select at least one operating day.');
+        return false;
+      }
     }
     if (step === 3) {
       if (!form.description.trim() || form.description.trim().length < 30) {
-        setError('Please provide a description of at least 30 characters.'); return false;
+        setError('Please provide a description of at least 30 characters.');
+        return false;
       }
-      if (form.cuisineTypes.length === 0) { setError('Please select at least one cuisine type.'); return false; }
+      if (form.cuisineTypes.length === 0) {
+        setError('Please select at least one cuisine type.');
+        return false;
+      }
     }
     return true;
   };
@@ -132,38 +167,34 @@ export default function PartnerApplyPage() {
       const userId = signUpData.user.id;
 
       // Step 2: Insert partner record linked to the new auth user
-      const { error: partnerError } = await supabase
-        .from('partners')
-        .insert({
-          user_id: userId,
-          name: form.businessName.trim(),
-          location: form.location.trim(),
-          email: form.email.trim().toLowerCase(),
-          phone: form.phone.trim(),
-          description: form.description.trim(),
-          is_active: true,
-        });
+      const { error: partnerError } = await supabase.from('partners').insert({
+        user_id: userId,
+        name: form.businessName.trim(),
+        location: form.location.trim(),
+        email: form.email.trim().toLowerCase(),
+        phone: form.phone.trim(),
+        description: form.description.trim(),
+        is_active: true,
+      });
 
       if (partnerError) throw partnerError;
 
       // Step 3: Also store full application details for records
-      await supabase
-        .from('partner_applications')
-        .insert({
-          business_name: form.businessName.trim(),
-          owner_name: form.ownerName.trim(),
-          email: form.email.trim().toLowerCase(),
-          phone: form.phone.trim(),
-          location: form.location.trim(),
-          address: form.address.trim() || null,
-          opening_time: form.openingTime,
-          closing_time: form.closingTime,
-          operating_days: form.operatingDays,
-          description: form.description.trim(),
-          cuisine_types: form.cuisineTypes,
-          seating_capacity: form.seatingCapacity ? parseInt(form.seatingCapacity, 10) : null,
-          status: 'approved',
-        });
+      await supabase.from('partner_applications').insert({
+        business_name: form.businessName.trim(),
+        owner_name: form.ownerName.trim(),
+        email: form.email.trim().toLowerCase(),
+        phone: form.phone.trim(),
+        location: form.location.trim(),
+        address: form.address.trim() || null,
+        opening_time: form.openingTime,
+        closing_time: form.closingTime,
+        operating_days: form.operatingDays,
+        description: form.description.trim(),
+        cuisine_types: form.cuisineTypes,
+        seating_capacity: form.seatingCapacity ? parseInt(form.seatingCapacity, 10) : null,
+        status: 'approved',
+      });
 
       // Step 4: Sign in the new partner
       const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -190,10 +221,14 @@ export default function PartnerApplyPage() {
         className="hidden lg:flex lg:w-[42%] relative overflow-hidden flex-col justify-between p-12"
         style={{ background: 'linear-gradient(145deg, #0d2b22 0%, #1a3a2e 40%, #0f2027 100%)' }}
       >
-        <div className="absolute top-[-80px] right-[-80px] w-[320px] h-[320px] rounded-full opacity-10"
-          style={{ background: 'radial-gradient(circle, #3ECBA0 0%, transparent 70%)' }} />
-        <div className="absolute bottom-[-60px] left-[-60px] w-[260px] h-[260px] rounded-full opacity-8"
-          style={{ background: 'radial-gradient(circle, #3ECBA0 0%, transparent 70%)' }} />
+        <div
+          className="absolute top-[-80px] right-[-80px] w-[320px] h-[320px] rounded-full opacity-10"
+          style={{ background: 'radial-gradient(circle, #3ECBA0 0%, transparent 70%)' }}
+        />
+        <div
+          className="absolute bottom-[-60px] left-[-60px] w-[260px] h-[260px] rounded-full opacity-8"
+          style={{ background: 'radial-gradient(circle, #3ECBA0 0%, transparent 70%)' }}
+        />
 
         {/* Logo */}
         <div className="flex items-center gap-3 relative z-10">
@@ -214,22 +249,41 @@ export default function PartnerApplyPage() {
         <div className="relative z-10 space-y-8">
           <div>
             <h2 className="text-4xl font-bold text-white leading-tight mb-4">
-              Join our<br />
-              <span style={{ color: '#3ECBA0' }}>food network</span><br />
+              Join our
+              <br />
+              <span style={{ color: '#3ECBA0' }}>food network</span>
+              <br />
               today.
             </h2>
             <p className="text-white/60 text-base leading-relaxed max-w-sm">
-              Partner with Makanan to reach hundreds of students daily. Manage your outlet, track orders, and grow your revenue — all in one place.
+              Partner with Makanan to reach hundreds of students daily. Manage your outlet, track
+              orders, and grow your revenue — all in one place.
             </p>
           </div>
 
           {/* Benefits */}
           <div className="space-y-4">
             {[
-              { icon: '🏪', title: 'Easy Onboarding', desc: 'Set up your outlet profile in minutes' },
-              { icon: '📊', title: 'Real-time Analytics', desc: 'Track redemptions and earnings daily' },
-              { icon: '💳', title: 'Guaranteed Payments', desc: 'Bi-weekly settlements, no delays' },
-              { icon: '🎓', title: 'Campus Reach', desc: 'Access to 800+ active student subscribers' },
+              {
+                icon: '🏪',
+                title: 'Easy Onboarding',
+                desc: 'Set up your outlet profile in minutes',
+              },
+              {
+                icon: '📊',
+                title: 'Real-time Analytics',
+                desc: 'Track redemptions and earnings daily',
+              },
+              {
+                icon: '💳',
+                title: 'Guaranteed Payments',
+                desc: 'Bi-weekly settlements, no delays',
+              },
+              {
+                icon: '🎓',
+                title: 'Campus Reach',
+                desc: 'Access to 800+ active student subscribers',
+              },
             ].map((b) => (
               <div key={b.title} className="flex items-start gap-3">
                 <span className="text-xl">{b.icon}</span>
@@ -258,38 +312,58 @@ export default function PartnerApplyPage() {
               className="object-contain"
             />
             <span className="text-[#1a3028] font-bold text-lg">Makanan</span>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#3ECBA0]/15 text-[#3ECBA0]">Partner</span>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#3ECBA0]/15 text-[#3ECBA0]">
+              Partner
+            </span>
           </div>
 
           {/* Header */}
           <div className="mb-7">
             <h1 className="text-2xl font-bold text-[#111827] mb-1">Partner Application</h1>
-            <p className="text-[#6B7280] text-sm">Fill in your business details to create your partner account.</p>
+            <p className="text-[#6B7280] text-sm">
+              Fill in your business details to create your partner account.
+            </p>
           </div>
 
           {/* Step Indicator */}
           <div className="flex items-center gap-2 mb-8">
             {([1, 2, 3] as Step[]).map((s) => (
               <div key={s} className="flex items-center gap-2 flex-1">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 transition-all ${
-                  step === s
-                    ? 'bg-[#3ECBA0] text-white shadow-md shadow-[#3ECBA0]/30'
-                    : step > s
-                    ? 'bg-[#3ECBA0]/20 text-[#3ECBA0]'
-                    : 'bg-[#E5E7EB] text-[#9CA3AF]'
-                }`}>
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 transition-all ${
+                    step === s
+                      ? 'bg-[#3ECBA0] text-white shadow-md shadow-[#3ECBA0]/30'
+                      : step > s
+                        ? 'bg-[#3ECBA0]/20 text-[#3ECBA0]'
+                        : 'bg-[#E5E7EB] text-[#9CA3AF]'
+                  }`}
+                >
                   {step > s ? (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
-                  ) : s}
+                  ) : (
+                    s
+                  )}
                 </div>
                 <div className="flex-1">
-                  <p className={`text-xs font-semibold ${step >= s ? 'text-[#374151]' : 'text-[#9CA3AF]'}`}>
+                  <p
+                    className={`text-xs font-semibold ${step >= s ? 'text-[#374151]' : 'text-[#9CA3AF]'}`}
+                  >
                     {s === 1 ? 'Business Info' : s === 2 ? 'Operations' : 'About & Cuisine'}
                   </p>
                 </div>
-                {s < 3 && <div className={`h-px flex-1 max-w-[24px] ${step > s ? 'bg-[#3ECBA0]' : 'bg-[#E5E7EB]'}`} />}
+                {s < 3 && (
+                  <div
+                    className={`h-px flex-1 max-w-[24px] ${step > s ? 'bg-[#3ECBA0]' : 'bg-[#E5E7EB]'}`}
+                  />
+                )}
               </div>
             ))}
           </div>
@@ -297,8 +371,18 @@ export default function PartnerApplyPage() {
           {/* Error */}
           {error && (
             <div className="mb-5 p-4 rounded-xl bg-red-50 border border-red-100 flex items-start gap-3">
-              <svg className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
               <p className="text-red-600 text-sm">{error}</p>
             </div>
@@ -374,18 +458,44 @@ export default function PartnerApplyPage() {
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#6B7280] transition-colors"
                     >
                       {showPassword ? (
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={1.8}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                          />
                         </svg>
                       ) : (
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={1.8}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
                         </svg>
                       )}
                     </button>
                   </div>
-                  <p className="text-xs text-[#9CA3AF] mt-1.5">You will use this password to sign in to your partner dashboard.</p>
+                  <p className="text-xs text-[#9CA3AF] mt-1.5">
+                    You will use this password to sign in to your partner dashboard.
+                  </p>
                 </div>
               </div>
             </div>
@@ -407,7 +517,9 @@ export default function PartnerApplyPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#374151] mb-1.5">Full Address</label>
+                <label className="block text-sm font-medium text-[#374151] mb-1.5">
+                  Full Address
+                </label>
                 <textarea
                   value={form.address}
                   onChange={(e) => updateField('address', e.target.value)}
@@ -419,7 +531,9 @@ export default function PartnerApplyPage() {
 
               {/* Operating Hours */}
               <div>
-                <label className="block text-sm font-medium text-[#374151] mb-2">Operating Hours</label>
+                <label className="block text-sm font-medium text-[#374151] mb-2">
+                  Operating Hours
+                </label>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-[#9CA3AF] mb-1">Opening Time</label>
@@ -470,7 +584,9 @@ export default function PartnerApplyPage() {
 
               {/* Seating Capacity */}
               <div>
-                <label className="block text-sm font-medium text-[#374151] mb-1.5">Seating Capacity (optional)</label>
+                <label className="block text-sm font-medium text-[#374151] mb-1.5">
+                  Seating Capacity (optional)
+                </label>
                 <input
                   type="number"
                   value={form.seatingCapacity}
@@ -530,11 +646,15 @@ export default function PartnerApplyPage() {
 
               {/* Summary card */}
               <div className="bg-[#F0FBF7] rounded-2xl border border-[#3ECBA0]/20 p-4">
-                <p className="text-xs font-semibold text-[#3ECBA0] uppercase tracking-wide mb-3">Application Summary</p>
+                <p className="text-xs font-semibold text-[#3ECBA0] uppercase tracking-wide mb-3">
+                  Application Summary
+                </p>
                 <div className="space-y-1.5 text-sm">
                   <div className="flex justify-between">
                     <span className="text-[#9CA3AF]">Business</span>
-                    <span className="font-medium text-[#111827] text-right max-w-[60%] truncate">{form.businessName || '—'}</span>
+                    <span className="font-medium text-[#111827] text-right max-w-[60%] truncate">
+                      {form.businessName || '—'}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#9CA3AF]">Owner</span>
@@ -542,15 +662,21 @@ export default function PartnerApplyPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#9CA3AF]">Email</span>
-                    <span className="font-medium text-[#111827] text-right max-w-[60%] truncate">{form.email || '—'}</span>
+                    <span className="font-medium text-[#111827] text-right max-w-[60%] truncate">
+                      {form.email || '—'}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#9CA3AF]">Location</span>
-                    <span className="font-medium text-[#111827] text-right max-w-[60%] truncate">{form.location || '—'}</span>
+                    <span className="font-medium text-[#111827] text-right max-w-[60%] truncate">
+                      {form.location || '—'}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#9CA3AF]">Hours</span>
-                    <span className="font-medium text-[#111827]">{form.openingTime} – {form.closingTime}</span>
+                    <span className="font-medium text-[#111827]">
+                      {form.openingTime} – {form.closingTime}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#9CA3AF]">Days</span>
@@ -562,7 +688,9 @@ export default function PartnerApplyPage() {
               </div>
 
               <p className="text-xs text-[#9CA3AF] leading-relaxed">
-                By submitting this application, you confirm that all information provided is accurate and that you agree to Makanan's partner terms and conditions. Your account will be created immediately upon submission.
+                By submitting this application, you confirm that all information provided is
+                accurate and that you agree to Makanan's partner terms and conditions. Your account
+                will be created immediately upon submission.
               </p>
             </div>
           )}
@@ -575,8 +703,18 @@ export default function PartnerApplyPage() {
                 onClick={handleBack}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-[#E5E7EB] text-sm font-medium text-[#374151] hover:bg-[#F9FAFB] transition-all"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                  />
                 </svg>
                 Back
               </button>
@@ -585,8 +723,18 @@ export default function PartnerApplyPage() {
                 href="/partner-portal/login"
                 className="flex items-center gap-2 text-sm text-[#9CA3AF] hover:text-[#6B7280] transition-colors"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                  />
                 </svg>
                 Back to Login
               </Link>
@@ -600,7 +748,13 @@ export default function PartnerApplyPage() {
                 style={{ background: 'linear-gradient(135deg, #3ECBA0 0%, #2db88d 100%)' }}
               >
                 Continue
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
               </button>
@@ -610,21 +764,46 @@ export default function PartnerApplyPage() {
                 onClick={handleSubmit}
                 disabled={loading}
                 className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                style={{ background: loading ? '#9CA3AF' : 'linear-gradient(135deg, #3ECBA0 0%, #2db88d 100%)' }}
+                style={{
+                  background: loading
+                    ? '#9CA3AF'
+                    : 'linear-gradient(135deg, #3ECBA0 0%, #2db88d 100%)',
+                }}
               >
                 {loading ? (
                   <>
                     <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
                     </svg>
                     Creating Account...
                   </>
                 ) : (
                   <>
                     Create Partner Account
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
                     </svg>
                   </>
                 )}
@@ -636,7 +815,10 @@ export default function PartnerApplyPage() {
           <div className="mt-6 text-center">
             <p className="text-sm text-[#6B7280]">
               Already a partner?{' '}
-              <Link href="/partner-portal/login" className="text-[#3ECBA0] font-semibold hover:text-[#2db88d]">
+              <Link
+                href="/partner-portal/login"
+                className="text-[#3ECBA0] font-semibold hover:text-[#2db88d]"
+              >
                 Sign in here
               </Link>
             </p>

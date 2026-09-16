@@ -24,7 +24,12 @@ interface Student {
 }
 
 function InitialsAvatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' }) {
-  const initials = name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
+  const initials = name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
   const colors = ['#3ECBA0', '#6366F1', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
   const color = colors[name.charCodeAt(0) % colors.length];
   const sz = size === 'sm' ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm';
@@ -44,9 +49,14 @@ function MealsProgress({ used, total }: { used: number; total: number }) {
   const color = pct > 50 ? '#3ECBA0' : pct > 20 ? '#F59E0B' : '#EF4444';
   return (
     <div className="min-w-[120px]">
-      <p className="text-sm font-semibold text-[#374151] mb-1">{remaining} / {total}</p>
+      <p className="text-sm font-semibold text-[#374151] mb-1">
+        {remaining} / {total}
+      </p>
       <div className="h-1.5 bg-[#F3F4F6] rounded-full overflow-hidden">
-        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
+        <div
+          className="h-full rounded-full transition-all"
+          style={{ width: `${pct}%`, background: color }}
+        />
       </div>
     </div>
   );
@@ -69,7 +79,10 @@ export default function StudentsPage() {
           .eq('role', 'student')
           .order('created_at', { ascending: false });
 
-        if (!profiles) { setLoading(false); return; }
+        if (!profiles) {
+          setLoading(false);
+          return;
+        }
 
         const enriched: Student[] = await Promise.all(
           profiles.map(async (p) => {
@@ -130,21 +143,103 @@ export default function StudentsPage() {
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);
-    return d.toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleDateString('en-MY', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   // Demo data fallback
   const demoStudents: Student[] = [
-    { id: 'demo-1', full_name: 'Siti Aisyah', email: 'siti@student.aiu.edu', student_id: 'SA-2024-00123', is_active: true, created_at: new Date().toISOString(), subscription: { id: 's1', status: 'active', credits_total: 60, credits_used: 28, meal_plan: { name: 'Standard Plan', price_myr: 300 } }, last_activity: new Date().toISOString() },
-    { id: 'demo-2', full_name: 'Ali Bin Abu', email: 'ali@student.aiu.edu', student_id: 'AB-2024-00456', is_active: false, created_at: new Date().toISOString(), subscription: { id: 's2', status: 'expired', credits_total: 60, credits_used: 60, meal_plan: { name: 'Classic Plan', price_myr: 250 } }, last_activity: new Date(Date.now() - 86400000 * 8).toISOString() },
-    { id: 'demo-3', full_name: 'Sarah Lee', email: 'sarah@student.aiu.edu', student_id: 'SL-2024-00999', is_active: true, created_at: new Date().toISOString(), subscription: { id: 's3', status: 'active', credits_total: 40, credits_used: 25, meal_plan: { name: 'Premium Plan', price_myr: 400 } }, last_activity: new Date(Date.now() - 86400000).toISOString() },
-    { id: 'demo-4', full_name: 'Jason Tan', email: 'jason@student.aiu.edu', student_id: 'JT-2024-00321', is_active: true, created_at: new Date().toISOString(), subscription: { id: 's4', status: 'active', credits_total: 60, credits_used: 28, meal_plan: { name: 'Classic Plan', price_myr: 250 } }, last_activity: new Date().toISOString() },
-    { id: 'demo-5', full_name: 'Maryam Khalid', email: 'maryam@student.aiu.edu', student_id: 'MK-2024-00654', is_active: true, created_at: new Date().toISOString(), subscription: { id: 's5', status: 'active', credits_total: 40, credits_used: 25, meal_plan: { name: 'Premium Plan', price_myr: 400 } }, last_activity: new Date(Date.now() - 86400000).toISOString() },
+    {
+      id: 'demo-1',
+      full_name: 'Siti Aisyah',
+      email: 'siti@student.aiu.edu',
+      student_id: 'SA-2024-00123',
+      is_active: true,
+      created_at: new Date().toISOString(),
+      subscription: {
+        id: 's1',
+        status: 'active',
+        credits_total: 60,
+        credits_used: 28,
+        meal_plan: { name: 'Standard Plan', price_myr: 300 },
+      },
+      last_activity: new Date().toISOString(),
+    },
+    {
+      id: 'demo-2',
+      full_name: 'Ali Bin Abu',
+      email: 'ali@student.aiu.edu',
+      student_id: 'AB-2024-00456',
+      is_active: false,
+      created_at: new Date().toISOString(),
+      subscription: {
+        id: 's2',
+        status: 'expired',
+        credits_total: 60,
+        credits_used: 60,
+        meal_plan: { name: 'Classic Plan', price_myr: 250 },
+      },
+      last_activity: new Date(Date.now() - 86400000 * 8).toISOString(),
+    },
+    {
+      id: 'demo-3',
+      full_name: 'Sarah Lee',
+      email: 'sarah@student.aiu.edu',
+      student_id: 'SL-2024-00999',
+      is_active: true,
+      created_at: new Date().toISOString(),
+      subscription: {
+        id: 's3',
+        status: 'active',
+        credits_total: 40,
+        credits_used: 25,
+        meal_plan: { name: 'Premium Plan', price_myr: 400 },
+      },
+      last_activity: new Date(Date.now() - 86400000).toISOString(),
+    },
+    {
+      id: 'demo-4',
+      full_name: 'Jason Tan',
+      email: 'jason@student.aiu.edu',
+      student_id: 'JT-2024-00321',
+      is_active: true,
+      created_at: new Date().toISOString(),
+      subscription: {
+        id: 's4',
+        status: 'active',
+        credits_total: 60,
+        credits_used: 28,
+        meal_plan: { name: 'Classic Plan', price_myr: 250 },
+      },
+      last_activity: new Date().toISOString(),
+    },
+    {
+      id: 'demo-5',
+      full_name: 'Maryam Khalid',
+      email: 'maryam@student.aiu.edu',
+      student_id: 'MK-2024-00654',
+      is_active: true,
+      created_at: new Date().toISOString(),
+      subscription: {
+        id: 's5',
+        status: 'active',
+        credits_total: 40,
+        credits_used: 25,
+        meal_plan: { name: 'Premium Plan', price_myr: 400 },
+      },
+      last_activity: new Date(Date.now() - 86400000).toISOString(),
+    },
   ];
 
-  const displayStudents = students.length === 0 && !loading
-    ? demoStudents.filter((s) => statusFilter === 'active' ? s.is_active : !s.is_active)
-    : filtered;
+  const displayStudents =
+    students.length === 0 && !loading
+      ? demoStudents.filter((s) => (statusFilter === 'active' ? s.is_active : !s.is_active))
+      : filtered;
 
   return (
     <AdminLayout>
@@ -158,8 +253,18 @@ export default function StudentsPage() {
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px] max-w-sm">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <svg
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
             <input
               type="text"
@@ -190,8 +295,18 @@ export default function StudentsPage() {
         <div className="bg-white rounded-2xl border border-[#F3F4F6] overflow-hidden">
           {/* Header row */}
           <div className="grid grid-cols-[2fr_1.5fr_2fr_1.5fr_1fr_2fr_32px] gap-4 px-5 py-3 border-b border-[#F3F4F6] bg-[#FAFAFA]">
-            {['Student', 'Student ID', 'Current Plan', 'Meals Remaining', 'Status', 'Last Activity', ''].map((h) => (
-              <p key={h} className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">{h}</p>
+            {[
+              'Student',
+              'Student ID',
+              'Current Plan',
+              'Meals Remaining',
+              'Status',
+              'Last Activity',
+              '',
+            ].map((h) => (
+              <p key={h} className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">
+                {h}
+              </p>
             ))}
           </div>
 
@@ -219,7 +334,9 @@ export default function StudentsPage() {
                       />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-[#111827] truncate">{student.full_name}</p>
+                      <p className="text-sm font-semibold text-[#111827] truncate">
+                        {student.full_name}
+                      </p>
                       <p className="text-xs text-[#9CA3AF] truncate">{student.email}</p>
                     </div>
                   </div>
@@ -231,8 +348,13 @@ export default function StudentsPage() {
                   <div>
                     {student.subscription?.meal_plan ? (
                       <>
-                        <p className="text-sm font-medium text-[#374151]">{student.subscription.meal_plan.name}</p>
-                        <p className="text-xs text-[#9CA3AF]">RM{student.subscription.meal_plan.price_myr} / {student.subscription.credits_total} Meals</p>
+                        <p className="text-sm font-medium text-[#374151]">
+                          {student.subscription.meal_plan.name}
+                        </p>
+                        <p className="text-xs text-[#9CA3AF]">
+                          RM{student.subscription.meal_plan.price_myr} /{' '}
+                          {student.subscription.credits_total} Meals
+                        </p>
                       </>
                     ) : (
                       <p className="text-sm text-[#9CA3AF]">No active plan</p>
@@ -262,12 +384,20 @@ export default function StudentsPage() {
 
                   {/* Last activity */}
                   <div>
-                    <p className="text-xs text-[#374151]">{formatDate(student.last_activity || student.created_at)}</p>
+                    <p className="text-xs text-[#374151]">
+                      {formatDate(student.last_activity || student.created_at)}
+                    </p>
                     <p className="text-xs text-[#9CA3AF]">Meal Redeemed</p>
                   </div>
 
                   {/* Arrow */}
-                  <svg className="w-4 h-4 text-[#D1D5DB] group-hover:text-[#3ECBA0] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg
+                    className="w-4 h-4 text-[#D1D5DB] group-hover:text-[#3ECBA0] transition-colors"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                   </svg>
                 </Link>

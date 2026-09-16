@@ -76,7 +76,9 @@ export default function MealDetailPage() {
     fetchData();
   }, [params?.id, user]);
 
-  const creditsRemaining = subscription ? subscription.credits_total - subscription.credits_used : 0;
+  const creditsRemaining = subscription
+    ? subscription.credits_total - subscription.credits_used
+    : 0;
 
   if (loading) {
     return (
@@ -97,7 +99,9 @@ export default function MealDetailPage() {
         <div className="text-center">
           <div className="text-4xl mb-3">🍽️</div>
           <p className="text-[#1A1A1A] font-semibold mb-2">Meal not found</p>
-          <button onClick={() => router.back()} className="text-[#3ECBA0] font-medium text-sm">Go back</button>
+          <button onClick={() => router.back()} className="text-[#3ECBA0] font-medium text-sm">
+            Go back
+          </button>
         </div>
       </div>
     );
@@ -113,7 +117,9 @@ export default function MealDetailPage() {
         {meal.image_url ? (
           <img src={meal.image_url} alt={meal.name} className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-[#E8F9F2] to-[#C8F0E4] flex items-center justify-center text-7xl">🍽️</div>
+          <div className="w-full h-full bg-gradient-to-br from-[#E8F9F2] to-[#C8F0E4] flex items-center justify-center text-7xl">
+            🍽️
+          </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
 
@@ -122,15 +128,31 @@ export default function MealDetailPage() {
           onClick={() => router.back()}
           className="absolute top-4 left-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
         >
-          <svg className="w-5 h-5 text-[#1A1A1A]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg
+            className="w-5 h-5 text-[#1A1A1A]"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
 
         {/* Share button */}
         <button className="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors">
-          <svg className="w-5 h-5 text-[#1A1A1A]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+          <svg
+            className="w-5 h-5 text-[#1A1A1A]"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+            />
           </svg>
         </button>
 
@@ -149,9 +171,23 @@ export default function MealDetailPage() {
           <div className="mb-4">
             <h1 className="text-[#1A1A1A] font-bold text-2xl leading-tight mb-1">{meal.name}</h1>
             <div className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-[#9CA3AF]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              <svg
+                className="w-4 h-4 text-[#9CA3AF]"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                />
               </svg>
               <p className="text-[#6B7280] text-sm font-medium">{meal.partners?.name}</p>
               {meal.partners?.location && (
@@ -163,11 +199,22 @@ export default function MealDetailPage() {
           {/* Stats row */}
           <div className="grid grid-cols-3 gap-3 mb-5">
             {[
-              { icon: '🔥', value: meal.calories ? `${meal.calories} cal` : '—', label: 'Calories' },
-              { icon: '⏱', value: meal.prep_time_minutes ? `${meal.prep_time_minutes} min` : '—', label: 'Prep time' },
+              {
+                icon: '🔥',
+                value: meal.calories ? `${meal.calories} cal` : '—',
+                label: 'Calories',
+              },
+              {
+                icon: '⏱',
+                value: meal.prep_time_minutes ? `${meal.prep_time_minutes} min` : '—',
+                label: 'Prep time',
+              },
               { icon: '⭐', value: meal.rating ? meal.rating.toString() : '—', label: 'Rating' },
             ].map((stat) => (
-              <div key={stat.label} className="bg-[#F7F8FA] rounded-2xl p-3 text-center border border-[#EBEBEB]">
+              <div
+                key={stat.label}
+                className="bg-[#F7F8FA] rounded-2xl p-3 text-center border border-[#EBEBEB]"
+              >
                 <div className="text-lg mb-0.5">{stat.icon}</div>
                 <div className="text-[#1A1A1A] font-bold text-sm">{stat.value}</div>
                 <div className="text-[#9CA3AF] text-xs">{stat.label}</div>
@@ -200,7 +247,9 @@ export default function MealDetailPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[#9CA3AF] text-xs mb-0.5">Your plan</p>
-                  <p className="text-[#1A1A1A] font-semibold text-sm">{subscription.meal_plans?.name}</p>
+                  <p className="text-[#1A1A1A] font-semibold text-sm">
+                    {subscription.meal_plans?.name}
+                  </p>
                 </div>
                 <div className="text-right">
                   <p className="text-[#9CA3AF] text-xs mb-0.5">Credits left</p>
@@ -220,11 +269,23 @@ export default function MealDetailPage() {
             disabled={!canRedeem}
             className="flex-1 bg-[#3ECBA0] text-white font-bold py-3.5 rounded-xl text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#2DAF87] transition-colors cta-primary disabled:shadow-none"
           >
-            {!subscription ? 'No active plan' : creditsRemaining === 0 ? 'No credits left' : 'Redeem Meal'}
+            {!subscription
+              ? 'No active plan'
+              : creditsRemaining === 0
+                ? 'No credits left'
+                : 'Redeem Meal'}
           </button>
           <div className="bg-[#F7F8FA] rounded-xl px-4 py-3.5 text-sm font-semibold text-[#1A1A1A] flex items-center gap-1.5 border border-[#EBEBEB] flex-shrink-0">
             1 meal
-            <svg className="w-3 h-3 text-[#9CA3AF]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+            <svg
+              className="w-3 h-3 text-[#9CA3AF]"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
           </div>
         </div>
       </div>
@@ -236,7 +297,8 @@ export default function MealDetailPage() {
           creditsRemaining={creditsRemaining}
           onClose={() => setShowModal(false)}
           onSuccess={() => {
-            if (subscription) setSubscription({ ...subscription, credits_used: subscription.credits_used + 1 });
+            if (subscription)
+              setSubscription({ ...subscription, credits_used: subscription.credits_used + 1 });
           }}
         />
       )}

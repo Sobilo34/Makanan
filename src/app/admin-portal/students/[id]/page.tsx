@@ -36,12 +36,20 @@ interface Redemption {
 type TabType = 'subscription' | 'redemption' | 'payment';
 
 function InitialsAvatar({ name, size = 'lg' }: { name: string; size?: 'lg' | 'md' }) {
-  const initials = name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
+  const initials = name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
   const colors = ['#3ECBA0', '#6366F1', '#F59E0B', '#EF4444', '#8B5CF6'];
   const color = colors[name.charCodeAt(0) % colors.length];
   const sz = size === 'lg' ? 'w-14 h-14 text-xl' : 'w-9 h-9 text-sm';
   return (
-    <div className={`${sz} rounded-full flex items-center justify-center font-bold text-white flex-shrink-0`} style={{ background: color }}>
+    <div
+      className={`${sz} rounded-full flex items-center justify-center font-bold text-white flex-shrink-0`}
+      style={{ background: color }}
+    >
       {initials}
     </div>
   );
@@ -63,14 +71,48 @@ export default function StudentDetailPage() {
     const load = async () => {
       if (studentId.startsWith('demo-')) {
         // Demo data
-        setStudent({ id: studentId, full_name: 'Siti Aisyah', email: 'siti@student.aiu.edu', student_id: 'SA-2024-00123', is_active: true, phone: '+60 12-345 6789', created_at: new Date().toISOString() });
+        setStudent({
+          id: studentId,
+          full_name: 'Siti Aisyah',
+          email: 'siti@student.aiu.edu',
+          student_id: 'SA-2024-00123',
+          is_active: true,
+          phone: '+60 12-345 6789',
+          created_at: new Date().toISOString(),
+        });
         setSubscriptions([
-          { id: 's1', status: 'active', credits_total: 60, credits_used: 28, starts_at: '2026-05-12T00:00:00Z', expires_at: '2026-08-12T00:00:00Z', meal_plan: { name: 'Standard Plan', price_myr: 300 } },
-          { id: 's2', status: 'expired', credits_total: 60, credits_used: 60, starts_at: '2026-02-12T00:00:00Z', expires_at: '2026-05-12T00:00:00Z', meal_plan: { name: 'Classic Plan', price_myr: 250 } },
+          {
+            id: 's1',
+            status: 'active',
+            credits_total: 60,
+            credits_used: 28,
+            starts_at: '2026-05-12T00:00:00Z',
+            expires_at: '2026-08-12T00:00:00Z',
+            meal_plan: { name: 'Standard Plan', price_myr: 300 },
+          },
+          {
+            id: 's2',
+            status: 'expired',
+            credits_total: 60,
+            credits_used: 60,
+            starts_at: '2026-02-12T00:00:00Z',
+            expires_at: '2026-05-12T00:00:00Z',
+            meal_plan: { name: 'Classic Plan', price_myr: 250 },
+          },
         ]);
         setRedemptions([
-          { id: 'r1', redeemed_at: new Date().toISOString(), meal: { name: 'Nasi Lemak' }, partner: { name: 'Mamak Stall A' } },
-          { id: 'r2', redeemed_at: new Date(Date.now() - 86400000).toISOString(), meal: { name: 'Chicken Rice' }, partner: { name: 'Grand Central' } },
+          {
+            id: 'r1',
+            redeemed_at: new Date().toISOString(),
+            meal: { name: 'Nasi Lemak' },
+            partner: { name: 'Mamak Stall A' },
+          },
+          {
+            id: 'r2',
+            redeemed_at: new Date(Date.now() - 86400000).toISOString(),
+            meal: { name: 'Chicken Rice' },
+            partner: { name: 'Grand Central' },
+          },
         ]);
         setLoading(false);
         return;
@@ -83,7 +125,10 @@ export default function StudentDetailPage() {
           .eq('id', studentId)
           .maybeSingle();
 
-        if (!profile) { router.push('/admin-portal/students'); return; }
+        if (!profile) {
+          router.push('/admin-portal/students');
+          return;
+        }
         setStudent(profile);
 
         const { data: subs } = await supabase
@@ -95,7 +140,11 @@ export default function StudentDetailPage() {
         if (subs) {
           const enrichedSubs = await Promise.all(
             subs.map(async (s) => {
-              const { data: plan } = await supabase.from('meal_plans').select('name, price_myr').eq('id', s.meal_plan_id).maybeSingle();
+              const { data: plan } = await supabase
+                .from('meal_plans')
+                .select('name, price_myr')
+                .eq('id', s.meal_plan_id)
+                .maybeSingle();
               return { ...s, meal_plan: plan || undefined };
             })
           );
@@ -116,7 +165,11 @@ export default function StudentDetailPage() {
                 supabase.from('meals').select('name').eq('id', r.meal_id).maybeSingle(),
                 supabase.from('partners').select('name').eq('id', r.partner_id).maybeSingle(),
               ]);
-              return { ...r, meal: mealResult.data || undefined, partner: partnerResult.data || undefined };
+              return {
+                ...r,
+                meal: mealResult.data || undefined,
+                partner: partnerResult.data || undefined,
+              };
             })
           );
           setRedemptions(enrichedReds);
@@ -133,27 +186,43 @@ export default function StudentDetailPage() {
     if (!studentId.startsWith('demo-')) {
       const channel = supabase
         .channel(`admin-student-subs-${studentId}`)
-        .on('postgres_changes', {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'subscriptions',
-          filter: `user_id=eq.${studentId}`,
-        }, (payload) => {
-          setSubscriptions((prev) =>
-            prev.map((s) => s.id === (payload.new as any).id ? { ...s, ...(payload.new as any) } : s)
-          );
-        })
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'subscriptions',
+            filter: `user_id=eq.${studentId}`,
+          },
+          (payload) => {
+            setSubscriptions((prev) =>
+              prev.map((s) =>
+                s.id === (payload.new as any).id ? { ...s, ...(payload.new as any) } : s
+              )
+            );
+          }
+        )
         .subscribe();
-      return () => { supabase.removeChannel(channel); };
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [studentId]);
 
   const activeSubscription = subscriptions.find((s) => s.status === 'active');
-  const mealsRemaining = activeSubscription ? activeSubscription.credits_total - activeSubscription.credits_used : 0;
+  const mealsRemaining = activeSubscription
+    ? activeSubscription.credits_total - activeSubscription.credits_used
+    : 0;
   const mealsUsed = activeSubscription?.credits_used || 0;
 
   const formatDate = (iso: string) =>
-    new Date(iso).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    new Date(iso).toLocaleDateString('en-MY', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
 
   const statusBadge = (status: string) => {
     const map: Record<string, { bg: string; text: string }> = {
@@ -164,7 +233,10 @@ export default function StudentDetailPage() {
     };
     const s = map[status] || map['cancelled'];
     return (
-      <span className="text-xs font-semibold px-2.5 py-1 rounded-full capitalize" style={{ background: s.bg, color: s.text }}>
+      <span
+        className="text-xs font-semibold px-2.5 py-1 rounded-full capitalize"
+        style={{ background: s.bg, color: s.text }}
+      >
         {status}
       </span>
     );
@@ -186,8 +258,17 @@ export default function StudentDetailPage() {
     <AdminLayout>
       <div className="space-y-5 max-w-4xl">
         {/* Back */}
-        <Link href="/admin-portal/students" className="inline-flex items-center gap-1.5 text-sm text-[#6B7280] hover:text-[#374151] transition-colors">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <Link
+          href="/admin-portal/students"
+          className="inline-flex items-center gap-1.5 text-sm text-[#6B7280] hover:text-[#374151] transition-colors"
+        >
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
           Back to Students
@@ -200,10 +281,15 @@ export default function StudentDetailPage() {
             <div>
               <h1 className="text-xl font-bold text-[#111827]">{student.full_name}</h1>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-sm text-[#6B7280] font-mono">{student.student_id || 'No ID'}</span>
+                <span className="text-sm text-[#6B7280] font-mono">
+                  {student.student_id || 'No ID'}
+                </span>
                 <span
                   className="text-xs font-semibold px-2 py-0.5 rounded-full"
-                  style={{ background: student.is_active ? '#dcfce7' : '#F3F4F6', color: student.is_active ? '#16a34a' : '#6B7280' }}
+                  style={{
+                    background: student.is_active ? '#dcfce7' : '#F3F4F6',
+                    color: student.is_active ? '#16a34a' : '#6B7280',
+                  }}
                 >
                   {student.is_active ? 'Active' : 'Inactive'}
                 </span>
@@ -217,19 +303,29 @@ export default function StudentDetailPage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white rounded-2xl p-4 border border-[#F3F4F6]">
             <p className="text-xs text-[#9CA3AF] font-medium mb-1">Current Plan</p>
-            <p className="text-sm font-bold text-[#111827]">{activeSubscription?.meal_plan?.name || 'No Plan'}</p>
+            <p className="text-sm font-bold text-[#111827]">
+              {activeSubscription?.meal_plan?.name || 'No Plan'}
+            </p>
             {activeSubscription && (
-              <p className="text-xs text-[#6B7280] mt-0.5">RM{activeSubscription.meal_plan?.price_myr} / {activeSubscription.credits_total} Meals</p>
+              <p className="text-xs text-[#6B7280] mt-0.5">
+                RM{activeSubscription.meal_plan?.price_myr} / {activeSubscription.credits_total}{' '}
+                Meals
+              </p>
             )}
             {activeSubscription && (
               <div className="mt-2">
                 <div className="h-1.5 bg-[#F3F4F6] rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full bg-[#3ECBA0]"
-                    style={{ width: `${activeSubscription.credits_total > 0 ? ((activeSubscription.credits_total - activeSubscription.credits_used) / activeSubscription.credits_total) * 100 : 0}%` }}
+                    style={{
+                      width: `${activeSubscription.credits_total > 0 ? ((activeSubscription.credits_total - activeSubscription.credits_used) / activeSubscription.credits_total) * 100 : 0}%`,
+                    }}
                   />
                 </div>
-                <p className="text-xs text-[#9CA3AF] mt-1">{activeSubscription.credits_total - activeSubscription.credits_used} / {activeSubscription.credits_total} Meals Remaining</p>
+                <p className="text-xs text-[#9CA3AF] mt-1">
+                  {activeSubscription.credits_total - activeSubscription.credits_used} /{' '}
+                  {activeSubscription.credits_total} Meals Remaining
+                </p>
               </div>
             )}
           </div>
@@ -247,8 +343,12 @@ export default function StudentDetailPage() {
             <p className="text-xs text-[#9CA3AF] font-medium mb-1">Last Redemption</p>
             {redemptions[0] ? (
               <>
-                <p className="text-xs font-semibold text-[#374151]">{formatDate(redemptions[0].redeemed_at)}</p>
-                <p className="text-xs text-[#9CA3AF] mt-0.5">{redemptions[0].partner?.name || 'Unknown'}</p>
+                <p className="text-xs font-semibold text-[#374151]">
+                  {formatDate(redemptions[0].redeemed_at)}
+                </p>
+                <p className="text-xs text-[#9CA3AF] mt-0.5">
+                  {redemptions[0].partner?.name || 'Unknown'}
+                </p>
               </>
             ) : (
               <p className="text-sm text-[#9CA3AF]">No redemptions</p>
@@ -259,11 +359,13 @@ export default function StudentDetailPage() {
         {/* Tabs */}
         <div className="bg-white rounded-2xl border border-[#F3F4F6] overflow-hidden">
           <div className="flex border-b border-[#F3F4F6]">
-            {([
-              { key: 'subscription', label: 'Subscription History' },
-              { key: 'redemption', label: 'Redemption History' },
-              { key: 'payment', label: 'Payment History' },
-            ] as { key: TabType; label: string }[]).map((tab) => (
+            {(
+              [
+                { key: 'subscription', label: 'Subscription History' },
+                { key: 'redemption', label: 'Redemption History' },
+                { key: 'payment', label: 'Payment History' },
+              ] as { key: TabType; label: string }[]
+            ).map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
@@ -285,21 +387,40 @@ export default function StudentDetailPage() {
                   <p className="text-[#9CA3AF] text-sm text-center py-8">No subscription history</p>
                 ) : (
                   subscriptions.map((sub) => (
-                    <div key={sub.id} className="flex items-center justify-between p-4 rounded-xl border border-[#F3F4F6] hover:bg-[#F9FAFB] transition-colors">
+                    <div
+                      key={sub.id}
+                      className="flex items-center justify-between p-4 rounded-xl border border-[#F3F4F6] hover:bg-[#F9FAFB] transition-colors"
+                    >
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-xl bg-[#3ECBA0]/10 flex items-center justify-center">
-                          <svg className="w-4 h-4 text-[#3ECBA0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                          <svg
+                            className="w-4 h-4 text-[#3ECBA0]"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                            />
                           </svg>
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-[#374151]">{sub.meal_plan?.name || 'Unknown Plan'}</p>
-                          <p className="text-xs text-[#9CA3AF]">(RM{sub.meal_plan?.price_myr} / {sub.credits_total} Meals)</p>
+                          <p className="text-sm font-semibold text-[#374151]">
+                            {sub.meal_plan?.name || 'Unknown Plan'}
+                          </p>
+                          <p className="text-xs text-[#9CA3AF]">
+                            (RM{sub.meal_plan?.price_myr} / {sub.credits_total} Meals)
+                          </p>
                         </div>
                       </div>
                       <div className="text-right">
                         <p className="text-xs text-[#6B7280] mb-1">
-                          {sub.status === 'active' ? `Renewed: ${formatDate(sub.starts_at)}` : `Expired: ${sub.expires_at ? formatDate(sub.expires_at) : 'N/A'}`}
+                          {sub.status === 'active'
+                            ? `Renewed: ${formatDate(sub.starts_at)}`
+                            : `Expired: ${sub.expires_at ? formatDate(sub.expires_at) : 'N/A'}`}
                         </p>
                         {statusBadge(sub.status)}
                       </div>
@@ -315,12 +436,21 @@ export default function StudentDetailPage() {
                   <p className="text-[#9CA3AF] text-sm text-center py-8">No redemption history</p>
                 ) : (
                   redemptions.map((red) => (
-                    <div key={red.id} className="flex items-center justify-between p-4 rounded-xl border border-[#F3F4F6] hover:bg-[#F9FAFB] transition-colors">
+                    <div
+                      key={red.id}
+                      className="flex items-center justify-between p-4 rounded-xl border border-[#F3F4F6] hover:bg-[#F9FAFB] transition-colors"
+                    >
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-[#F59E0B]/10 flex items-center justify-center text-base">🍽️</div>
+                        <div className="w-9 h-9 rounded-xl bg-[#F59E0B]/10 flex items-center justify-center text-base">
+                          🍽️
+                        </div>
                         <div>
-                          <p className="text-sm font-semibold text-[#374151]">{red.meal?.name || 'Unknown Meal'}</p>
-                          <p className="text-xs text-[#9CA3AF]">{red.partner?.name || 'Unknown Partner'}</p>
+                          <p className="text-sm font-semibold text-[#374151]">
+                            {red.meal?.name || 'Unknown Meal'}
+                          </p>
+                          <p className="text-xs text-[#9CA3AF]">
+                            {red.partner?.name || 'Unknown Partner'}
+                          </p>
                         </div>
                       </div>
                       <p className="text-xs text-[#6B7280]">{formatDate(red.redeemed_at)}</p>
@@ -333,8 +463,18 @@ export default function StudentDetailPage() {
             {activeTab === 'payment' && (
               <div className="text-center py-8">
                 <div className="w-12 h-12 rounded-2xl bg-[#F3F4F6] flex items-center justify-center mx-auto mb-3">
-                  <svg className="w-6 h-6 text-[#9CA3AF]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  <svg
+                    className="w-6 h-6 text-[#9CA3AF]"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.8}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                    />
                   </svg>
                 </div>
                 <p className="text-[#9CA3AF] text-sm">Payment history coming soon</p>
