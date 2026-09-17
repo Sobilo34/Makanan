@@ -42,6 +42,7 @@ export default function Header() {
               { label: 'How It Works', href: '#how-it-works' },
               { label: 'Menu', href: '#menu' },
               { label: 'About', href: '#about' },
+              { label: 'Waitlist', href: '#waitlist' },
             ]?.map((item) => (
               <a
                 key={item?.label}
@@ -110,6 +111,7 @@ export default function Header() {
             { label: 'How It Works', href: '#how-it-works' },
             { label: 'Menu', href: '#menu' },
             { label: 'About', href: '#about' },
+            { label: 'Waitlist', href: '#waitlist' },
             { label: 'Get Started', href: '/signup' },
           ]?.map((item) => (
             <a

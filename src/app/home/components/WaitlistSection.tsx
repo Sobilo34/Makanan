@@ -2,12 +2,6 @@
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
-const features = [
-  { text: 'Meals at below-retail prices' },
-  { text: 'Launching near your campus' },
-  { text: 'Early access & priority spots' },
-];
-
 const initialForm = {
   full_name: '',
   email: '',
@@ -99,75 +93,42 @@ export default function WaitlistSection() {
   };
 
   return (
-    <section className="w-full py-20 px-5 md:px-8" style={{ background: '#1A1A1A' }} id="waitlist">
-      <div className="max-w-5xl mx-auto text-center">
+    <section className="w-full py-16 px-5 md:px-8" style={{ background: '#1A1A1A' }} id="waitlist">
+      <div className="max-w-3xl mx-auto text-center">
         <p
-          className="font-sans font-600 text-xs tracking-widest uppercase mb-5"
+          className="font-sans font-600 text-xs tracking-widest uppercase mb-4"
           style={{ color: '#3ECBA0', letterSpacing: '0.15em' }}
         >
           For Students
         </p>
 
         <h2
-          className="font-sans font-700 leading-tight mb-5"
+          className="font-sans font-700 leading-tight mb-4"
           style={{ fontSize: 'clamp(1.8rem, 4.5vw, 2.75rem)', fontWeight: 700, color: '#FFFFFF' }}
         >
           Coming to your uni. <span style={{ color: '#3ECBA0' }}>Be the first to know.</span>
         </h2>
 
         <p
-          className="font-sans text-sm leading-relaxed max-w-md mx-auto mb-8"
+          className="font-sans text-sm leading-relaxed max-w-lg mx-auto mb-6"
           style={{ color: 'rgba(255,255,255,0.6)' }}
         >
-          We&apos;re expanding campus by campus. Join the student waitlist and we&apos;ll reach your
-          university faster — and lock you in at our lowest prices.
+          Join the waitlist to get first access when Makanan opens near your campus.
         </p>
 
-        <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
-          {features?.map((feature) => (
-            <div
-              key={feature?.text}
-              className="inline-flex items-center gap-2 rounded-pill px-4 py-2 text-xs font-sans font-500"
-              style={{
-                background: 'rgba(62,203,160,0.12)',
-                border: '1px solid rgba(62,203,160,0.3)',
-                color: 'rgba(255,255,255,0.8)',
-              }}
-            >
-              <span
-                className="w-1.5 h-1.5 rounded-full inline-block"
-                style={{ background: '#3ECBA0' }}
-              />
-              {feature?.text}
-            </div>
-          ))}
+        <div className="max-w-2xl mx-auto mb-6 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-white/75">
+          <span className="font-semibold text-white">Quick note:</span> early access, launch
+          updates, and campus rollout info will be sent to your email.
         </div>
 
-        <div className="grid gap-8 md:grid-cols-[1.1fr_0.9fr] items-start max-w-4xl mx-auto">
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-left">
-            <p className="font-sans text-xs uppercase tracking-[0.2em] text-[#3ECBA0] mb-3">
-              Early access
-            </p>
-            <div className="flex items-end gap-3 mb-6">
-              <span className="font-sans text-5xl font-700 text-white" style={{ fontWeight: 700 }}>
-                {count}
-              </span>
-              <span className="font-sans text-sm text-white/70 mb-1">students joined</span>
-            </div>
-            <div className="space-y-3 text-white/80 text-sm text-left">
-              <p>• Priority notice when your campus opens</p>
-              <p>• Locked-in launch pricing for early signups</p>
-              <p>• Direct updates from the Makanan team</p>
-            </div>
-          </div>
-
+        <div className="max-w-2xl mx-auto">
           <form
             onSubmit={handleSubmit}
             className="bg-white rounded-2xl p-6 shadow-xl text-left"
             style={{ boxShadow: '0 24px 60px rgba(0,0,0,0.14)' }}
           >
             <p
-              className="font-sans font-600 text-xs tracking-widest uppercase mb-4"
+              className="font-sans font-600 text-xs tracking-widest uppercase mb-3"
               style={{ color: '#3ECBA0', letterSpacing: '0.15em' }}
             >
               Student Waitlist
@@ -180,9 +141,8 @@ export default function WaitlistSection() {
               Join the waitlist
             </h3>
 
-            <p className="font-sans text-muted-text text-sm leading-relaxed mb-5">
-              Tell us where you study and we&apos;ll keep you posted when Makanan reaches your
-              campus.
+            <p className="font-sans text-muted-text text-sm leading-relaxed mb-4">
+              Fill this in and we&apos;ll email you when your campus is next.
             </p>
 
             <div className="space-y-4">
@@ -263,10 +223,11 @@ export default function WaitlistSection() {
               {loading ? 'Joining...' : 'Join the waitlist'}
             </button>
 
-            <p className="font-sans text-muted-text text-xs mt-4">
-              No spam. Quick survey to help us reach your campus. 🎓
-            </p>
+            <p className="font-sans text-muted-text text-xs mt-4">No spam. Only launch updates.</p>
           </form>
+        </div>
+        <div className="max-w-2xl mx-auto mt-6 text-center text-xs text-white/50">
+          Joined by {count} students so far.
         </div>
       </div>
     </section>
