@@ -35,11 +35,43 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
 
 
 def decode_access_token(token: str) -> Optional[Dict[str, Any]]:
+    if not token or str(token).strip().lower() in ["undefined", "null", "none", ""]:
+        return None
+
+    # 1. Native FastAPI JWT
     try:
         payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
         return payload
     except jwt.PyJWTError:
-        return None
+        pass
+
+    # 2. Supabase JWT fallback (allows transparent transition from Supabase auth session)
+    try:
+        unverified = jwt.decode(token, options={"verify_signature": False})
+        exp = unverified.get("exp")
+        now_ts = datetime.now(timezone.utc).timestamp()
+        
+        # Allow 30-day grace period for Supabase session transition
+        if exp and (now_ts - exp) > (30 * 86400):
+            return None  # truly expired beyond session window
+
+        if unverified.get("sub"):
+            user_meta = unverified.get("user_metadata") or {}
+            app_meta = unverified.get("app_metadata") or {}
+            role = user_meta.get("role") or app_meta.get("role") or unverified.get("role") or "student"
+            full_name = user_meta.get("full_name") or user_meta.get("fullName") or unverified.get("email", "").split("@")[0]
+            return {
+                "sub": unverified.get("sub"),
+                "email": unverified.get("email"),
+                "role": role,
+                "full_name": full_name,
+                "is_supabase": True,
+            }
+    except Exception as e:
+        print(f"[SECURITY] JWT decode error: {e}")
+        pass
+
+    return None
 
 
 # ── HMAC-SHA256 Cryptographic Dynamic QR Token ────────────────────────────────

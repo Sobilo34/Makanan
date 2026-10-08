@@ -61,3 +61,12 @@ async def login(req: UserLogin, db: AsyncSession = Depends(get_db)):
 @router.get("/me", response_model=UserOut)
 async def get_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@router.post("/sync-session", response_model=TokenResponse)
+async def sync_session(current_user: User = Depends(get_current_user)):
+    """
+    Exchanges any valid session token (including Supabase JWT) for a native FastAPI token.
+    """
+    token = create_access_token({"sub": str(current_user.id), "role": current_user.role, "email": current_user.email})
+    return {"access_token": token, "token_type": "bearer", "user": current_user}

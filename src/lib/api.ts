@@ -60,9 +60,51 @@ export interface PaymentOrder {
 }
 
 class ApiClient {
-  private getToken(): string | null {
+  public getToken(): string | null {
     if (typeof window === 'undefined') return null;
-    return localStorage.getItem('makanan_token');
+
+    const isValidJwt = (t: any): boolean => {
+      if (!t || typeof t !== 'string') return false;
+      const parts = t.trim().split('.');
+      return parts.length === 3 && parts[0].length > 0 && parts[1].length > 0;
+    };
+
+    // 1. Direct FastAPI token
+    const directToken = localStorage.getItem('makanan_token');
+    if (isValidJwt(directToken)) return directToken!;
+
+    // 2. Search localStorage for active Supabase session token
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('sb-') || key.includes('supabase.auth.token')) && key.endsWith('-auth-token')) {
+          const item = JSON.parse(localStorage.getItem(key) || '{}');
+          if (isValidJwt(item?.access_token)) return item.access_token;
+          if (isValidJwt(item?.currentSession?.access_token)) return item.currentSession.access_token;
+        }
+      }
+    } catch {}
+
+    // 3. Search document cookies for Supabase auth token
+    try {
+      const match = document.cookie.match(/sb-[a-z0-9_\-]+-auth-token=([^;]+)/i);
+      if (match && match[1]) {
+        const decoded = decodeURIComponent(match[1]);
+        try {
+          const parsed = JSON.parse(decoded);
+          if (isValidJwt(parsed?.access_token)) return parsed.access_token;
+          if (Array.isArray(parsed) && isValidJwt(parsed[0])) return parsed[0];
+        } catch {
+          if (isValidJwt(decoded)) return decoded;
+        }
+      }
+    } catch {}
+
+    return null;
+  }
+
+  public hasToken(): boolean {
+    return !!this.getToken();
   }
 
   public setToken(token: string) {
@@ -75,6 +117,27 @@ class ApiClient {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('makanan_token');
       localStorage.removeItem('makanan_user');
+    }
+  }
+
+  public async syncSession(externalToken?: string) {
+    const tokenToSend = externalToken || this.getToken();
+    if (!tokenToSend) return null;
+    try {
+      const res = await this.request<{ access_token: string; user: User }>('/auth/sync-session', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${tokenToSend}`,
+        },
+      });
+      if (res?.access_token) {
+        this.setToken(res.access_token);
+        this.setUser(res.user);
+      }
+      return res;
+    } catch (e) {
+      console.warn('Session sync warning:', e);
+      return null;
     }
   }
 
@@ -102,7 +165,7 @@ class ApiClient {
       ...(options.headers as Record<string, string>),
     };
 
-    if (token) {
+    if (token && !headers['Authorization']) {
       headers['Authorization'] = `Bearer ${token}`;
     }
 

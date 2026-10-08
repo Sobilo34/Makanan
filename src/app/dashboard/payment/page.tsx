@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { createClient } from '@/lib/supabase/client';
 import { api, PaymentOrder } from '@/lib/api';
 
 const paymentMethods = [
@@ -98,6 +99,25 @@ function PaymentContent() {
     setError('');
 
     try {
+      // 1. Ensure token is synchronized if user is logged in
+      if (!api.hasToken()) {
+        try {
+          const supabase = createClient();
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.access_token) {
+            await api.syncSession(session.access_token);
+          }
+        } catch (syncErr) {
+          console.warn('Session sync attempt failed:', syncErr);
+        }
+      }
+
+      if (!api.hasToken() && !user) {
+        setError('Your session has expired. Please log in to complete your subscription.');
+        router.push(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+        return;
+      }
+
       const order = await api.createPaymentOrder(planId, selectedMethod);
       setActiveOrder(order);
       setTimeLeft(900);

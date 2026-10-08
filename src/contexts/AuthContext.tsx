@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 
 const AuthContext = createContext<any>({});
 
@@ -21,26 +22,44 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      if (session?.access_token) {
+        try {
+          await api.syncSession(session.access_token);
+        } catch (e) {
+          console.warn('Initial session sync:', e);
+        }
+      }
     });
 
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      if (session?.access_token) {
+        try {
+          await api.syncSession(session.access_token);
+        } catch (e) {
+          console.warn('Auth state sync:', e);
+        }
+      } else {
+        api.logout();
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
   // Email/Password Sign Up
-  const signUp = async (email: string, password: string, metadata = {}) => {
+  const signUp = async (email: string, password: string, metadata: any = {}) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -53,6 +72,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       },
     });
     if (error) throw error;
+
+    try {
+      await api.signup({
+        email,
+        password,
+        full_name: metadata?.fullName,
+        student_id: metadata?.studentId,
+        role: 'student',
+      });
+    } catch (apiErr) {
+      console.warn('FastAPI signup sync:', apiErr);
+      if (data?.session?.access_token) {
+        await api.syncSession(data.session.access_token);
+      }
+    }
     return data;
   };
 
@@ -63,11 +97,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       password,
     });
     if (error) throw error;
+
+    try {
+      await api.login(email, password);
+    } catch (apiErr) {
+      console.warn('FastAPI direct login sync failed, falling back to session sync:', apiErr);
+      if (data?.session?.access_token) {
+        await api.syncSession(data.session.access_token);
+      }
+    }
     return data;
   };
 
   // Sign Out
   const signOut = async () => {
+    api.logout();
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   };

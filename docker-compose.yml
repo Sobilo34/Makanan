@@ -46,6 +46,9 @@ services:
         condition: service_healthy
     env_file:
       - .env.docker
+    volumes:
+      - ./backend/app:/app/app
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     ports:
       - "8000:8000"
     healthcheck:
