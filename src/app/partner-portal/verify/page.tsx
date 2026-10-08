@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import PartnerLayout from '../components/PartnerLayout';
 import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 
 interface VerificationResult {
   valid: boolean;
@@ -70,6 +71,28 @@ export default function VerifyMealPage() {
     setConfirmed(false);
 
     try {
+      // 1. Try FastAPI backend first
+      try {
+        const backendRes = await api.verifyQr(qrCode.trim());
+        if (backendRes && (backendRes.valid || backendRes.already_confirmed)) {
+          setResult({
+            valid: backendRes.valid,
+            alreadyConfirmed: backendRes.already_confirmed,
+            studentName: backendRes.student_name,
+            mealName: backendRes.meal_name,
+            planName: backendRes.plan_name,
+            redemptionId: backendRes.redemption_id,
+            subscriptionId: backendRes.subscription_id,
+            partnerId: backendRes.partner_id,
+          });
+          if (backendRes.already_confirmed) setConfirmed(true);
+          return;
+        }
+      } catch (backendErr: any) {
+        console.warn('FastAPI verifyQr failed, falling back to Supabase:', backendErr);
+      }
+
+      // 2. Fallback to Supabase
       const { data: redemption, error: rErr } = await supabase
         .from('redemptions')
         .select(
@@ -129,12 +152,22 @@ export default function VerifyMealPage() {
   };
 
   const handleConfirm = async () => {
-    if (!result?.redemptionId || !partnerId) return;
+    if (!result?.redemptionId) return;
     setConfirming(true);
     setError('');
 
     try {
-      // Use atomic confirm_redemption RPC
+      // 1. Try FastAPI backend first
+      try {
+        await api.confirmRedemption(result.redemptionId);
+        setConfirmed(true);
+        return;
+      } catch (backendErr: any) {
+        console.warn('FastAPI confirmRedemption failed, falling back to Supabase:', backendErr);
+      }
+
+      // 2. Fallback to Supabase RPC
+      if (!partnerId) return;
       const { data: rpcResult, error: rpcErr } = await supabase.rpc('confirm_redemption', {
         redemption_id_param: result.redemptionId,
         partner_id_param: partnerId,

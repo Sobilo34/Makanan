@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import AdminLayout from '../components/AdminLayout';
 import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 import {
   LineChart,
   Line,
@@ -199,26 +200,54 @@ export default function AdminDashboardPage() {
 
   const loadData = useCallback(async () => {
     try {
+      // 1. Try FastAPI admin overview
+      let loadedStatsFromApi = false;
+      try {
+        const overview = await api.getAdminOverview();
+        if (overview) {
+          setStats({
+            activeStudents: overview.total_students || 0,
+            activePlans: overview.total_students || 0,
+            partnerCafeterias: overview.total_partners || 0,
+            mealsRedeemedToday: overview.redemptions_today || 0,
+          });
+          loadedStatsFromApi = true;
+        }
+      } catch (err) {
+        console.warn('FastAPI getAdminOverview fallback to Supabase:', err);
+      }
+
       const [studentsRes, plansRes, partnersRes, redemptionsRes, waitlistRes] = await Promise.all([
-        supabase
-          .from('user_profiles')
-          .select('id', { count: 'exact' })
-          .eq('is_active', true)
-          .eq('role', 'student'),
-        supabase.from('subscriptions').select('id', { count: 'exact' }).eq('status', 'active'),
-        supabase.from('partners').select('id', { count: 'exact' }).eq('is_active', true),
-        supabase
-          .from('redemptions')
-          .select('id', { count: 'exact' })
-          .gte('redeemed_at', new Date().toISOString().split('T')[0]),
+        !loadedStatsFromApi
+          ? supabase
+              .from('user_profiles')
+              .select('id', { count: 'exact' })
+              .eq('is_active', true)
+              .eq('role', 'student')
+          : Promise.resolve({ count: 0 }),
+        !loadedStatsFromApi
+          ? supabase.from('subscriptions').select('id', { count: 'exact' }).eq('status', 'active')
+          : Promise.resolve({ count: 0 }),
+        !loadedStatsFromApi
+          ? supabase.from('partners').select('id', { count: 'exact' }).eq('is_active', true)
+          : Promise.resolve({ count: 0 }),
+        !loadedStatsFromApi
+          ? supabase
+              .from('redemptions')
+              .select('id', { count: 'exact' })
+              .gte('redeemed_at', new Date().toISOString().split('T')[0])
+          : Promise.resolve({ count: 0 }),
         supabase.from('waitlist').select('*').order('created_at', { ascending: false }),
       ]);
-      setStats({
-        activeStudents: studentsRes.count || 0,
-        activePlans: plansRes.count || 0,
-        partnerCafeterias: partnersRes.count || 0,
-        mealsRedeemedToday: redemptionsRes.count || 0,
-      });
+
+      if (!loadedStatsFromApi) {
+        setStats({
+          activeStudents: (studentsRes as any).count || 0,
+          activePlans: (plansRes as any).count || 0,
+          partnerCafeterias: (partnersRes as any).count || 0,
+          mealsRedeemedToday: (redemptionsRes as any).count || 0,
+        });
+      }
 
       const { data: partnerData } = await supabase
         .from('partners')

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import PartnerLayout from '../components/PartnerLayout';
 import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 
 interface Settlement {
   id: string;
@@ -63,6 +64,26 @@ export default function SettlementPage() {
 
   const loadData = async (pid: string) => {
     setLoading(true);
+
+    // 1. Try FastAPI backend first
+    try {
+      const res = await api.getPartnerSettlements();
+      if (res && res.settlements) {
+        setSettlements(res.settlements as any);
+        setKpis({
+          totalPaid: Number(res.kpis?.total_paid || 0),
+          pendingAmount: Number(res.kpis?.pending_amount || 0),
+          totalRedemptions: Number(res.kpis?.total_redemptions || 0),
+          lastPaidDate: res.kpis?.last_paid_date || null,
+        });
+        setLoading(false);
+        return;
+      }
+    } catch (err) {
+      console.warn('FastAPI getPartnerSettlements fallback to Supabase:', err);
+    }
+
+    // 2. Supabase fallback
     const { data, error } = await supabase
       .from('settlements')
       .select('*')
@@ -85,6 +106,21 @@ export default function SettlementPage() {
 
   useEffect(() => {
     const init = async () => {
+      // 1. Check if authenticated via FastAPI
+      try {
+        const partnerProfile = await api.getPartnerProfile();
+        if (partnerProfile && partnerProfile.id) {
+          setPartnerId(partnerProfile.id);
+          setPartnerName(partnerProfile.name);
+          setPartnerEmail(partnerProfile.email || '');
+          await loadData(partnerProfile.id);
+          return;
+        }
+      } catch (err) {
+        console.warn('FastAPI getPartnerProfile fallback to Supabase auth:', err);
+      }
+
+      // 2. Fallback to Supabase auth
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -132,7 +168,27 @@ export default function SettlementPage() {
     setErrorMsg('');
     setSuccessMsg('');
 
-    // Calculate unsettled redemptions
+    // 1. Try FastAPI authoritative payout request
+    try {
+      const res = await api.requestPartnerPayout();
+      if (res && res.success) {
+        setSuccessMsg(
+          `Payout request for RM${Number(res.total_amount_myr).toFixed(2)} (${res.total_redemptions} meals) submitted successfully! Admin will process it shortly.`
+        );
+        await loadData(partnerId);
+        setRequesting(false);
+        return;
+      }
+    } catch (apiErr: any) {
+      console.warn('FastAPI requestPartnerPayout error, checking details:', apiErr);
+      if (apiErr?.message && !apiErr.message.includes('Failed to fetch')) {
+        setErrorMsg(apiErr.message);
+        setRequesting(false);
+        return;
+      }
+    }
+
+    // 2. Fallback to client-side Supabase calculation
     const { data: redemptions } = await supabase
       .from('redemptions')
       .select('id, redeemed_at, meals:meal_id(price_myr)')
@@ -170,25 +226,6 @@ export default function SettlementPage() {
       setErrorMsg('Failed to submit payout request. Please try again.');
     } else {
       setSuccessMsg('Payout request submitted successfully! Admin will process it shortly.');
-      // Send notification email
-      try {
-        await supabase.functions.invoke('send-email', {
-          body: {
-            type: 'settlement_paid',
-            to: partnerEmail,
-            data: {
-              partnerName,
-              period: `${new Date(periodStart).toLocaleDateString('en-MY')} – ${new Date(now).toLocaleDateString('en-MY')}`,
-              totalRedemptions: redemptions.length,
-              amount: totalAmount.toFixed(2),
-            },
-          },
-        });
-      } catch (e) {
-        // ignore notification failures to avoid blocking the payout flow
-        // eslint-disable-next-line no-console
-        console.warn('send-email invocation failed', e);
-      }
       await loadData(partnerId);
     }
     setRequesting(false);

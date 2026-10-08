@@ -5,14 +5,16 @@ import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
+import { api } from '@/lib/api';
+
 interface MealPlan {
   id: string;
   name: string;
   tier: string;
   price_myr: number;
   credits: number;
-  effective_rate: number;
-  description: string;
+  effective_rate?: number;
+  description?: string;
 }
 
 interface Subscription {
@@ -22,7 +24,7 @@ interface Subscription {
   credits_total: number;
   credits_used: number;
   expires_at: string;
-  meal_plans: { name: string; tier: string; price_myr: number };
+  meal_plans?: { name: string; tier: string; price_myr: number };
 }
 
 const planMeta = [
@@ -37,7 +39,7 @@ const planMeta = [
 
 const steps = [
   { num: '01', title: 'Pick a plan', desc: 'Choose the meal count that fits your schedule.' },
-  { num: '02', title: 'Pay securely', desc: 'Card, FPX, or GrabPay — all via Stripe.' },
+  { num: '02', title: 'Pay securely', desc: 'DuitNow QR or e-Wallets (TNG, GrabPay, ShopeePay).' },
   { num: '03', title: 'Credits loaded', desc: 'Meal credits appear in your wallet instantly.' },
   { num: '04', title: 'Scan & eat', desc: 'Show your QR at any partner restaurant.' },
 ];
@@ -51,28 +53,52 @@ export default function PlansPage() {
   const [selectedPlan, setSelectedPlan] = useState<MealPlan | null>(null);
 
   useEffect(() => {
-    if (!user) return;
     const fetchData = async () => {
-      const supabase = createClient();
       try {
-        const [plansRes, subRes] = await Promise.all([
-          supabase.from('meal_plans').select('*').eq('is_active', true).order('price_myr'),
-          supabase
-            .from('subscriptions')
-            .select('*, meal_plans(name, tier, price_myr)')
-            .eq('user_id', user.id)
-            .eq('status', 'active')
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle(),
-        ]);
-        setPlans(plansRes.data || []);
-        setSubscription(subRes.data || null);
+        // Try FastAPI backend first
+        const plansData = await api.getPlans();
+        if (plansData && plansData.length > 0) {
+          setPlans(plansData as any);
+        } else {
+          throw new Error('No plans from FastAPI');
+        }
       } catch (err) {
-        console.log('Plans fetch error:', err);
-      } finally {
-        setLoading(false);
+        console.warn('FastAPI getPlans fallback to Supabase:', err);
+        try {
+          const supabase = createClient();
+          const plansRes = await supabase
+            .from('meal_plans')
+            .select('*')
+            .eq('is_active', true)
+            .order('price_myr');
+          setPlans(plansRes.data || []);
+        } catch (sErr) {
+          console.error('Supabase getPlans error:', sErr);
+        }
       }
+
+      if (user) {
+        try {
+          const summary = await api.getStudentDashboardSummary();
+          if (summary && summary.subscription) {
+            setSubscription(summary.subscription);
+          } else {
+            const supabase = createClient();
+            const subRes = await supabase
+              .from('subscriptions')
+              .select('*, meal_plans(name, tier, price_myr)')
+              .eq('user_id', user.id)
+              .eq('status', 'active')
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            setSubscription(subRes.data || null);
+          }
+        } catch {
+          // silent fallback
+        }
+      }
+      setLoading(false);
     };
     fetchData();
   }, [user]);

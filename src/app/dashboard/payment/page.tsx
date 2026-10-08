@@ -1,51 +1,41 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { createClient } from '@/lib/supabase/client';
+import { api, PaymentOrder } from '@/lib/api';
 
 const paymentMethods = [
   {
-    id: 'card',
-    label: 'Credit / Debit Card',
-    desc: 'Visa, Mastercard, American Express',
-    badge: null,
-    accentColor: '#4F46E5',
-    bgColor: '#EEF2FF',
-    borderColor: '#C7D2FE',
-    selectedBg: '#EEF2FF',
+    id: 'duitnow_qr',
+    label: 'DuitNow QR',
+    desc: 'Pay with ANY Malaysian Bank or e-Wallet (MAE, CIMB, TNG, Grab)',
+    badge: 'National QR • Recommended',
+    badgeColor: '#EC4899',
+    accentColor: '#DB2777',
+    bgColor: '#FDF2F8',
+    borderColor: '#FBCFE8',
     icon: (
-      <svg viewBox="0 0 32 20" className="w-8 h-5" fill="none">
-        <rect width="32" height="20" rx="3" fill="#1A1F71" opacity="0.08" />
-        <rect x="2" y="7" width="8" height="5" rx="1" fill="#FFD700" />
-        <rect x="2" y="7" width="4" height="5" rx="1" fill="#FF6B00" />
-      </svg>
+      <div className="w-9 h-9 rounded-xl bg-[#ED0278] flex items-center justify-center shadow-sm">
+        <svg viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+        </svg>
+      </div>
     ),
   },
   {
-    id: 'fpx',
-    label: 'FPX Online Banking',
-    desc: 'Maybank, CIMB, RHB, Public Bank & more',
-    badge: 'Malaysian Banks',
-    accentColor: '#059669',
-    bgColor: '#ECFDF5',
-    borderColor: '#A7F3D0',
-    selectedBg: '#ECFDF5',
+    id: 'tng_ewallet',
+    label: "Touch 'n Go eWallet",
+    desc: 'Scan QR or tap to open directly in Touch n Go app',
+    badge: 'Direct e-Wallet',
+    badgeColor: '#0284C7',
+    accentColor: '#0284C7',
+    bgColor: '#F0F9FF',
+    borderColor: '#BAE6FD',
     icon: (
-      <svg
-        viewBox="0 0 24 24"
-        className="w-5 h-5 text-emerald-600"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.5}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"
-        />
-      </svg>
+      <div className="w-9 h-9 rounded-xl bg-[#005BAC] flex items-center justify-center shadow-sm">
+        <span className="text-white font-black text-xs tracking-tighter">TNG</span>
+      </div>
     ),
   },
   {
@@ -53,16 +43,28 @@ const paymentMethods = [
     label: 'GrabPay',
     desc: 'Pay with your GrabPay e-wallet balance',
     badge: 'e-Wallet',
+    badgeColor: '#059669',
     accentColor: '#00B14F',
     bgColor: '#F0FDF4',
     borderColor: '#BBF7D0',
-    selectedBg: '#F0FDF4',
     icon: (
-      <div
-        className="w-8 h-8 rounded-full flex items-center justify-center"
-        style={{ background: '#00B14F' }}
-      >
+      <div className="w-9 h-9 rounded-xl bg-[#00B14F] flex items-center justify-center shadow-sm">
         <span className="text-white font-black text-xs">G</span>
+      </div>
+    ),
+  },
+  {
+    id: 'shopeepay',
+    label: 'ShopeePay',
+    desc: 'Pay with your ShopeePay balance or Shopee app',
+    badge: 'e-Wallet',
+    badgeColor: '#EA580C',
+    accentColor: '#EE4D2D',
+    bgColor: '#FFF7ED',
+    borderColor: '#FED7AA',
+    icon: (
+      <div className="w-9 h-9 rounded-xl bg-[#EE4D2D] flex items-center justify-center shadow-sm">
+        <span className="text-white font-black text-xs">S</span>
       </div>
     ),
   },
@@ -73,60 +75,95 @@ function PaymentContent() {
   const searchParams = useSearchParams();
   const { user } = useAuth();
 
-  const planId = searchParams.get('planId') || '';
-  const price = searchParams.get('price') || '0';
-  const credits = searchParams.get('credits') || '0';
-  const planName = searchParams.get('name') || 'Meal Plan';
+  const planId = searchParams?.get('planId') || '';
+  const price = searchParams?.get('price') || '0';
+  const credits = searchParams?.get('credits') || '0';
+  const planName = searchParams?.get('name') || 'Meal Plan';
 
-  const [selectedMethod, setSelectedMethod] = useState('card');
+  const [selectedMethod, setSelectedMethod] = useState('duitnow_qr');
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
 
-  const handlePay = async () => {
-    if (!user || !planId) return;
+  // Active Payment Order Modal State (Octopus Cashless Experience)
+  const [activeOrder, setActiveOrder] = useState<PaymentOrder | null>(null);
+  const [timeLeft, setTimeLeft] = useState(900); // 15 mins
+  const [simulating, setSimulating] = useState(false);
+
+  const handleInitiatePayment = async () => {
+    if (!planId) {
+      setError('Please select a valid meal plan to continue.');
+      return;
+    }
     setProcessing(true);
     setError('');
 
     try {
-      const supabase = createClient();
-      const appUrl = window.location.origin;
-
-      const { data, error: fnErr } = await supabase.functions.invoke('create-checkout-session', {
-        body: {
-          planId,
-          planName,
-          priceMyr: price,
-          credits: parseInt(credits),
-          userId: user.id,
-          userEmail: user.email,
-          successUrl: `${appUrl}/dashboard/payment-success?session_id={CHECKOUT_SESSION_ID}&price=${price}&credits=${credits}&name=${encodeURIComponent(planName)}`,
-          cancelUrl: `${appUrl}/dashboard/payment?planId=${planId}&price=${price}&credits=${credits}&name=${encodeURIComponent(planName)}`,
-        },
-      });
-
-      if (fnErr) {
-        const errMsg =
-          (data as { error?: string } | null)?.error ?? fnErr.message ?? 'Payment setup failed';
-        throw new Error(errMsg);
-      }
-
-      const result = data as { sessionId?: string; url?: string; error?: string } | null;
-      if (result?.error) throw new Error(result.error);
-      if (result?.url) {
-        window.location.href = result.url;
-      } else {
-        throw new Error('No checkout URL returned from payment service');
-      }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Payment failed. Please try again.';
-      console.error('Payment error:', err);
-      setError(message);
+      const order = await api.createPaymentOrder(planId, selectedMethod);
+      setActiveOrder(order);
+      setTimeLeft(900);
+    } catch (err: any) {
+      setError(err.message || 'Failed to initiate payment. Please try again.');
+    } finally {
       setProcessing(false);
     }
   };
 
-  const selectedMethodData = paymentMethods.find((m) => m.id === selectedMethod);
-  const perMeal = (parseFloat(price) / parseInt(credits)).toFixed(2);
+  // 15-minute countdown timer
+  useEffect(() => {
+    if (!activeOrder) return;
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setActiveOrder(null);
+          setError('Payment session expired. Please try again.');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [activeOrder]);
+
+  // Real-time payment verification polling
+  useEffect(() => {
+    if (!activeOrder) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await api.getPaymentStatus(activeOrder.reference_code);
+        if (res.status === 'completed') {
+          clearInterval(interval);
+          router.push(
+            `/dashboard/payment-success?price=${activeOrder.amount_myr}&credits=${activeOrder.credits}&name=${encodeURIComponent(activeOrder.plan_name)}`
+          );
+        }
+      } catch (err) {
+        // silently ignore transient network hiccups
+      }
+    }, 2500);
+
+    return () => clearInterval(interval);
+  }, [activeOrder, router]);
+
+  const handleSimulateSuccess = async () => {
+    if (!activeOrder) return;
+    setSimulating(true);
+    try {
+      await api.simulatePaymentSuccess(activeOrder.reference_code);
+      router.push(
+        `/dashboard/payment-success?price=${activeOrder.amount_myr}&credits=${activeOrder.credits}&name=${encodeURIComponent(activeOrder.plan_name)}`
+      );
+    } catch (err: any) {
+      setError(err.message || 'Simulation failed.');
+      setSimulating(false);
+    }
+  };
+
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
+  const timeFormatted = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  const perMeal = (parseFloat(price) / (parseInt(credits) || 1)).toFixed(2);
 
   return (
     <div className="min-h-full bg-[#F0F2F5]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
@@ -137,295 +174,218 @@ function PaymentContent() {
             onClick={() => router.back()}
             className="w-9 h-9 bg-white rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm"
           >
-            <svg
-              className="w-4 h-4 text-[#374151]"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
+            <svg className="w-4 h-4 text-[#374151]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
           <div className="flex-1">
-            <h1 className="text-[#111827] font-bold text-xl">Secure Checkout</h1>
-            <p className="text-[#9CA3AF] text-xs mt-0.5">Powered by Stripe</p>
-          </div>
-          {/* Stripe badge */}
-          <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-3 py-1.5 shadow-sm">
-            <svg
-              className="w-3 h-3 text-[#3ECBA0]"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-              />
-            </svg>
-            <span className="text-[10px] font-bold text-[#374151]">SSL</span>
+            <h1 className="text-[#1A1A1A] font-bold text-xl">Checkout</h1>
+            <p className="text-[#6B7280] text-xs">Fast & Secure Malaysian Payment</p>
           </div>
         </div>
 
-        {/* Order summary card */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-5">
-          <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/50">
-            <p className="text-[#9CA3AF] text-xs font-semibold uppercase tracking-widest">
-              Order Summary
-            </p>
-          </div>
-          <div className="p-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-[#3ECBA0] to-[#1a9e7a] rounded-xl flex items-center justify-center flex-shrink-0">
-                  <svg
-                    className="w-5 h-5 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.8}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-[#111827] font-bold text-base">{planName}</p>
-                  <p className="text-[#9CA3AF] text-xs">
-                    {credits} meal credits · RM{perMeal}/meal
-                  </p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-[#3ECBA0] font-black text-2xl">RM{price}</p>
-                <p className="text-[#9CA3AF] text-xs">one-time</p>
-              </div>
+        {/* Order Summary Card */}
+        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm mb-5">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-xs text-[#9CA3AF] uppercase font-bold tracking-wider">Selected Plan</p>
+              <h2 className="text-[#1A1A1A] font-bold text-lg">{planName}</h2>
+            </div>
+            <div className="text-right">
+              <span className="text-[#3ECBA0] font-black text-2xl">RM{parseFloat(price).toFixed(2)}</span>
             </div>
           </div>
+
+          <div className="flex items-center gap-4 pt-3 border-t border-gray-100">
+            <div className="flex items-center gap-1.5 text-xs text-[#4B5563]">
+              <span className="w-2 h-2 rounded-full bg-[#3ECBA0]" />
+              <strong>{credits} Meals</strong> included
+            </div>
+            <span className="text-gray-300">•</span>
+            <div className="text-xs text-[#4B5563]">
+              <strong>RM{perMeal}</strong> per meal
+            </div>
+            <span className="text-gray-300">•</span>
+            <div className="text-xs text-[#4B5563]">Valid 30 Days</div>
+          </div>
         </div>
 
-        {error && (
-          <div className="mb-5 flex items-center gap-3 bg-red-50 border border-red-100 rounded-2xl px-4 py-3 text-red-600 text-sm">
-            <svg
-              className="w-4 h-4 flex-shrink-0"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            {error}
+        {/* Payment Methods */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-[#1A1A1A] font-bold text-sm">Select Payment Method</h3>
+            <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+              Zero Fees • Instant Credit
+            </span>
           </div>
-        )}
 
-        {/* Payment method */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-5">
-          <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/50">
-            <p className="text-[#9CA3AF] text-xs font-semibold uppercase tracking-widest">
-              Payment Method
-            </p>
-          </div>
-          <div className="p-4 space-y-2.5">
-            {paymentMethods.map((method) => {
-              const isSelected = selectedMethod === method.id;
+          <div className="space-y-3">
+            {paymentMethods.map((m) => {
+              const isSelected = selectedMethod === m.id;
               return (
-                <button
-                  key={method.id}
-                  onClick={() => setSelectedMethod(method.id)}
-                  className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${
-                    isSelected ? 'shadow-sm' : 'border-gray-100 bg-gray-50/50 hover:border-gray-200'
-                  }`}
-                  style={
+                <div
+                  key={m.id}
+                  onClick={() => setSelectedMethod(m.id)}
+                  className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
                     isSelected
-                      ? { borderColor: method.accentColor, background: method.selectedBg }
-                      : {}
-                  }
+                      ? 'border-[#3ECBA0] bg-white shadow-md'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
                 >
-                  <div className="flex-shrink-0">{method.icon}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold text-sm text-[#111827]">{method.label}</p>
-                      {method.badge && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white border border-gray-200 text-[#6B7280]">
-                          {method.badge}
-                        </span>
-                      )}
+                  <div className="flex items-center gap-3.5">
+                    {m.icon}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[#1A1A1A] font-bold text-sm">{m.label}</span>
+                        {m.badge && (
+                          <span
+                            className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                            style={{ background: m.bgColor, color: m.accentColor }}
+                          >
+                            {m.badge}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[#6B7280] text-xs mt-0.5">{m.desc}</p>
                     </div>
-                    <p className="text-[#9CA3AF] text-xs mt-0.5">{method.desc}</p>
+
+                    <div
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                        isSelected ? 'border-[#3ECBA0] bg-[#3ECBA0]' : 'border-gray-300'
+                      }`}
+                    >
+                      {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                    </div>
                   </div>
-                  <div
-                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all`}
-                    style={
-                      isSelected
-                        ? { borderColor: method.accentColor, background: method.accentColor }
-                        : { borderColor: '#D1D5DB', background: 'white' }
-                    }
-                  >
-                    {isSelected && (
-                      <svg
-                        className="w-2.5 h-2.5 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={3}
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </div>
-                </button>
+                </div>
               );
             })}
           </div>
         </div>
 
-        {/* FPX banks */}
-        {selectedMethod === 'fpx' && (
-          <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 mb-5">
-            <p className="text-emerald-700 font-bold text-xs uppercase tracking-wide mb-2">
-              Supported Banks
-            </p>
-            <div className="grid grid-cols-3 gap-1.5">
-              {[
-                'Maybank',
-                'CIMB',
-                'RHB',
-                'Public Bank',
-                'Hong Leong',
-                'AmBank',
-                'Bank Islam',
-                'BSN',
-                'Affin Bank',
-              ].map((bank) => (
-                <div key={bank} className="bg-white rounded-lg px-2 py-1.5 text-center">
-                  <span className="text-emerald-700 text-xs font-medium">{bank}</span>
-                </div>
-              ))}
-            </div>
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl p-3.5 text-xs mb-5 flex items-center gap-2">
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{error}</span>
           </div>
         )}
 
-        {/* Trust signals */}
-        <div className="grid grid-cols-3 gap-3 mb-5">
-          {[
-            { icon: '🔒', label: '256-bit SSL' },
-            { icon: '⚡', label: 'Instant Credits' },
-            { icon: '↩️', label: 'Refund Policy' },
-          ].map(({ icon, label }) => (
-            <div key={label} className="bg-white rounded-xl border border-gray-100 p-3 text-center">
-              <div className="text-lg mb-1">{icon}</div>
-              <p className="text-[#6B7280] text-xs font-medium">{label}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Desktop pay button */}
-        <div className="hidden lg:block">
-          <button
-            onClick={handlePay}
-            disabled={processing}
-            className="w-full text-white font-bold py-4 rounded-2xl transition-all disabled:opacity-60 text-base shadow-lg"
-            style={{
-              background: processing
-                ? '#9CA3AF'
-                : 'linear-gradient(135deg, #3ECBA0 0%, #1a9e7a 100%)',
-            }}
-          >
-            {processing ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
-                Redirecting to Stripe...
-              </span>
-            ) : (
-              `Pay RM${price} · ${selectedMethodData?.label}`
-            )}
-          </button>
-          <p className="text-center text-[#9CA3AF] text-xs mt-2">
-            Secured by Stripe · Your card details are never stored on our servers
-          </p>
-        </div>
-      </div>
-
-      {/* Mobile sticky pay button */}
-      <div
-        className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-100 px-5 py-4 z-20 shadow-lg"
-        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}
-      >
+        {/* Action Button */}
         <button
-          onClick={handlePay}
+          onClick={handleInitiatePayment}
           disabled={processing}
-          className="w-full text-white font-bold py-4 rounded-2xl transition-all disabled:opacity-60 text-base shadow-md"
-          style={{
-            background: processing
-              ? '#9CA3AF'
-              : 'linear-gradient(135deg, #3ECBA0 0%, #1a9e7a 100%)',
-          }}
+          className="w-full bg-[#3ECBA0] hover:bg-[#2DAF87] text-white font-bold py-4 rounded-2xl shadow-lg shadow-[#3ECBA0]/20 transition-all flex items-center justify-center gap-2 disabled:opacity-60 text-base"
         >
           {processing ? (
-            <span className="flex items-center justify-center gap-2">
+            <>
               <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                />
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-              Redirecting to Stripe...
-            </span>
+              <span>Generating Secure QR...</span>
+            </>
           ) : (
-            `Pay RM${price} · ${selectedMethodData?.label}`
+            <>
+              <span>Pay RM{parseFloat(price).toFixed(2)} with {paymentMethods.find((m) => m.id === selectedMethod)?.label}</span>
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
+            </>
           )}
         </button>
-        <p className="text-center text-[#9CA3AF] text-xs mt-2">
-          🔒 Secured by Stripe · 256-bit SSL
-        </p>
+
+        {/* Security badge */}
+        <div className="flex items-center justify-center gap-2 text-[#9CA3AF] text-xs mt-4">
+          <svg className="w-3.5 h-3.5 text-[#3ECBA0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+          <span>End-to-End Encrypted • Bank Negara Malaysia Standard</span>
+        </div>
       </div>
+
+      {/* ── Seamless Remittance Modal (Octopus Laundry Cashless UX) ─────────── */}
+      {activeOrder && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden p-6 text-center animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#3ECBA0] animate-pulse" />
+                <span className="text-xs font-bold text-[#111827] uppercase tracking-wider">Awaiting Remittance</span>
+              </div>
+              <div className="flex items-center gap-1 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full text-xs font-bold font-mono border border-amber-200">
+                <svg className="w-3.5 h-3.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>{timeFormatted}</span>
+              </div>
+            </div>
+
+            {/* QR Code Container */}
+            <div className="bg-[#F9FAFB] rounded-2xl p-4 border border-gray-200 mb-4 inline-block">
+              {activeOrder.qr_image_url ? (
+                <img
+                  src={activeOrder.qr_image_url}
+                  alt="Payment QR"
+                  className="w-48 h-48 mx-auto object-contain rounded-lg"
+                />
+              ) : (
+                <div className="w-48 h-48 flex items-center justify-center text-gray-400">Loading QR...</div>
+              )}
+              <p className="text-[11px] font-mono text-[#6B7280] mt-2 font-medium">{activeOrder.reference_code}</p>
+            </div>
+
+            {/* Amount & Plan */}
+            <div className="mb-4">
+              <div className="text-2xl font-black text-[#111827]">RM{activeOrder.amount_myr.toFixed(2)}</div>
+              <p className="text-xs text-[#6B7280] mt-0.5">
+                {activeOrder.plan_name} • <span className="font-semibold text-[#3ECBA0]">{activeOrder.credits} Credits</span>
+              </p>
+            </div>
+
+            {/* Instructions */}
+            <p className="text-xs text-[#6B7280] bg-gray-50 rounded-xl p-3 border border-gray-100 mb-4 text-left leading-relaxed">
+              {activeOrder.instructions}
+            </p>
+
+            {/* Deep link button if mobile app available */}
+            {activeOrder.deep_link_url && (
+              <a
+                href={activeOrder.deep_link_url}
+                className="block w-full bg-[#005BAC] text-white font-bold py-2.5 rounded-xl text-xs mb-2 hover:bg-[#004B8D] transition-colors"
+              >
+                Open e-Wallet App Directly
+              </a>
+            )}
+
+            {/* Sandbox Simulation Button */}
+            <button
+              onClick={handleSimulateSuccess}
+              disabled={simulating}
+              className="w-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 font-bold py-2.5 rounded-xl text-xs mb-2 transition-colors flex items-center justify-center gap-1.5"
+            >
+              {simulating ? 'Processing...' : '⚡ Simulate Payment Scan (Test Mode)'}
+            </button>
+
+            {/* Cancel Button */}
+            <button
+              onClick={() => setActiveOrder(null)}
+              className="w-full text-xs text-gray-400 hover:text-gray-600 font-semibold py-1.5 transition-colors"
+            >
+              Cancel Payment
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 export default function PaymentPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-[#F0F2F5] flex items-center justify-center">
-          <div className="w-8 h-8 rounded-full border-2 border-[#3ECBA0] border-t-transparent animate-spin" />
-        </div>
-      }
-    >
+    <Suspense fallback={<div className="p-8 text-center text-[#9CA3AF]">Loading payment options...</div>}>
       <PaymentContent />
     </Suspense>
   );

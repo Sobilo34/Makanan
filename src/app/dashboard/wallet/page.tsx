@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -244,6 +245,20 @@ export default function WalletPage() {
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
+      // 1. Try FastAPI backend first
+      try {
+        const walletData = await api.getStudentWallet();
+        if (walletData) {
+          setSubscription(walletData.active_subscription || null);
+          setTransactions(walletData.recent_transactions || []);
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.warn('FastAPI getStudentWallet fallback to Supabase:', err);
+      }
+
+      // 2. Supabase fallback
       const supabase = createClient();
       try {
         const [subRes, txnRes] = await Promise.all([
@@ -344,6 +359,26 @@ export default function WalletPage() {
     setCancelError('');
 
     try {
+      // 1. Try FastAPI backend first
+      try {
+        const res = await api.cancelSubscription(subscription.id);
+        if (res && res.success) {
+          setSubscription(null);
+          setShowCancelModal(false);
+          setSuccessRefund(res.credits_refunded ?? 0);
+          setCancelling(false);
+          return;
+        }
+      } catch (apiErr: any) {
+        console.warn('FastAPI cancel error, checking fallback:', apiErr);
+        if (apiErr?.message && !apiErr.message.includes('Failed to fetch')) {
+          setCancelError(apiErr.message);
+          setCancelling(false);
+          return;
+        }
+      }
+
+      // 2. Fallback to Supabase RPC
       const supabase = createClient();
       const { data, error } = await supabase.rpc('cancel_subscription_with_refund', {
         p_subscription_id: subscription.id,

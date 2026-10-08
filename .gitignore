@@ -1,15 +1,41 @@
-# Node modules
+# Node modules & dependencies
 node_modules/
 package-lock.json
 
 # Next.js build output
 .next/
 out/
-
-# Production build
 build/
+dist/
 
-# Logs
+# Environment Variables & Secrets
+.env.docker
+.env.local
+.env.*.local
+.env.production
+!.env.example
+!.env.docker.example
+
+# Python & Backend runtime artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+env/
+ENV/
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Database & Cache local persistent mounts
+postgres_data/
+redis_data/
+
+# Logs & debugging
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -22,19 +48,20 @@ Thumbs.db
 # Vercel deployment
 .vercel/
 
-# Optional: if using TypeScript
+# TypeScript & Tests
 *.tsbuildinfo
-
-# Optional: if using testing tools
 coverage/
 jest-test-results.json
 
-# Optional: if using IDEs
+# IDE / Editor configurations
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# Optional: if using TurboRepo or monorepo
+# Monorepo / Turbo
 turbo/
 
-# Ignore local Dockerfile used for testing
-Dockerfile
+# Ignore root test Dockerfile but track backend Dockerfile
+/Dockerfile
+!backend/Dockerfile

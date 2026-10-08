@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 
 interface Meal {
   id: string;
@@ -55,23 +56,30 @@ export default function RedemptionModal({
     setLoading(true);
     setError('');
     try {
-      const supabase = createClient();
+      let partnerId: string | undefined = meal.partners?.id;
 
-      // Get partner_id from meal's partner
-      let partnerId: string | null = null;
-      if (meal.partners?.id) {
-        partnerId = meal.partners.id;
-      } else {
-        // Look up partner by meal
+      // Try FastAPI backend first
+      try {
+        const result = await api.redeemMeal(subscription.id, meal.id, partnerId);
+        setQrCode(result.qr_token || result.qr_code);
+        onSuccess();
+        setStep('success');
+        return;
+      } catch (backendErr: any) {
+        console.warn('FastAPI backend redeem error, attempting Supabase RPC:', backendErr);
+      }
+
+      // Fallback to Supabase RPC
+      const supabase = createClient();
+      if (!partnerId) {
         const { data: mealData } = await supabase
           .from('meals')
           .select('partner_id')
           .eq('id', meal.id)
           .single();
-        partnerId = mealData?.partner_id || null;
+        partnerId = mealData?.partner_id || undefined;
       }
 
-      // Use atomic RPC to redeem meal
       const { data: result, error: rpcErr } = await supabase.rpc('redeem_meal', {
         p_user_id: user.id,
         p_subscription_id: subscription.id,
