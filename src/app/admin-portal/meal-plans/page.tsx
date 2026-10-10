@@ -54,6 +54,7 @@ export default function MealPlansPage() {
   const togglePlan = async (planId: string, currentStatus: boolean) => {
     setToggling(planId);
     try {
+      await api.updateAdminMealPlan(planId, { is_active: !currentStatus });
       setPlans((prev) =>
         prev.map((p) => (p.id === planId ? { ...p, is_active: !currentStatus } : p))
       );
@@ -71,79 +72,7 @@ export default function MealPlansPage() {
     return matchSearch && matchStatus;
   });
 
-  // Demo data fallback
-  const demoPlans: MealPlan[] = [
-    {
-      id: 'd1',
-      name: 'Standard RM250 Plan',
-      tier: 'standard',
-      price_myr: 250,
-      credits: 60,
-      is_active: true,
-      created_at: new Date().toISOString(),
-      activeStudents: 85,
-    },
-    {
-      id: 'd2',
-      name: 'Eco RM250 Plan',
-      tier: 'value',
-      price_myr: 250,
-      credits: 40,
-      is_active: true,
-      created_at: new Date().toISOString(),
-      activeStudents: 120,
-    },
-    {
-      id: 'd3',
-      name: 'Value RM300 Plan',
-      tier: 'value',
-      price_myr: 300,
-      credits: 60,
-      is_active: false,
-      created_at: new Date().toISOString(),
-      activeStudents: 15,
-    },
-    {
-      id: 'd4',
-      name: 'Mini RM300 Plan',
-      tier: 'standard',
-      price_myr: 300,
-      credits: 40,
-      is_active: true,
-      created_at: new Date().toISOString(),
-      activeStudents: 90,
-    },
-    {
-      id: 'd5',
-      name: 'Premium RM400 Plan',
-      tier: 'premium',
-      price_myr: 400,
-      credits: 60,
-      is_active: true,
-      created_at: new Date().toISOString(),
-      activeStudents: 50,
-    },
-    {
-      id: 'd6',
-      name: 'Select RM400 Plan',
-      tier: 'premium',
-      price_myr: 400,
-      credits: 40,
-      is_active: true,
-      created_at: new Date().toISOString(),
-      activeStudents: 30,
-    },
-  ];
-
-  const displayPlans =
-    plans.length === 0 && !loading
-      ? demoPlans.filter((p) => {
-          const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
-          const matchStatus =
-            statusFilter === 'all' || (statusFilter === 'active' ? p.is_active : !p.is_active);
-          return matchSearch && matchStatus;
-        })
-      : filtered;
+  const displayPlans = filtered;
 
   const tierColor = (tier: string) => {
     const map: Record<string, string> = {

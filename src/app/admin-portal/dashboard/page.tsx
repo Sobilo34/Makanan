@@ -53,58 +53,7 @@ interface WaitlistEntry {
 
 const DONUT_COLORS = ['#3ECBA0', '#6366F1', '#F59E0B'];
 
-const mockRedemptionData: RedemptionPoint[] = [
-  { date: '01 Aug', count: 320 },
-  { date: '02 Aug', count: 410 },
-  { date: '03 Aug', count: 380 },
-  { date: '04 Aug', count: 520 },
-  { date: '05 Aug', count: 490 },
-  { date: '06 Aug', count: 610 },
-  { date: '07 Aug', count: 580 },
-  { date: '08 Aug', count: 650 },
-  { date: '09 Aug', count: 420 },
-  { date: '10 Aug', count: 390 },
-  { date: '11 Aug', count: 480 },
-  { date: '12 Aug', count: 560 },
-];
 
-const mockActivity: ActivityItem[] = [
-  {
-    id: '1',
-    type: 'renewal',
-    description: 'Plan Renewed — Ali Bin Abu, RM300 / 60 Meals',
-    time: '10 min ago',
-    icon: '🔄',
-  },
-  {
-    id: '2',
-    type: 'partner',
-    description: 'New Partner Onboarded — Mamak Corner, Alor Setar',
-    time: '1 hr ago',
-    icon: '🏪',
-  },
-  {
-    id: '3',
-    type: 'issue',
-    description: 'Payment Issue — Sarah Lee, RM400 Plan',
-    time: '2 hrs ago',
-    icon: '⚠️',
-  },
-  {
-    id: '4',
-    type: 'redemption',
-    description: 'Meal Redeemed — Siti Aisyah at Grand Central',
-    time: '3 hrs ago',
-    icon: '🍽️',
-  },
-  {
-    id: '5',
-    type: 'signup',
-    description: 'New Student Signup — Jason Tan, Standard Plan',
-    time: '4 hrs ago',
-    icon: '👤',
-  },
-];
 
 function StatCard({
   title,
@@ -184,10 +133,11 @@ export default function AdminDashboardPage() {
     mealsRedeemedToday: 0,
   });
   const [partners, setPartners] = useState<PartnerPerf[]>([]);
+  const [redemptionChartData, setRedemptionChartData] = useState<RedemptionPoint[]>([]);
   const [subscriptionOverview, setSubscriptionOverview] = useState([
-    { name: 'Active', value: 85 },
-    { name: 'Paused', value: 10 },
-    { name: 'Expired', value: 5 },
+    { name: 'Active', value: 100 },
+    { name: 'Paused', value: 0 },
+    { name: 'Expired', value: 0 },
   ]);
   const [loading, setLoading] = useState(true);
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
@@ -198,17 +148,19 @@ export default function AdminDashboardPage() {
 
   const loadData = useCallback(async () => {
     try {
-      const [overview, students, partnersList] = await Promise.all([
+      const [overview, students, partnersList, redemptionsList, waitlistList] = await Promise.all([
         api.getAdminOverview().catch(() => null),
         api.listAdminStudents().catch(() => []),
         api.listAdminPartners().catch(() => []),
+        api.listAdminRedemptions().catch(() => []),
+        api.listAdminWaitlist().catch(() => []),
       ]);
 
       if (overview) {
         setStats({
-          activeStudents: overview.total_students || 0,
+          activeStudents: overview.total_students || (Array.isArray(students) ? students.length : 0),
           activePlans: overview.total_students || 0,
-          partnerCafeterias: overview.total_partners || 0,
+          partnerCafeterias: overview.total_partners || (Array.isArray(partnersList) ? partnersList.length : 0),
           mealsRedeemedToday: overview.redemptions_today || 0,
         });
       }
@@ -217,15 +169,66 @@ export default function AdminDashboardPage() {
         setPartners(
           partnersList.slice(0, 5).map((p: any) => ({
             name: p.name,
-            location: p.location || 'N/A',
-            redemptions: p.redemptions_count || 14,
-            status: p.status || 'active',
-            rating: p.rating || 4.8,
+            location: p.location || 'Campus Cafeteria',
+            redemptions: p.redemptions_count || 0,
+            status: p.status || (p.is_active ? 'active' : 'suspended'),
+            rating: p.rating || 5.0,
           }))
         );
+      } else {
+        setPartners([]);
       }
 
-      setRecentActivity(mockActivity);
+      // Compute last 7 days chart from real redemptions
+      const dateMap: Record<string, number> = {};
+      const today = new Date();
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        const key = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+        dateMap[key] = 0;
+      }
+      if (Array.isArray(redemptionsList)) {
+        redemptionsList.forEach((r: any) => {
+          const d = new Date(r.redeemed_at || r.created_at);
+          const key = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+          if (key in dateMap) {
+            dateMap[key]++;
+          }
+        });
+      }
+      setRedemptionChartData(Object.entries(dateMap).map(([date, count]) => ({ date, count })));
+
+      // Compute subscription breakdown from students
+      if (Array.isArray(students) && students.length > 0) {
+        const activeCount = students.filter((s: any) => s.subscription?.status === 'active').length;
+        const pausedCount = students.filter((s: any) => s.subscription?.status === 'paused').length;
+        const expiredCount = students.length - activeCount - pausedCount;
+        setSubscriptionOverview([
+          { name: 'Active', value: Math.round((activeCount / students.length) * 100) },
+          { name: 'Paused', value: Math.round((pausedCount / students.length) * 100) },
+          { name: 'Expired', value: Math.round((expiredCount / students.length) * 100) },
+        ]);
+      }
+
+      // Compute recent activity from real redemptions
+      if (Array.isArray(redemptionsList) && redemptionsList.length > 0) {
+        setRecentActivity(
+          redemptionsList.slice(0, 5).map((r: any) => ({
+            id: r.id,
+            type: 'redemption',
+            description: `${r.student_name || 'Student'} redeemed ${r.meal_name || 'Meal'} at ${r.partner_name || 'Partner'}`,
+            time: new Date(r.redeemed_at || r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            icon: '🍽️',
+          }))
+        );
+      } else {
+        setRecentActivity([]);
+      }
+
+      if (Array.isArray(waitlistList)) {
+        setWaitlist(waitlistList);
+      }
     } catch (err) {
       console.error('Dashboard load error:', err);
     } finally {
@@ -510,7 +513,7 @@ export default function AdminDashboardPage() {
                 </div>
                 <ResponsiveContainer width="100%" height={220}>
                   <LineChart
-                    data={mockRedemptionData}
+                    data={redemptionChartData}
                     margin={{ top: 5, right: 10, left: -20, bottom: 5 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -694,43 +697,26 @@ export default function AdminDashboardPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {(partners.length > 0
-                        ? partners
-                        : [
-                            {
-                              name: 'Grand Central Cafeteria',
-                              redemptions: 450,
-                              status: 'active',
-                              rating: 4.9,
-                              location: '',
-                            },
-                            {
-                              name: 'Mamak Stall A',
-                              redemptions: 380,
-                              status: 'active',
-                              rating: 4.5,
-                              location: '',
-                            },
-                            {
-                              name: 'U-Cafe Kiosk',
-                              redemptions: 210,
-                              status: 'pending',
-                              rating: 3.2,
-                              location: '',
-                            },
-                          ]
-                      ).map((p, i) => (
-                        <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                          <td className="py-3 pr-3">
-                            <p className="text-sm font-medium text-white">{p.name}</p>
-                            <StarRating rating={p.rating} />
+                      {partners.length === 0 ? (
+                        <tr>
+                          <td colSpan={3} className="py-6 text-center text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                            No partner cafeterias registered yet.
                           </td>
-                          <td className="py-3 pr-3">
-                            <span className="text-sm font-bold text-white">{p.redemptions}</span>
-                          </td>
-                          <td className="py-3">{statusBadge(p.status)}</td>
                         </tr>
-                      ))}
+                      ) : (
+                        partners.map((p, i) => (
+                          <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                            <td className="py-3 pr-3">
+                              <p className="text-sm font-medium text-white">{p.name}</p>
+                              <StarRating rating={p.rating} />
+                            </td>
+                            <td className="py-3 pr-3">
+                              <span className="text-sm font-bold text-white">{p.redemptions}</span>
+                            </td>
+                            <td className="py-3">{statusBadge(p.status)}</td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>

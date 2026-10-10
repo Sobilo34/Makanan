@@ -398,6 +398,10 @@ class ApiClient {
     });
   }
 
+  async listAdminWaitlist() {
+    return this.request<any[]>('/admin/waitlist');
+  }
+
   // ── Support & Feedback ─────────────────────────────────────────────────────
   async getTickets(): Promise<SupportTicket[]> {
     return this.request<SupportTicket[]>('/support/tickets');
@@ -432,6 +436,52 @@ class ApiClient {
     return this.request<any>('/notifications/read', {
       method: 'POST',
       body: JSON.stringify({ notification_ids: notificationIds, all_read: allRead }),
+    });
+  }
+
+  async listAdminRedemptions(limit = 100) {
+    return this.request<any[]>(`/admin/redemptions?limit=${limit}`);
+  }
+
+  async createAdminMealPlan(data: { name: string; tier: string; price_myr: number; credits: number; description?: string; is_active?: boolean }) {
+    return this.request<any>('/admin/meal-plans', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateAdminMealPlan(planId: string, data: any) {
+    return this.request<any>(`/admin/meal-plans/${planId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateAdminPartner(partnerId: string, data: any) {
+    return this.request<any>(`/admin/partners/${partnerId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updatePartnerProfile(data: any) {
+    return this.request<any>('/partners/me', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async changePassword(currentPassword: string, newPassword: string) {
+    return this.request<{ success: boolean; message: string }>('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+    });
+  }
+
+  async forgotPassword(email: string) {
+    return this.request<{ success: boolean; message: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
     });
   }
 

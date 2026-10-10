@@ -58,84 +58,79 @@ function PartnerInitials({ name }: { name: string }) {
   );
 }
 
-const demoMeals = [
-  {
-    id: 'm1',
-    name: 'Nasi Lemak Special',
-    category: 'Rice',
-    price: 'RM 8.00',
-    availability: 'Available',
-    redemptions: 142,
-  },
-  {
-    id: 'm2',
-    name: 'Mee Goreng Mamak',
-    category: 'Noodles',
-    price: 'RM 7.50',
-    availability: 'Available',
-    redemptions: 98,
-  },
-  {
-    id: 'm3',
-    name: 'Roti Canai Set',
-    category: 'Breakfast',
-    price: 'RM 5.00',
-    availability: 'Limited',
-    redemptions: 210,
-  },
-  {
-    id: 'm4',
-    name: 'Ayam Goreng Berempah',
-    category: 'Mains',
-    price: 'RM 10.00',
-    availability: 'Unavailable',
-    redemptions: 55,
-  },
-];
-
-const demoRedemptions = [
-  {
-    id: 'r1',
-    time: '09:14 AM',
-    student: 'Ali Bin Abu',
-    meal: 'Nasi Lemak Special',
-    plan: 'Standard',
-    status: 'success',
-  },
-  {
-    id: 'r2',
-    time: '10:02 AM',
-    student: 'Siti Aisyah',
-    meal: 'Roti Canai Set',
-    plan: 'Premium',
-    status: 'success',
-  },
-  {
-    id: 'r3',
-    time: '11:30 AM',
-    student: 'Jason Tan',
-    meal: 'Mee Goreng Mamak',
-    plan: 'Standard',
-    status: 'pending',
-  },
-  {
-    id: 'r4',
-    time: '12:45 PM',
-    student: 'Nurul Huda',
-    meal: 'Ayam Goreng Berempah',
-    plan: 'Premium',
-    status: 'rejected',
-  },
-];
-
-const demoSettlement = [
-  { id: 's1', period: 'Aug 1–15, 2026', meals: 108, amount: 'RM 864.00', status: 'Paid' },
-  { id: 's2', period: 'Jul 16–31, 2026', meals: 95, amount: 'RM 760.00', status: 'Paid' },
-  { id: 's3', period: 'Jul 1–15, 2026', meals: 112, amount: 'RM 896.00', status: 'Pending' },
-];
-
-function PartnerDetailView({ partner, onBack }: { partner: Partner; onBack: () => void }) {
+function PartnerDetailView({
+  partner,
+  onBack,
+  onRefresh,
+}: {
+  partner: Partner;
+  onBack: () => void;
+  onRefresh: () => void;
+}) {
   const [detailTab, setDetailTab] = useState<DetailTab>('meals');
+  const [partnerMeals, setPartnerMeals] = useState<any[]>([]);
+  const [partnerRedemptions, setPartnerRedemptions] = useState<any[]>([]);
+  const [partnerSettlements, setPartnerSettlements] = useState<any[]>([]);
+  const [loadingDetails, setLoadingDetails] = useState(true);
+  const [updating, setUpdating] = useState(false);
+
+  useEffect(() => {
+    const fetchDetails = async () => {
+      setLoadingDetails(true);
+      try {
+        const [mealsData, redemptionsData, settlementsData] = await Promise.all([
+          api.getMeals({ partner_id: partner.id }).catch(() => []),
+          api.listAdminRedemptions().catch(() => []),
+          api.listAdminSettlements().catch(() => []),
+        ]);
+
+        if (Array.isArray(mealsData)) {
+          setPartnerMeals(mealsData);
+        }
+        if (Array.isArray(redemptionsData)) {
+          setPartnerRedemptions(
+            redemptionsData.filter(
+              (r: any) =>
+                r.partner_id === partner.id ||
+                r.partner_name?.toLowerCase() === partner.name?.toLowerCase()
+            )
+          );
+        }
+        if (Array.isArray(settlementsData)) {
+          setPartnerSettlements(
+            settlementsData.filter(
+              (s: any) =>
+                s.partner_id === partner.id ||
+                s.partner_name?.toLowerCase() === partner.name?.toLowerCase()
+            )
+          );
+        }
+      } catch (err) {
+        console.error('Failed to load partner details:', err);
+      } finally {
+        setLoadingDetails(false);
+      }
+    };
+    fetchDetails();
+  }, [partner.id, partner.name]);
+
+  const togglePartnerStatus = async () => {
+    setUpdating(true);
+    try {
+      const newStatus = partner.is_active ? 'suspended' : 'active';
+      await api.updateAdminPartner(partner.id, {
+        is_active: !partner.is_active,
+        status: newStatus,
+      });
+      partner.is_active = !partner.is_active;
+      partner.status = newStatus;
+      onRefresh();
+    } catch (err) {
+      console.error('Failed to update partner:', err);
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   const statusColor = (s: string) => {
     if (s === 'active') return { bg: '#dcfce7', text: '#16a34a' };
@@ -148,27 +143,27 @@ function PartnerDetailView({ partner, onBack }: { partner: Partner; onBack: () =
   const kpis = [
     {
       label: 'Meals Served',
-      value: (partner.meals_redeemed || 0) + (partner.redemptionCount || 0),
+      value: partnerRedemptions.length,
       icon: '🍽️',
       color: '#3ECBA0',
     },
-    { label: 'Active Meals', value: partner.meals_available || 0, icon: '📋', color: '#6366F1' },
+    { label: 'Active Meals', value: partnerMeals.length, icon: '📋', color: '#6366F1' },
     {
-      label: 'Redemptions',
-      value: partner.redemptionCount || partner.meals_redeemed || 0,
+      label: 'Total Redemptions',
+      value: partnerRedemptions.length,
       icon: '✅',
       color: '#F59E0B',
     },
     {
-      label: 'Earnings',
-      value: `RM ${((partner.redemptionCount || partner.meals_redeemed || 0) * 8).toLocaleString()}`,
+      label: 'Settlements',
+      value: partnerSettlements.length,
       icon: '💰',
       color: '#EC4899',
     },
   ];
 
   const redemptionStatusStyle = (s: string) => {
-    if (s === 'success') return { bg: '#E8F8F1', text: '#4CAF7D' };
+    if (s === 'success' || s === 'completed') return { bg: '#E8F8F1', text: '#4CAF7D' };
     if (s === 'pending') return { bg: '#FEF9EC', text: '#F2C94C' };
     return { bg: '#FDECEA', text: '#E57373' };
   };
@@ -244,14 +239,16 @@ function PartnerDetailView({ partner, onBack }: { partner: Partner; onBack: () =
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button className="px-4 py-2 rounded-xl border border-[#E5E7EB] text-sm font-semibold text-[#374151] hover:bg-[#F9FAFB] transition-colors">
-              Manage Access
-            </button>
             <button
-              className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
-              style={{ background: 'linear-gradient(135deg, #3ECBA0, #2db88d)' }}
+              onClick={togglePartnerStatus}
+              disabled={updating}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                partner.is_active
+                  ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                  : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+              }`}
             >
-              Edit Partner
+              {updating ? 'Updating...' : partner.is_active ? 'Suspend Partner' : 'Activate Partner'}
             </button>
           </div>
         </div>
@@ -276,7 +273,7 @@ function PartnerDetailView({ partner, onBack }: { partner: Partner; onBack: () =
       {/* Tabs */}
       <div className="bg-white rounded-2xl border border-[#F3F4F6] overflow-hidden">
         <div className="flex border-b border-[#F3F4F6] px-5 pt-4 gap-1">
-          {(['meals', 'redemptions', 'performance', 'settlement'] as DetailTab[]).map((tab) => (
+          {(['meals', 'redemptions', 'settlement'] as DetailTab[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setDetailTab(tab)}
@@ -292,144 +289,121 @@ function PartnerDetailView({ partner, onBack }: { partner: Partner; onBack: () =
         </div>
 
         <div className="p-5">
-          {/* Meals tab */}
-          {detailTab === 'meals' && (
+          {loadingDetails ? (
+            <div className="py-12 text-center text-sm text-[#9CA3AF]">Loading partner records...</div>
+          ) : detailTab === 'meals' ? (
             <div className="space-y-3">
-              <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-4 px-3 py-2 bg-[#FAFAFA] rounded-xl">
-                {['Meal Name', 'Category', 'Price', 'Availability', 'Redemptions'].map((h) => (
-                  <p
-                    key={h}
-                    className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider"
-                  >
-                    {h}
-                  </p>
-                ))}
-              </div>
-              {demoMeals.map((meal) => (
-                <div
-                  key={meal.id}
-                  className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-4 px-3 py-3 rounded-xl hover:bg-[#F9FAFB] transition-colors items-center"
-                >
-                  <p className="text-sm font-semibold text-[#374151]">{meal.name}</p>
-                  <span className="text-xs px-2 py-1 rounded-full bg-[#F3F4F6] text-[#6B7280] w-fit">
-                    {meal.category}
-                  </span>
-                  <p className="text-sm text-[#374151]">{meal.price}</p>
-                  <span
-                    className={`text-xs font-semibold px-2 py-1 rounded-full w-fit ${
-                      meal.availability === 'Available'
-                        ? 'bg-[#E8F8F1] text-[#4CAF7D]'
-                        : meal.availability === 'Limited'
-                          ? 'bg-[#FEF9EC] text-[#F2C94C]'
-                          : 'bg-[#FDECEA] text-[#E57373]'
-                    }`}
-                  >
-                    {meal.availability}
-                  </span>
-                  <p className="text-sm font-semibold text-[#374151]">{meal.redemptions}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Redemptions tab */}
-          {detailTab === 'redemptions' && (
-            <div className="space-y-3">
-              <div className="grid grid-cols-[1fr_2fr_2fr_1fr_1fr] gap-4 px-3 py-2 bg-[#FAFAFA] rounded-xl">
-                {['Time', 'Student', 'Meal', 'Plan', 'Status'].map((h) => (
-                  <p
-                    key={h}
-                    className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider"
-                  >
-                    {h}
-                  </p>
-                ))}
-              </div>
-              {demoRedemptions.map((r) => {
-                const rs = redemptionStatusStyle(r.status);
-                return (
-                  <div
-                    key={r.id}
-                    className="grid grid-cols-[1fr_2fr_2fr_1fr_1fr] gap-4 px-3 py-3 rounded-xl hover:bg-[#F9FAFB] transition-colors items-center"
-                  >
-                    <p className="text-sm text-[#6B7280]">{r.time}</p>
-                    <p className="text-sm font-medium text-[#374151]">{r.student}</p>
-                    <p className="text-sm text-[#6B7280]">{r.meal}</p>
-                    <span className="text-xs px-2 py-1 rounded-full bg-[#F3F4F6] text-[#6B7280] w-fit">
-                      {r.plan}
-                    </span>
-                    <span
-                      className="text-xs font-semibold px-2.5 py-1 rounded-full capitalize w-fit"
-                      style={{ background: rs.bg, color: rs.text }}
-                    >
-                      {r.status}
-                    </span>
+              {partnerMeals.length === 0 ? (
+                <p className="text-sm text-[#9CA3AF] text-center py-6">No meals registered for this cafeteria yet.</p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-4 px-3 py-2 bg-[#FAFAFA] rounded-xl">
+                    {['Meal Name', 'Category', 'Price', 'Status'].map((h) => (
+                      <p key={h} className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">
+                        {h}
+                      </p>
+                    ))}
                   </div>
-                );
-              })}
+                  {partnerMeals.map((meal) => (
+                    <div
+                      key={meal.id}
+                      className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-4 px-3 py-3 rounded-xl hover:bg-[#F9FAFB] transition-colors items-center"
+                    >
+                      <p className="text-sm font-semibold text-[#374151]">{meal.name}</p>
+                      <span className="text-xs px-2 py-1 rounded-full bg-[#F3F4F6] text-[#6B7280] w-fit">
+                        {meal.category || 'Mains'}
+                      </span>
+                      <p className="text-sm text-[#374151]">RM {Number(meal.price_myr || 0).toFixed(2)}</p>
+                      <span
+                        className={`text-xs font-semibold px-2 py-1 rounded-full w-fit ${
+                          meal.is_available
+                            ? 'bg-[#E8F8F1] text-[#4CAF7D]'
+                            : 'bg-[#FDECEA] text-[#E57373]'
+                        }`}
+                      >
+                        {meal.is_available ? 'Available' : 'Unavailable'}
+                      </span>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
-          )}
-
-          {/* Performance tab */}
-          {detailTab === 'performance' && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {[
-                { label: 'Avg. Daily Redemptions', value: '34', sub: 'Last 30 days' },
-                { label: 'Peak Hour', value: '12–1 PM', sub: 'Lunch rush' },
-                {
-                  label: 'Student Satisfaction',
-                  value: `${partner.rating > 0 ? partner.rating.toFixed(1) : '4.5'} / 5`,
-                  sub: 'Based on ratings',
-                },
-                { label: 'Completion Rate', value: '96.2%', sub: 'Meals fulfilled' },
-                { label: 'Avg. Wait Time', value: '4 min', sub: 'Per redemption' },
-                {
-                  label: 'Monthly Revenue',
-                  value: `RM ${((partner.redemptionCount || 50) * 8 * 30).toLocaleString()}`,
-                  sub: 'Estimated',
-                },
-              ].map((m) => (
-                <div key={m.label} className="bg-[#FAFAFA] rounded-xl p-4">
-                  <p className="text-xs text-[#9CA3AF] font-medium mb-1">{m.label}</p>
-                  <p className="text-xl font-bold text-[#111827]">{m.value}</p>
-                  <p className="text-xs text-[#9CA3AF] mt-0.5">{m.sub}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Settlement tab */}
-          {detailTab === 'settlement' && (
+          ) : detailTab === 'redemptions' ? (
             <div className="space-y-3">
-              <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-4 px-3 py-2 bg-[#FAFAFA] rounded-xl">
-                {['Period', 'Meals', 'Amount', 'Status'].map((h) => (
-                  <p
-                    key={h}
-                    className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider"
-                  >
-                    {h}
-                  </p>
-                ))}
-              </div>
-              {demoSettlement.map((s) => (
-                <div
-                  key={s.id}
-                  className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-4 px-3 py-3 rounded-xl hover:bg-[#F9FAFB] transition-colors items-center"
-                >
-                  <p className="text-sm font-medium text-[#374151]">{s.period}</p>
-                  <p className="text-sm text-[#6B7280]">{s.meals}</p>
-                  <p className="text-sm font-semibold text-[#374151]">{s.amount}</p>
-                  <span
-                    className={`text-xs font-semibold px-2.5 py-1 rounded-full w-fit ${
-                      s.status === 'Paid'
-                        ? 'bg-[#E8F8F1] text-[#4CAF7D]'
-                        : 'bg-[#FEF9EC] text-[#F2C94C]'
-                    }`}
-                  >
-                    {s.status}
-                  </span>
-                </div>
-              ))}
+              {partnerRedemptions.length === 0 ? (
+                <p className="text-sm text-[#9CA3AF] text-center py-6">No redemptions recorded for this cafeteria yet.</p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-[1fr_2fr_2fr_1fr_1fr] gap-4 px-3 py-2 bg-[#FAFAFA] rounded-xl">
+                    {['Time', 'Student', 'Meal', 'Plan', 'Status'].map((h) => (
+                      <p key={h} className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">
+                        {h}
+                      </p>
+                    ))}
+                  </div>
+                  {partnerRedemptions.map((r) => {
+                    const rs = redemptionStatusStyle(r.status);
+                    return (
+                      <div
+                        key={r.id}
+                        className="grid grid-cols-[1fr_2fr_2fr_1fr_1fr] gap-4 px-3 py-3 rounded-xl hover:bg-[#F9FAFB] transition-colors items-center"
+                      >
+                        <p className="text-sm text-[#6B7280]">
+                          {new Date(r.redeemed_at || r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                        <p className="text-sm font-medium text-[#374151]">{r.student_name}</p>
+                        <p className="text-sm text-[#6B7280]">{r.meal_name}</p>
+                        <span className="text-xs px-2 py-1 rounded-full bg-[#F3F4F6] text-[#6B7280] w-fit">
+                          {r.plan_name || 'Standard'}
+                        </span>
+                        <span
+                          className="text-xs font-semibold px-2.5 py-1 rounded-full capitalize w-fit"
+                          style={{ background: rs.bg, color: rs.text }}
+                        >
+                          {r.status}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {partnerSettlements.length === 0 ? (
+                <p className="text-sm text-[#9CA3AF] text-center py-6">No settlements filed for this partner yet.</p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-4 px-3 py-2 bg-[#FAFAFA] rounded-xl">
+                    {['Period', 'Meals', 'Amount', 'Status'].map((h) => (
+                      <p key={h} className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">
+                        {h}
+                      </p>
+                    ))}
+                  </div>
+                  {partnerSettlements.map((s) => (
+                    <div
+                      key={s.id}
+                      className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-4 px-3 py-3 rounded-xl hover:bg-[#F9FAFB] transition-colors items-center"
+                    >
+                      <p className="text-sm font-medium text-[#374151]">
+                        {new Date(s.period_start).toLocaleDateString()} – {new Date(s.period_end).toLocaleDateString()}
+                      </p>
+                      <p className="text-sm text-[#6B7280]">{s.meals_count}</p>
+                      <p className="text-sm font-semibold text-[#374151]">RM {Number(s.amount_myr || 0).toFixed(2)}</p>
+                      <span
+                        className={`text-xs font-semibold px-2.5 py-1 rounded-full w-fit ${
+                          s.status === 'paid'
+                            ? 'bg-[#E8F8F1] text-[#4CAF7D]'
+                            : 'bg-[#FEF9EC] text-[#F2C94C]'
+                        }`}
+                      >
+                        {s.status}
+                      </span>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           )}
         </div>
@@ -445,110 +419,38 @@ export default function PartnersPage() {
   const [activeTab, setActiveTab] = useState<TabType>('active');
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
 
-  useEffect(() => {
-    const loadPartners = async () => {
-      setLoading(true);
-      try {
-        const data = await api.listAdminPartners();
-        if (data && Array.isArray(data)) {
-          setPartners(
-            data.map((p: any) => ({
-              id: p.id,
-              name: p.name,
-              location: p.location || 'Kedah, Malaysia',
-              email: p.email || null,
-              phone: p.phone || null,
-              status: p.status || 'active',
-              rating: p.rating || 4.8,
-              meals_available: 150,
-              meals_redeemed: p.redemptions_count || 45,
-              is_active: p.status !== 'suspended',
-              created_at: p.created_at || new Date().toISOString(),
-              redemptionCount: p.redemptions_count || 45,
-            }))
-          );
-        }
-      } catch (err) {
-        console.error('Partners load error:', err);
-      } finally {
-        setLoading(false);
+  const loadPartners = async () => {
+    setLoading(true);
+    try {
+      const data = await api.listAdminPartners();
+      if (data && Array.isArray(data)) {
+        setPartners(
+          data.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            location: p.location || 'Campus Cafeteria',
+            email: p.email || null,
+            phone: p.phone || null,
+            status: p.status || (p.is_active ? 'active' : 'suspended'),
+            rating: p.rating || 5.0,
+            meals_available: p.meals_count || 0,
+            meals_redeemed: p.redemptions_count || 0,
+            is_active: p.is_active !== undefined ? p.is_active : p.status !== 'suspended',
+            created_at: p.created_at || new Date().toISOString(),
+            redemptionCount: p.redemptions_count || 0,
+          }))
+        );
       }
-    };
+    } catch (err) {
+      console.error('Partners load error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     loadPartners();
   }, []);
-
-  const demoPartners: Partner[] = [
-    {
-      id: 'd1',
-      name: 'Central Kitchen',
-      location: 'Alor Setar, Kedah',
-      email: 'central@kitchen.com',
-      phone: '+60 12-111 2222',
-      status: 'active',
-      rating: 4.9,
-      meals_available: 300,
-      meals_redeemed: 215,
-      is_active: true,
-      created_at: new Date().toISOString(),
-      redemptionCount: 215,
-    },
-    {
-      id: 'd2',
-      name: 'Campus Hub Cafe',
-      location: 'Campus B, Campus Hub',
-      email: 'hub@campus.com',
-      phone: '+60 12-333 4444',
-      status: 'active',
-      rating: 4.5,
-      meals_available: 150,
-      meals_redeemed: 95,
-      is_active: true,
-      created_at: new Date().toISOString(),
-      redemptionCount: 95,
-    },
-    {
-      id: 'd3',
-      name: 'Mamak Stall A',
-      location: 'Alor Setar',
-      email: 'mamak@stall.com',
-      phone: '+60 12-555 6666',
-      status: 'active',
-      rating: 4.3,
-      meals_available: 200,
-      meals_redeemed: 170,
-      is_active: true,
-      created_at: new Date().toISOString(),
-      redemptionCount: 170,
-    },
-    {
-      id: 'd4',
-      name: 'Kiosk 7',
-      location: 'Student Center',
-      email: 'kiosk7@campus.com',
-      phone: '+60 12-777 8888',
-      status: 'pending',
-      rating: 0,
-      meals_available: 50,
-      meals_redeemed: 12,
-      is_active: false,
-      created_at: new Date().toISOString(),
-      redemptionCount: 12,
-    },
-    {
-      id: 'd5',
-      name: 'Downtown Grocer',
-      location: 'Alor Setar',
-      email: 'downtown@grocer.com',
-      phone: '+60 12-999 0000',
-      status: 'suspended',
-      rating: 0,
-      meals_available: 0,
-      meals_redeemed: 0,
-      is_active: false,
-      created_at: new Date().toISOString(),
-      redemptionCount: 0,
-    },
-  ];
 
   const getTabPartners = (tab: TabType, list: Partner[]) => {
     return list.filter((p) => {
@@ -564,8 +466,7 @@ export default function PartnersPage() {
     });
   };
 
-  const sourcePartners = partners.length === 0 && !loading ? demoPartners : partners;
-  const tabPartners = getTabPartners(activeTab, sourcePartners);
+  const tabPartners = getTabPartners(activeTab, partners);
   const filtered = tabPartners.filter(
     (p) =>
       !search ||
@@ -574,9 +475,9 @@ export default function PartnersPage() {
   );
 
   const tabCounts = {
-    active: getTabPartners('active', sourcePartners).length,
-    pending: getTabPartners('pending', sourcePartners).length,
-    suspended: getTabPartners('suspended', sourcePartners).length,
+    active: getTabPartners('active', partners).length,
+    pending: getTabPartners('pending', partners).length,
+    suspended: getTabPartners('suspended', partners).length,
   };
 
   const statusBadge = (status: string) => {
@@ -599,7 +500,11 @@ export default function PartnersPage() {
   if (selectedPartner) {
     return (
       <AdminLayout>
-        <PartnerDetailView partner={selectedPartner} onBack={() => setSelectedPartner(null)} />
+        <PartnerDetailView
+          partner={selectedPartner}
+          onBack={() => setSelectedPartner(null)}
+          onRefresh={loadPartners}
+        />
       </AdminLayout>
     );
   }
@@ -611,23 +516,8 @@ export default function PartnersPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-[#111827]">Partner Management</h1>
-            <p className="text-[#6B7280] text-sm mt-0.5">{sourcePartners.length} total partners</p>
+            <p className="text-[#6B7280] text-sm mt-0.5">{partners.length} total partners</p>
           </div>
-          <button
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
-            style={{ background: 'linear-gradient(135deg, #3ECBA0, #2db88d)' }}
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            Add Partner
-          </button>
         </div>
 
         {/* Search + Tabs */}
@@ -671,7 +561,9 @@ export default function PartnersPage() {
               >
                 {tab}
                 <span
-                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${activeTab === tab ? 'bg-white/20 text-white' : 'bg-[#E5E7EB] text-[#6B7280]'}`}
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                    activeTab === tab ? 'bg-white/20 text-white' : 'bg-[#E5E7EB] text-[#6B7280]'
+                  }`}
                 >
                   {tabCounts[tab]}
                 </span>

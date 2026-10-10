@@ -181,3 +181,29 @@ curl -s -X POST http://localhost:8000/api/v1/auth/login \
 # 3. Fetch Meal Catalog
 curl -s http://localhost:8000/api/v1/meals | jq '.[0]'
 ```
+
+---
+
+## 8. Automated Testing & Verification
+
+### Run Backend Unit & Doctests (Inside Docker)
+```bash
+cd /home/bilal/bilal_projects/Makanan-backend
+
+# Run the complete test suite (13 passing tests)
+docker compose exec backend pytest -v
+
+# Run doctests specifically
+docker compose exec backend pytest tests/test_doctests.py -v
+```
+
+### Run Frontend Type Check & Production Build
+```bash
+cd /home/bilal/bilal_projects/Makanan
+
+# Validate all TypeScript types
+npx tsc --noEmit
+
+# Run complete Next.js production build (42 routes)
+npm run build
+```

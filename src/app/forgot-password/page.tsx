@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { api } from '@/lib/api';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -17,8 +18,7 @@ export default function ForgotPasswordPage() {
       if (!email.trim() || !email.includes('@')) {
         throw new Error('Please enter a valid email address');
       }
-      // Password reset instructions dispatched
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      await api.forgotPassword(email.trim());
       setSent(true);
     } catch (err: any) {
       setError(err.message || 'Failed to send reset email');

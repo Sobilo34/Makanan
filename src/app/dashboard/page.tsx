@@ -137,54 +137,7 @@ export default function DashboardHome() {
     );
   }
 
-  // Fallback meal cards for when no DB data
-  const fallbackMeals = [
-    {
-      id: 'f1',
-      name: 'Nasi Lemak',
-      category: 'breakfast',
-      image_url: '',
-      partners: { name: 'School Cafeteria' },
-      tier: '',
-      calories: 0,
-      rating: 0,
-      availability: 'available',
-    },
-    {
-      id: 'f2',
-      name: 'Chicken Rice',
-      category: 'lunch',
-      image_url: '',
-      partners: { name: 'School Cafeteria' },
-      tier: '',
-      calories: 0,
-      rating: 0,
-      availability: 'available',
-    },
-    {
-      id: 'f3',
-      name: 'Grilled Chicken Salad',
-      category: 'lunch',
-      image_url: '',
-      partners: { name: 'School Cafeteria' },
-      tier: '',
-      calories: 0,
-      rating: 0,
-      availability: 'available',
-    },
-    {
-      id: 'f4',
-      name: 'Mixed Curry Rice',
-      category: 'dinner',
-      image_url: '',
-      partners: { name: 'School Cafeteria' },
-      tier: '',
-      calories: 0,
-      rating: 0,
-      availability: 'available',
-    },
-  ];
-  const displayMeals = todayMeals.length > 0 ? todayMeals.slice(0, 4) : fallbackMeals;
+  const displayMeals = todayMeals.slice(0, 4);
 
   return (
     <div className="min-h-full bg-[#F5F6FA]">
@@ -363,58 +316,64 @@ export default function DashboardHome() {
                   </svg>
                 </Link>
               </div>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                {displayMeals.map((meal) => (
-                  <div
-                    key={meal.id}
-                    className="bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-md transition-shadow flex flex-col"
-                  >
-                    {/* Meal image */}
-                    <div className="relative w-full" style={{ paddingTop: '70%' }}>
-                      {meal.image_url ? (
-                        <img
-                          src={meal.image_url}
-                          alt={meal.name}
-                          className="absolute inset-0 w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 bg-gradient-to-br from-[#EBF9F4] to-[#C8F0E4] flex items-center justify-center">
-                          <svg
-                            className="w-10 h-10 text-[#3ECBA0] opacity-60"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth={1.5}
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                            />
-                          </svg>
-                        </div>
-                      )}
+              {displayMeals.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
+                  <p className="text-[#9CA3AF] text-sm">No meals available currently.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  {displayMeals.map((meal) => (
+                    <div
+                      key={meal.id}
+                      className="bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-md transition-shadow flex flex-col"
+                    >
+                      {/* Meal image */}
+                      <div className="relative w-full" style={{ paddingTop: '70%' }}>
+                        {meal.image_url ? (
+                          <img
+                            src={meal.image_url}
+                            alt={meal.name}
+                            className="absolute inset-0 w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-br from-[#EBF9F4] to-[#C8F0E4] flex items-center justify-center">
+                            <svg
+                              className="w-10 h-10 text-[#3ECBA0] opacity-60"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={1.5}
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                              />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                      {/* Meal info */}
+                      <div className="p-3 flex flex-col flex-1">
+                        <span className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full mb-1.5 self-start bg-[#EBF9F4] text-[#3ECBA0]">
+                          Meal
+                        </span>
+                        <p className="text-[#1A1A1A] font-bold text-sm leading-tight mb-0.5">
+                          {meal.name}
+                        </p>
+                        <p className="text-[#9CA3AF] text-xs mb-3">{meal.partners?.name}</p>
+                        <button
+                          onClick={() => handleRedeem(meal as Meal)}
+                          disabled={!subscription || creditsRemaining === 0}
+                          className="mt-auto w-full bg-[#3ECBA0] hover:bg-[#2DAF87] text-white font-semibold text-sm py-2 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Redeem
+                        </button>
+                      </div>
                     </div>
-                    {/* Meal info */}
-                    <div className="p-3 flex flex-col flex-1">
-                      <span className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full mb-1.5 self-start bg-[#EBF9F4] text-[#3ECBA0]">
-                        Meal
-                      </span>
-                      <p className="text-[#1A1A1A] font-bold text-sm leading-tight mb-0.5">
-                        {meal.name}
-                      </p>
-                      <p className="text-[#9CA3AF] text-xs mb-3">{meal.partners?.name}</p>
-                      <button
-                        onClick={() => handleRedeem(meal as Meal)}
-                        disabled={!subscription || creditsRemaining === 0}
-                        className="mt-auto w-full bg-[#3ECBA0] hover:bg-[#2DAF87] text-white font-semibold text-sm py-2 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                      >
-                        Redeem
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Recent Orders */}

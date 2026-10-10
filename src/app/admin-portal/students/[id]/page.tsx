@@ -68,55 +68,7 @@ export default function StudentDetailPage() {
 
   useEffect(() => {
     const load = async () => {
-      if (studentId.startsWith('demo-')) {
-        // Demo data
-        setStudent({
-          id: studentId,
-          full_name: 'Siti Aisyah',
-          email: 'siti@student.aiu.edu',
-          student_id: 'SA-2024-00123',
-          is_active: true,
-          phone: '+60 12-345 6789',
-          created_at: new Date().toISOString(),
-        });
-        setSubscriptions([
-          {
-            id: 's1',
-            status: 'active',
-            credits_total: 60,
-            credits_used: 28,
-            starts_at: '2026-05-12T00:00:00Z',
-            expires_at: '2026-08-12T00:00:00Z',
-            meal_plan: { name: 'Standard Plan', price_myr: 300 },
-          },
-          {
-            id: 's2',
-            status: 'expired',
-            credits_total: 60,
-            credits_used: 60,
-            starts_at: '2026-02-12T00:00:00Z',
-            expires_at: '2026-05-12T00:00:00Z',
-            meal_plan: { name: 'Classic Plan', price_myr: 250 },
-          },
-        ]);
-        setRedemptions([
-          {
-            id: 'r1',
-            redeemed_at: new Date().toISOString(),
-            meal: { name: 'Nasi Lemak' },
-            partner: { name: 'Mamak Stall A' },
-          },
-          {
-            id: 'r2',
-            redeemed_at: new Date(Date.now() - 86400000).toISOString(),
-            meal: { name: 'Chicken Rice' },
-            partner: { name: 'Grand Central' },
-          },
-        ]);
-        setLoading(false);
-        return;
-      }
-
+      if (!studentId) return;
       try {
         const data = await api.getAdminStudent(studentId);
         if (!data || !data.student) {

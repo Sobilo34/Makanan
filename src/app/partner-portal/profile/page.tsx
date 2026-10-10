@@ -219,25 +219,49 @@ export default function PartnerSettingsPage() {
   const handleSaveBusiness = async () => {
     if (!partner) return;
     setBizSaving(true);
-    await new Promise((r) => setTimeout(r, 500));
-    setBizSaving(false);
-    showToast('Business info updated successfully.', 'success');
+    try {
+      await api.updatePartnerProfile({
+        name: bizName,
+        phone: bizPhone,
+        location: bizLocation,
+        description: bizDescription,
+      });
+      showToast('Business info updated successfully.', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to update business info.', 'error');
+    } finally {
+      setBizSaving(false);
+    }
   };
 
   const handleSaveHours = async () => {
     if (!partner) return;
     setHoursSaving(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setHoursSaving(false);
-    showToast('Operating hours saved.', 'success');
+    try {
+      await api.updatePartnerProfile({
+        description: `${bizDescription ? bizDescription + ' | ' : ''}Hours: ${openTime} - ${closeTime} (${operatingDays.join(', ')})`,
+      });
+      showToast('Operating hours saved.', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to update hours.', 'error');
+    } finally {
+      setHoursSaving(false);
+    }
   };
 
   const handleSavePayment = async () => {
     if (!partner) return;
     setPaymentSaving(true);
-    await new Promise((r) => setTimeout(r, 500));
-    setPaymentSaving(false);
-    showToast('Payment details updated.', 'success');
+    try {
+      await api.updatePartnerProfile({
+        price_per_meal: pricePerMeal ? parseFloat(pricePerMeal) : undefined,
+      });
+      showToast('Payment details updated.', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to update payment details.', 'error');
+    } finally {
+      setPaymentSaving(false);
+    }
   };
 
   const handleSavePassword = async () => {
@@ -245,24 +269,43 @@ export default function PartnerSettingsPage() {
       showToast('Passwords do not match.', 'error');
       return;
     }
-    if (newPassword.length < 6) {
-      showToast('Password must be at least 6 characters.', 'error');
+    if (newPassword.length < 8) {
+      showToast('Password must be at least 8 characters.', 'error');
       return;
     }
     setPasswordSaving(true);
-    await new Promise((r) => setTimeout(r, 500));
-    setPasswordSaving(false);
-    showToast('Password updated successfully.', 'success');
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
+    try {
+      await api.changePassword(currentPassword, newPassword);
+      showToast('Password updated successfully.', 'success');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to change password.', 'error');
+    } finally {
+      setPasswordSaving(false);
+    }
   };
 
   const handleSavePreferences = async () => {
     setPrefSaving(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setPrefSaving(false);
-    showToast('Preferences saved.', 'success');
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(
+          'makanan_partner_prefs',
+          JSON.stringify({
+            emailNotifications,
+            redemptionAlerts,
+            weeklyReport,
+          })
+        );
+      }
+      showToast('Preferences saved.', 'success');
+    } catch {
+      showToast('Failed to save preferences.', 'error');
+    } finally {
+      setPrefSaving(false);
+    }
   };
 
   const toggleDay = (day: string) => {
