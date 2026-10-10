@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 import NotificationCenter from '@/components/NotificationCenter';
 
 interface Partner {
@@ -198,7 +198,6 @@ const allNavItems = navGroups.flatMap((g) => g.items);
 export default function PartnerLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const supabase = createClient();
   const [partner, setPartner] = useState<Partner | null>(null);
   const [loading, setLoading] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -206,35 +205,35 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     const loadPartner = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
+      try {
+        const user = await api.getMe();
+        if (!user) {
+          router.push('/partner-portal/login');
+          return;
+        }
+        const p = await api.getPartnerProfile();
+        if (!p) {
+          router.push('/partner-portal/login');
+          return;
+        }
+        setPartner(p);
+        setPartnerId(p.id);
+      } catch {
         router.push('/partner-portal/login');
-        return;
+      } finally {
+        setLoading(false);
       }
-      const { data } = await supabase
-        .from('partners')
-        .select('id, name, image_url')
-        .eq('user_id', user.id)
-        .single();
-      if (!data) {
-        router.push('/partner-portal/login');
-        return;
-      }
-      setPartner(data);
-      setPartnerId(data.id);
-      setLoading(false);
     };
     loadPartner();
   }, []);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    api.logout();
     router.push('/partner-portal/login');
   };
 
   const isActive = (href: string) => {
+    if (!pathname) return false;
     if (href === '/partner-portal/dashboard') return pathname === '/partner-portal/dashboard';
     return pathname.startsWith(href);
   };

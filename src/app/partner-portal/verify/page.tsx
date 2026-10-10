@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import PartnerLayout from '../components/PartnerLayout';
-import { createClient } from '@/lib/supabase/client';
 import { api } from '@/lib/api';
 
 interface VerificationResult {
@@ -19,7 +18,6 @@ interface VerificationResult {
 }
 
 export default function VerifyMealPage() {
-  const supabase = createClient();
   const [manualCode, setManualCode] = useState('');
   const [showManual, setShowManual] = useState(false);
   const [verifying, setVerifying] = useState(false);
@@ -33,16 +31,12 @@ export default function VerifyMealPage() {
 
   useEffect(() => {
     const load = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: partner } = await supabase
-        .from('partners')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-      if (partner) setPartnerId(partner.id);
+      try {
+        const partner = await api.getPartnerProfile();
+        if (partner?.id) setPartnerId(partner.id);
+      } catch {
+        // ignore
+      }
     };
     load();
   }, []);
@@ -71,67 +65,18 @@ export default function VerifyMealPage() {
     setConfirmed(false);
 
     try {
-      // 1. Try FastAPI backend first
-      try {
-        const backendRes = await api.verifyQr(qrCode.trim());
-        if (backendRes && (backendRes.valid || backendRes.already_confirmed)) {
-          setResult({
-            valid: backendRes.valid,
-            alreadyConfirmed: backendRes.already_confirmed,
-            studentName: backendRes.student_name,
-            mealName: backendRes.meal_name,
-            planName: backendRes.plan_name,
-            redemptionId: backendRes.redemption_id,
-            subscriptionId: backendRes.subscription_id,
-            partnerId: backendRes.partner_id,
-          });
-          if (backendRes.already_confirmed) setConfirmed(true);
-          return;
-        }
-      } catch (backendErr: any) {
-        console.warn('FastAPI verifyQr failed, falling back to Supabase:', backendErr);
-      }
-
-      // 2. Fallback to Supabase
-      const { data: redemption, error: rErr } = await supabase
-        .from('redemptions')
-        .select(
-          `
-          id, status, subscription_id, meal_id, partner_id, user_id,
-          user_profiles:user_id(full_name),
-          meals:meal_id(name),
-          subscriptions:subscription_id(
-            meal_plans:meal_plan_id(name)
-          )
-        `
-        )
-        .eq('qr_code', qrCode.trim())
-        .maybeSingle();
-
-      if (rErr || !redemption) {
-        setResult({ valid: false, studentName: '', mealName: '', planName: '' });
-        return;
-      }
-
-      const isAlreadyConfirmed = redemption.status === 'confirmed';
-      const isValid = redemption.status === 'pending';
-
+      const backendRes = await api.verifyQr(qrCode.trim());
       setResult({
-        valid: isValid,
-        alreadyConfirmed: isAlreadyConfirmed,
-        studentName: (redemption.user_profiles as any)?.full_name || 'Unknown Student',
-        mealName: (redemption.meals as any)?.name || 'Unknown Meal',
-        planName: (redemption.subscriptions as any)?.meal_plans?.name || 'Unknown Plan',
-        redemptionId: redemption.id,
-        subscriptionId: redemption.subscription_id,
-        userId: redemption.user_id,
-        mealId: redemption.meal_id,
-        partnerId: redemption.partner_id,
+        valid: backendRes.valid,
+        alreadyConfirmed: backendRes.already_confirmed,
+        studentName: backendRes.student_name || 'Student',
+        mealName: backendRes.meal_name || 'Meal',
+        planName: backendRes.plan_name || 'Meal Plan',
+        redemptionId: backendRes.redemption_id,
+        subscriptionId: backendRes.subscription_id,
+        partnerId: backendRes.partner_id,
       });
-
-      if (isAlreadyConfirmed) {
-        setConfirmed(true);
-      }
+      if (backendRes.already_confirmed) setConfirmed(true);
     } catch (err: any) {
       setError(err.message || 'Verification failed.');
     } finally {
@@ -157,25 +102,7 @@ export default function VerifyMealPage() {
     setError('');
 
     try {
-      // 1. Try FastAPI backend first
-      try {
-        await api.confirmRedemption(result.redemptionId);
-        setConfirmed(true);
-        return;
-      } catch (backendErr: any) {
-        console.warn('FastAPI confirmRedemption failed, falling back to Supabase:', backendErr);
-      }
-
-      // 2. Fallback to Supabase RPC
-      if (!partnerId) return;
-      const { data: rpcResult, error: rpcErr } = await supabase.rpc('confirm_redemption', {
-        redemption_id_param: result.redemptionId,
-        partner_id_param: partnerId,
-      });
-
-      if (rpcErr) throw rpcErr;
-      if (!rpcResult?.success) throw new Error(rpcResult?.error || 'Confirmation failed');
-
+      await api.confirmRedemption(result.redemptionId);
       setConfirmed(true);
     } catch (err: any) {
       setError(err.message || 'Failed to confirm redemption.');
@@ -567,49 +494,23 @@ export default function VerifyMealPage() {
 }
 
 function RecentConfirmations({ partnerId }: { partnerId: string }) {
-  const supabase = createClient();
   const [recent, setRecent] = useState<any[]>([]);
 
   const loadRecent = async () => {
     if (!partnerId) return;
-    const { data } = await supabase
-      .from('redemptions')
-      .select(
-        `
-        id, status, redeemed_at,
-        user_profiles:user_id(full_name),
-        meals:meal_id(name)
-      `
-      )
-      .eq('partner_id', partnerId)
-      .order('redeemed_at', { ascending: false })
-      .limit(5);
-    setRecent(data || []);
+    try {
+      const data = await api.getPartnerRedemptions();
+      setRecent((data || []).slice(0, 5));
+    } catch {
+      // ignore
+    }
   };
 
   useEffect(() => {
     if (!partnerId) return;
     loadRecent();
-
-    const channel = supabase
-      .channel(`verify-recent-${partnerId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'redemptions',
-          filter: `partner_id=eq.${partnerId}`,
-        },
-        () => {
-          loadRecent();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    const interval = setInterval(loadRecent, 10000);
+    return () => clearInterval(interval);
   }, [partnerId]);
 
   if (recent.length === 0) return null;

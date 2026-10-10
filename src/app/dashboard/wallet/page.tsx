@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { createClient } from '@/lib/supabase/client';
 import { api } from '@/lib/api';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -245,86 +244,22 @@ export default function WalletPage() {
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
-      // 1. Try FastAPI backend first
       try {
         const walletData = await api.getStudentWallet();
         if (walletData) {
           setSubscription(walletData.active_subscription || null);
           setTransactions(walletData.recent_transactions || []);
-          setLoading(false);
-          return;
         }
       } catch (err) {
-        console.warn('FastAPI getStudentWallet fallback to Supabase:', err);
-      }
-
-      // 2. Supabase fallback
-      const supabase = createClient();
-      try {
-        const [subRes, txnRes] = await Promise.all([
-          supabase
-            .from('subscriptions')
-            .select('*, meal_plans(name, tier, price_myr)')
-            .eq('user_id', user.id)
-            .eq('status', 'active')
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle(),
-          supabase
-            .from('wallet_transactions')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(20),
-        ]);
-        setSubscription(subRes?.data || null);
-        setTransactions(txnRes?.data || []);
-      } catch (err) {
-        console.log('Wallet fetch error:', err);
+        console.warn('FastAPI getStudentWallet error:', err);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
 
-    // Real-time: update wallet when subscription or transactions change
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`student-wallet-${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'subscriptions',
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          if (payload.new && (payload.new as any).status !== 'active') {
-            // Subscription was cancelled/expired — remove from state
-            setSubscription(null);
-          } else if (payload.new) {
-            setSubscription((prev) => (prev ? { ...prev, ...(payload.new as any) } : null));
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'wallet_transactions',
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          setTransactions((prev) => [payload.new as any, ...prev.slice(0, 19)]);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    const interval = setInterval(fetchData, 10000);
+    return () => clearInterval(interval);
   }, [user]);
 
   const creditsRemaining = subscription
@@ -359,49 +294,14 @@ export default function WalletPage() {
     setCancelError('');
 
     try {
-      // 1. Try FastAPI backend first
-      try {
-        const res = await api.cancelSubscription(subscription.id);
-        if (res && res.success) {
-          setSubscription(null);
-          setShowCancelModal(false);
-          setSuccessRefund(res.credits_refunded ?? 0);
-          setCancelling(false);
-          return;
-        }
-      } catch (apiErr: any) {
-        console.warn('FastAPI cancel error, checking fallback:', apiErr);
-        if (apiErr?.message && !apiErr.message.includes('Failed to fetch')) {
-          setCancelError(apiErr.message);
-          setCancelling(false);
-          return;
-        }
+      const res = await api.cancelSubscription(subscription.id);
+      if (res && res.success) {
+        setSubscription(null);
+        setShowCancelModal(false);
+        setSuccessRefund(res.credits_refunded ?? 0);
+      } else {
+        setCancelError('Cancellation failed. Please try again.');
       }
-
-      // 2. Fallback to Supabase RPC
-      const supabase = createClient();
-      const { data, error } = await supabase.rpc('cancel_subscription_with_refund', {
-        p_subscription_id: subscription.id,
-        p_user_id: user.id,
-      });
-
-      if (error) {
-        setCancelError(error.message || 'Cancellation failed. Please try again.');
-        setCancelling(false);
-        return;
-      }
-
-      const result = data as { success: boolean; error?: string; credits_refunded?: number };
-      if (!result?.success) {
-        setCancelError(result?.error || 'Cancellation failed. Please try again.');
-        setCancelling(false);
-        return;
-      }
-
-      // Success — update local state immediately (real-time will also fire)
-      setSubscription(null);
-      setShowCancelModal(false);
-      setSuccessRefund(result.credits_refunded ?? 0);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Cancellation failed. Please try again.';
       setCancelError(msg);

@@ -42,7 +42,7 @@ export interface Meal {
   availability: string;
   is_active: boolean;
   redemption_count: number;
-  partners?: { id: string; name: string; location?: string };
+  partner?: { id: string; name: string; location?: string };
 }
 
 export interface PaymentOrder {
@@ -59,48 +59,31 @@ export interface PaymentOrder {
   instructions: string;
 }
 
+export interface SupportTicket {
+  id: string;
+  category: string;
+  subject: string;
+  description: string;
+  status: string;
+  created_at: string;
+}
+
+export interface NotificationItem {
+  id: string;
+  user_id?: string;
+  partner_id?: string;
+  recipient_type: string;
+  type: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+}
+
 class ApiClient {
   public getToken(): string | null {
     if (typeof window === 'undefined') return null;
-
-    const isValidJwt = (t: any): boolean => {
-      if (!t || typeof t !== 'string') return false;
-      const parts = t.trim().split('.');
-      return parts.length === 3 && parts[0].length > 0 && parts[1].length > 0;
-    };
-
-    // 1. Direct FastAPI token
-    const directToken = localStorage.getItem('makanan_token');
-    if (isValidJwt(directToken)) return directToken!;
-
-    // 2. Search localStorage for active Supabase session token
-    try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && (key.startsWith('sb-') || key.includes('supabase.auth.token')) && key.endsWith('-auth-token')) {
-          const item = JSON.parse(localStorage.getItem(key) || '{}');
-          if (isValidJwt(item?.access_token)) return item.access_token;
-          if (isValidJwt(item?.currentSession?.access_token)) return item.currentSession.access_token;
-        }
-      }
-    } catch {}
-
-    // 3. Search document cookies for Supabase auth token
-    try {
-      const match = document.cookie.match(/sb-[a-z0-9_\-]+-auth-token=([^;]+)/i);
-      if (match && match[1]) {
-        const decoded = decodeURIComponent(match[1]);
-        try {
-          const parsed = JSON.parse(decoded);
-          if (isValidJwt(parsed?.access_token)) return parsed.access_token;
-          if (Array.isArray(parsed) && isValidJwt(parsed[0])) return parsed[0];
-        } catch {
-          if (isValidJwt(decoded)) return decoded;
-        }
-      }
-    } catch {}
-
-    return null;
+    return localStorage.getItem('makanan_token');
   }
 
   public hasToken(): boolean {
@@ -117,27 +100,6 @@ class ApiClient {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('makanan_token');
       localStorage.removeItem('makanan_user');
-    }
-  }
-
-  public async syncSession(externalToken?: string) {
-    const tokenToSend = externalToken || this.getToken();
-    if (!tokenToSend) return null;
-    try {
-      const res = await this.request<{ access_token: string; user: User }>('/auth/sync-session', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${tokenToSend}`,
-        },
-      });
-      if (res?.access_token) {
-        this.setToken(res.access_token);
-        this.setUser(res.user);
-      }
-      return res;
-    } catch (e) {
-      console.warn('Session sync warning:', e);
-      return null;
     }
   }
 
@@ -158,7 +120,7 @@ class ApiClient {
     }
   }
 
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  public async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const token = this.getToken();
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -199,7 +161,9 @@ class ApiClient {
     return res;
   }
 
-  async login(email: string, password: string) {
+  async login(emailOrData: string | { email: string; password: string }, maybePassword?: string) {
+    const email = typeof emailOrData === 'string' ? emailOrData : emailOrData.email;
+    const password = typeof emailOrData === 'string' ? (maybePassword || '') : emailOrData.password;
     const res = await this.request<{ access_token: string; user: User }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
@@ -219,9 +183,17 @@ class ApiClient {
     this.removeToken();
   }
 
+  clearToken() {
+    this.removeToken();
+  }
+
   // ── Plans ──────────────────────────────────────────────────────────────────
   async getPlans(): Promise<MealPlan[]> {
     return this.request<MealPlan[]>('/plans');
+  }
+
+  async getPlan(id: string): Promise<MealPlan> {
+    return this.request<MealPlan>(`/plans/${id}`);
   }
 
   // ── Meals ──────────────────────────────────────────────────────────────────
@@ -279,8 +251,8 @@ class ApiClient {
     });
   }
 
-  async getRedemptionHistory() {
-    return this.request<any[]>('/redemptions/history');
+  async getRedemptionHistory(limit?: number) {
+    return this.request<any[]>(`/redemptions/history${limit ? `?limit=${limit}` : ''}`);
   }
 
   // ── Students ───────────────────────────────────────────────────────────────
@@ -312,6 +284,15 @@ class ApiClient {
         body: JSON.stringify({ subscription_id: subscriptionId }),
       }
     );
+  }
+
+  async updateStudentProfile(data: { full_name?: string; phone?: string; student_id?: string; avatar_url?: string }) {
+    const updated = await this.request<User>('/students/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    this.setUser(updated);
+    return updated;
   }
 
   // ── Partners ───────────────────────────────────────────────────────────────
@@ -356,8 +337,8 @@ class ApiClient {
     );
   }
 
-  async getPartnerRedemptions() {
-    return this.request<any[]>('/partners/redemptions');
+  async getPartnerRedemptions(limit?: number) {
+    return this.request<any[]>(`/partners/redemptions${limit ? `?limit=${limit}` : ''}`);
   }
 
   async getPartnerSettlements() {
@@ -415,6 +396,55 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({ reference }),
     });
+  }
+
+  // ── Support & Feedback ─────────────────────────────────────────────────────
+  async getTickets(): Promise<SupportTicket[]> {
+    return this.request<SupportTicket[]>('/support/tickets');
+  }
+
+  async createTicket(data: { category: string; subject: string; description: string }): Promise<SupportTicket> {
+    return this.request<SupportTicket>('/support/tickets', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async submitFeedback(data: {
+    redemption_id?: string;
+    meal_id?: string;
+    partner_id?: string;
+    rating: number;
+    comment?: string;
+  }) {
+    return this.request<any>('/support/feedback', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // ── Notifications ──────────────────────────────────────────────────────────
+  async getNotifications(): Promise<{ notifications: NotificationItem[]; unread_count: number }> {
+    return this.request<{ notifications: NotificationItem[]; unread_count: number }>('/notifications');
+  }
+
+  async markNotificationsRead(notificationIds?: string[], allRead?: boolean) {
+    return this.request<any>('/notifications/read', {
+      method: 'POST',
+      body: JSON.stringify({ notification_ids: notificationIds, all_read: allRead }),
+    });
+  }
+
+  // ── Waitlist ───────────────────────────────────────────────────────────────
+  async joinWaitlist(email: string, fullName?: string) {
+    return this.request<any>('/waitlist', {
+      method: 'POST',
+      body: JSON.stringify({ email, full_name: fullName || '' }),
+    });
+  }
+
+  async getWaitlistCount(): Promise<{ count: number }> {
+    return this.request<{ count: number }>('/waitlist/count');
   }
 }
 

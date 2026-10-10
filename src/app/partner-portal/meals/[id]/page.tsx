@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
 import PartnerLayout from '../../components/PartnerLayout';
-import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -46,7 +46,6 @@ interface MealForm {
 export default function EditMealPage() {
   const router = useRouter();
   const params = useParams();
-  const supabase = createClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isAdd = params?.id === 'add';
@@ -70,39 +69,29 @@ export default function EditMealPage() {
 
   useEffect(() => {
     const load = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: partner } = await supabase
-        .from('partners')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-      if (!partner) return;
-      setPartnerId(partner.id);
+      try {
+        const partner = await api.getPartnerProfile();
+        if (partner?.id) setPartnerId(partner.id);
 
-      if (mealId) {
-        const { data: meal } = await supabase
-          .from('meals')
-          .select('*')
-          .eq('id', mealId)
-          .eq('partner_id', partner.id)
-          .single();
-
-        if (meal) {
-          setForm({
-            name: meal.name || '',
-            description: meal.description || '',
-            price_myr: meal.price_myr ? String(meal.price_myr) : '',
-            serving_quantity: meal.serving_quantity || 50,
-            schedule_days: meal.schedule_days || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
-            availability: meal.availability || 'available',
-            is_active: meal.is_active ?? true,
-            image_url: meal.image_url || '',
-          });
-          setImagePreview(meal.image_url || '');
+        if (mealId) {
+          const meal = await api.getMeal(mealId);
+          if (meal) {
+            setForm({
+              name: meal.name || '',
+              description: meal.description || '',
+              price_myr: meal.price_myr ? String(meal.price_myr) : '',
+              serving_quantity: (meal as any).serving_quantity || 50,
+              schedule_days: (meal as any).schedule_days || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+              availability: meal.availability || 'available',
+              is_active: meal.is_active ?? true,
+              image_url: meal.image_url || '',
+            });
+            setImagePreview(meal.image_url || '');
+          }
         }
+      } catch (err) {
+        console.warn('Load meal error:', err);
+      } finally {
         setLoading(false);
       }
     };
@@ -141,29 +130,18 @@ export default function EditMealPage() {
     const payload = {
       name: form.name.trim(),
       description: form.description.trim(),
-      price_myr: form.price_myr ? parseFloat(form.price_myr) : null,
+      price_myr: form.price_myr ? parseFloat(form.price_myr) : 10.0,
       serving_quantity: form.serving_quantity,
       schedule_days: form.schedule_days,
       availability: form.availability,
       is_active: form.is_active,
-      image_url: form.image_url || null,
-      partner_id: partnerId,
-      // Keep category field for DB compatibility — use a neutral default
-      category: 'lunch' as const,
-      tier: 'standard' as const,
+      image_url: form.image_url || undefined,
+      category: 'lunch',
+      tier: 'standard',
     };
 
     try {
-      if (isAdd) {
-        const { error: insertError } = await supabase.from('meals').insert(payload);
-        if (insertError) throw insertError;
-      } else {
-        const { error: updateError } = await supabase
-          .from('meals')
-          .update(payload)
-          .eq('id', mealId!);
-        if (updateError) throw updateError;
-      }
+      await api.createPartnerMeal(payload);
       router.push('/partner-portal/meals');
     } catch (err: any) {
       setError(err.message || 'Failed to save meal.');

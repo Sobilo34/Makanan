@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 
 function PaymentSuccessContent() {
@@ -11,7 +11,7 @@ function PaymentSuccessContent() {
   const searchParams = useSearchParams();
   const { user } = useAuth();
 
-  const sessionId = searchParams?.get('session_id') || '';
+  const sessionId = searchParams?.get('session_id') || searchParams?.get('ref') || '';
   const price = searchParams?.get('price') || '0';
   const credits = searchParams?.get('credits') || '0';
   const planName = searchParams?.get('name') || 'Meal Plan';
@@ -29,34 +29,24 @@ function PaymentSuccessContent() {
 
     const verifyPayment = async () => {
       try {
-        const supabase = createClient();
-        // Poll for up to 10 seconds for the webhook to process
         let attempts = 0;
-        const maxAttempts = 10;
-
-        const checkPayment = async (): Promise<boolean> => {
-          const { data } = await supabase
-            .from('payments')
-            .select('status, subscription_id')
-            .eq('stripe_session_id', sessionId)
-            .eq('user_id', user.id)
-            .maybeSingle();
-
-          return data?.status === 'completed';
-        };
+        const maxAttempts = 5;
 
         while (attempts < maxAttempts) {
-          const isComplete = await checkPayment();
-          if (isComplete) {
-            setVerified(true);
-            setVerifying(false);
-            return;
+          try {
+            const status = await api.getPaymentStatus(sessionId);
+            if (status.status === 'completed') {
+              setVerified(true);
+              setVerifying(false);
+              return;
+            }
+          } catch {
+            // keep waiting
           }
           attempts++;
           await new Promise((resolve) => setTimeout(resolve, 1000));
         }
 
-        // If webhook hasn't fired yet, still show success (webhook will process async)
         setVerified(true);
         setVerifying(false);
       } catch (err) {

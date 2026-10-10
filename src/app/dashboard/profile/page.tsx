@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 import Link from 'next/link';
 
 interface Profile {
@@ -29,30 +29,34 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!user) return;
     const fetchProfile = async () => {
-      const supabase = createClient();
       try {
-        const { data } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('id', user.id)
-          .maybeSingle();
+        const data = await api.getMe();
         if (data) {
-          setProfile(data);
-          setForm(data);
-        } else {
-          const fallback = {
-            full_name: user.user_metadata?.full_name || '',
-            email: user.email || '',
-            student_id: user.user_metadata?.student_id || '',
-            phone: '',
-            university: 'Albukhary International University',
-            avatar_url: '',
+          const p: Profile = {
+            full_name: data.full_name || '',
+            email: data.email || '',
+            student_id: data.student_id || '',
+            phone: data.phone || '',
+            university: data.university || 'Albukhary International University',
+            avatar_url: data.avatar_url || '',
+            role: data.role || 'student',
           };
-          setProfile(fallback as Profile);
-          setForm(fallback);
+          setProfile(p);
+          setForm(p);
         }
       } catch (err) {
         console.log('Profile fetch error:', err);
+        const fallback: Profile = {
+          full_name: user.full_name || '',
+          email: user.email || '',
+          student_id: user.student_id || '',
+          phone: '',
+          university: 'Albukhary International University',
+          avatar_url: '',
+          role: user.role || 'student',
+        };
+        setProfile(fallback);
+        setForm(fallback);
       } finally {
         setLoading(false);
       }
@@ -64,17 +68,12 @@ export default function ProfilePage() {
     if (!user) return;
     setSaving(true);
     try {
-      const supabase = createClient();
-      await supabase
-        .from('user_profiles')
-        .update({
-          full_name: form.full_name,
-          student_id: form.student_id,
-          phone: form.phone,
-          university: form.university,
-        })
-        .eq('id', user.id);
-      setProfile({ ...profile!, ...form });
+      const updated = await api.updateStudentProfile({
+        full_name: form.full_name,
+        student_id: form.student_id,
+        phone: form.phone,
+      });
+      setProfile({ ...profile!, ...form, full_name: updated.full_name });
       setEditing(false);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);

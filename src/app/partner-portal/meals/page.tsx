@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import PartnerLayout from '../components/PartnerLayout';
-import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 
 interface Meal {
   id: string;
@@ -66,7 +66,6 @@ function StatusBadge({ isActive }: { isActive: boolean }) {
 }
 
 export default function ManageMealsPage() {
-  const supabase = createClient();
   const [meals, setMeals] = useState<Meal[]>([]);
   const [filtered, setFiltered] = useState<Meal[]>([]);
   const [search, setSearch] = useState('');
@@ -75,29 +74,18 @@ export default function ManageMealsPage() {
 
   useEffect(() => {
     const load = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: partner } = await supabase
-        .from('partners')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-      if (!partner) return;
-      setPartnerId(partner.id);
+      try {
+        const partner = await api.getPartnerProfile();
+        if (partner?.id) setPartnerId(partner.id);
 
-      const { data } = await supabase
-        .from('meals')
-        .select(
-          'id, name, description, image_url, price_myr, availability, redemption_count, is_active, serving_quantity'
-        )
-        .eq('partner_id', partner.id)
-        .order('created_at', { ascending: false });
-
-      setMeals(data || []);
-      setFiltered(data || []);
-      setLoading(false);
+        const data = await api.getPartnerMeals();
+        setMeals(data || []);
+        setFiltered(data || []);
+      } catch (err) {
+        console.warn('Partner meals load error:', err);
+      } finally {
+        setLoading(false);
+      }
     };
     load();
   }, []);

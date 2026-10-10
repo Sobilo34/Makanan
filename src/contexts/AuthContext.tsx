@@ -1,10 +1,27 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { api } from '@/lib/api';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { api, User } from '@/lib/api';
 
-const AuthContext = createContext<any>({});
+interface AuthSession {
+  access_token: string;
+  user: User;
+}
+
+interface AuthContextType {
+  user: User | null;
+  session: AuthSession | null;
+  loading: boolean;
+  signUp: (email: string, password: string, metadata?: any) => Promise<any>;
+  signIn: (email: string, password: string) => Promise<any>;
+  signOut: () => Promise<void>;
+  getCurrentUser: () => Promise<User | null>;
+  isEmailVerified: () => boolean;
+  getUserProfile: () => Promise<User | null>;
+  refreshUser: () => Promise<User | null>;
+}
+
+const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -15,132 +32,105 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<any>(null);
-  const [session, setSession] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<AuthSession | null>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+
+  const initAuth = useCallback(async () => {
+    const token = api.getToken();
+    if (!token) {
+      setUser(null);
+      setSession(null);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const cached = api.getUser();
+      if (cached) {
+        setUser(cached);
+        setSession({ access_token: token, user: cached });
+      }
+
+      const me = await api.getMe();
+      setUser(me);
+      setSession({ access_token: token, user: me });
+    } catch (err) {
+      console.warn('Session verification failed, clearing credentials:', err);
+      api.logout();
+      setUser(null);
+      setSession(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-
-      if (session?.access_token) {
-        try {
-          await api.syncSession(session.access_token);
-        } catch (e) {
-          console.warn('Initial session sync:', e);
-        }
-      }
-    });
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-
-      if (session?.access_token) {
-        try {
-          await api.syncSession(session.access_token);
-        } catch (e) {
-          console.warn('Auth state sync:', e);
-        }
-      } else {
-        api.logout();
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+    initAuth();
+  }, [initAuth]);
 
   // Email/Password Sign Up
   const signUp = async (email: string, password: string, metadata: any = {}) => {
-    const { data, error } = await supabase.auth.signUp({
+    const res = await api.signup({
       email,
       password,
-      options: {
-        data: {
-          full_name: metadata?.fullName || '',
-          avatar_url: metadata?.avatarUrl || '',
-        },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
+      full_name: metadata?.fullName || metadata?.full_name || '',
+      student_id: metadata?.studentId || metadata?.student_id || '',
+      role: metadata?.role || 'student',
     });
-    if (error) throw error;
 
-    try {
-      await api.signup({
-        email,
-        password,
-        full_name: metadata?.fullName,
-        student_id: metadata?.studentId,
-        role: 'student',
-      });
-    } catch (apiErr) {
-      console.warn('FastAPI signup sync:', apiErr);
-      if (data?.session?.access_token) {
-        await api.syncSession(data.session.access_token);
-      }
-    }
-    return data;
+    setUser(res.user);
+    setSession({ access_token: res.access_token, user: res.user });
+    return { data: { user: res.user, session: { access_token: res.access_token } }, error: null };
   };
 
   // Email/Password Sign In
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) throw error;
-
-    try {
-      await api.login(email, password);
-    } catch (apiErr) {
-      console.warn('FastAPI direct login sync failed, falling back to session sync:', apiErr);
-      if (data?.session?.access_token) {
-        await api.syncSession(data.session.access_token);
-      }
-    }
-    return data;
+    const res = await api.login(email, password);
+    setUser(res.user);
+    setSession({ access_token: res.access_token, user: res.user });
+    return { data: { user: res.user, session: { access_token: res.access_token } }, error: null };
   };
 
   // Sign Out
   const signOut = async () => {
     api.logout();
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    setUser(null);
+    setSession(null);
   };
 
   // Get Current User
-  const getCurrentUser = async () => {
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser();
-    if (error) throw error;
-    return user;
+  const getCurrentUser = async (): Promise<User | null> => {
+    if (user) return user;
+    try {
+      const me = await api.getMe();
+      setUser(me);
+      return me;
+    } catch {
+      return null;
+    }
   };
 
   // Check if Email is Verified
   const isEmailVerified = () => {
-    return user?.email_confirmed_at !== null;
+    return user ? user.is_active : false;
   };
 
-  // Get User Profile from Database
-  const getUserProfile = async () => {
-    if (!user) return null;
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-    if (error) throw error;
-    return data;
+  // Get User Profile
+  const getUserProfile = async (): Promise<User | null> => {
+    if (user) return user;
+    return getCurrentUser();
+  };
+
+  // Refresh User Data
+  const refreshUser = async (): Promise<User | null> => {
+    try {
+      const me = await api.getMe();
+      setUser(me);
+      return me;
+    } catch {
+      return null;
+    }
   };
 
   const value = {
@@ -153,6 +143,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     getCurrentUser,
     isEmailVerified,
     getUserProfile,
+    refreshUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

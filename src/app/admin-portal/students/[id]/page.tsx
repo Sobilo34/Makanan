@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AdminLayout from '../../components/AdminLayout';
-import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 
 interface StudentDetail {
   id: string;
@@ -58,8 +58,7 @@ function InitialsAvatar({ name, size = 'lg' }: { name: string; size?: 'lg' | 'md
 export default function StudentDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const supabase = createClient();
-  const studentId = params.id as string;
+  const studentId = (params?.id as string) || '';
 
   const [student, setStudent] = useState<StudentDetail | null>(null);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -119,60 +118,49 @@ export default function StudentDetailPage() {
       }
 
       try {
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('id', studentId)
-          .maybeSingle();
-
-        if (!profile) {
+        const data = await api.getAdminStudent(studentId);
+        if (!data || !data.student) {
           router.push('/admin-portal/students');
           return;
         }
-        setStudent(profile);
+        setStudent({
+          id: data.student.id,
+          full_name: data.student.full_name,
+          email: data.student.email,
+          student_id: data.student.student_id || null,
+          is_active: data.student.is_active !== undefined ? data.student.is_active : true,
+          phone: data.student.phone || null,
+          created_at: data.student.created_at || new Date().toISOString(),
+        });
 
-        const { data: subs } = await supabase
-          .from('subscriptions')
-          .select('id, status, credits_total, credits_used, starts_at, expires_at, meal_plan_id')
-          .eq('user_id', studentId)
-          .order('created_at', { ascending: false });
-
-        if (subs) {
-          const enrichedSubs = await Promise.all(
-            subs.map(async (s) => {
-              const { data: plan } = await supabase
-                .from('meal_plans')
-                .select('name, price_myr')
-                .eq('id', s.meal_plan_id)
-                .maybeSingle();
-              return { ...s, meal_plan: plan || undefined };
-            })
+        if (data.subscriptions && Array.isArray(data.subscriptions)) {
+          setSubscriptions(
+            data.subscriptions.map((s: any) => ({
+              id: s.id,
+              status: s.status,
+              credits_total: s.credits_total,
+              credits_used: s.credits_used,
+              starts_at: s.starts_at,
+              expires_at: s.expires_at,
+              meal_plan: s.meal_plan
+                ? {
+                    name: s.meal_plan.name,
+                    price_myr: s.meal_plan.price_myr,
+                  }
+                : undefined,
+            }))
           );
-          setSubscriptions(enrichedSubs);
         }
 
-        const { data: reds } = await supabase
-          .from('redemptions')
-          .select('id, redeemed_at, meal_id, partner_id')
-          .eq('user_id', studentId)
-          .order('redeemed_at', { ascending: false })
-          .limit(20);
-
-        if (reds) {
-          const enrichedReds = await Promise.all(
-            reds.map(async (r) => {
-              const [mealResult, partnerResult] = await Promise.all([
-                supabase.from('meals').select('name').eq('id', r.meal_id).maybeSingle(),
-                supabase.from('partners').select('name').eq('id', r.partner_id).maybeSingle(),
-              ]);
-              return {
-                ...r,
-                meal: mealResult.data || undefined,
-                partner: partnerResult.data || undefined,
-              };
-            })
+        if (data.redemptions && Array.isArray(data.redemptions)) {
+          setRedemptions(
+            data.redemptions.map((r: any) => ({
+              id: r.id,
+              redeemed_at: r.redeemed_at || r.created_at,
+              meal: r.meal ? { name: r.meal.name } : undefined,
+              partner: r.partner ? { name: r.partner.name } : undefined,
+            }))
           );
-          setRedemptions(enrichedReds);
         }
       } catch (err) {
         console.error('Student detail error:', err);
@@ -181,32 +169,6 @@ export default function StudentDetailPage() {
       }
     };
     load();
-
-    // Real-time: reflect subscription cancellations immediately
-    if (!studentId.startsWith('demo-')) {
-      const channel = supabase
-        .channel(`admin-student-subs-${studentId}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'subscriptions',
-            filter: `user_id=eq.${studentId}`,
-          },
-          (payload) => {
-            setSubscriptions((prev) =>
-              prev.map((s) =>
-                s.id === (payload.new as any).id ? { ...s, ...(payload.new as any) } : s
-              )
-            );
-          }
-        )
-        .subscribe();
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
   }, [studentId]);
 
   const activeSubscription = subscriptions.find((s) => s.status === 'active');

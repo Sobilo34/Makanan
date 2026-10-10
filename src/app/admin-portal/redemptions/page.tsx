@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import AdminLayout from '../components/AdminLayout';
-import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 
 interface RedemptionRow {
   id: string;
@@ -24,7 +24,6 @@ const statusStyle = (s: string) => {
 };
 
 export default function RedemptionsPage() {
-  const supabase = createClient();
   const [rows, setRows] = useState<RedemptionRow[]>([]);
   const [partnerFilter, setPartnerFilter] = useState('All Partners');
   const [statusFilter, setStatusFilter] = useState('All Status');
@@ -33,113 +32,43 @@ export default function RedemptionsPage() {
   const [partners, setPartners] = useState<string[]>(['All Partners']);
   const [liveCount, setLiveCount] = useState(0);
 
-  const getDateStart = (filter: string) => {
-    const now = new Date();
-    if (filter === 'today') {
-      const d = new Date(now);
-      d.setHours(0, 0, 0, 0);
-      return d.toISOString();
+  const loadRedemptions = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await api.getRedemptionHistory(100);
+      const mapped: RedemptionRow[] = (data || []).map((r: any) => ({
+        id: r.id,
+        time: new Date(r.redeemed_at || r.created_at).toLocaleTimeString('en-MY', {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        student: r.student_name || r.user?.full_name || 'Student',
+        meal: r.meal?.name || r.meal_name || 'Healthy Meal',
+        partner: r.partner?.name || r.partner_name || 'Central Kitchen',
+        plan: 'Standard',
+        status: r.status || 'confirmed',
+        redeemed_at: r.redeemed_at || r.created_at,
+      }));
+
+      setRows(mapped);
+
+      const uniquePartners = [
+        'All Partners',
+        ...Array.from(new Set(mapped.map((r) => r.partner).filter(Boolean))),
+      ];
+      setPartners(uniquePartners);
+    } catch (err) {
+      console.log('Redemptions load error:', err);
+    } finally {
+      setLoading(false);
     }
-    if (filter === 'week') {
-      const d = new Date(now);
-      d.setDate(d.getDate() - 7);
-      return d.toISOString();
-    }
-    // month
-    const d = new Date(now);
-    d.setDate(1);
-    d.setHours(0, 0, 0, 0);
-    return d.toISOString();
-  };
-
-  const loadRedemptions = useCallback(
-    async (dateF: string) => {
-      setLoading(true);
-      try {
-        const since = getDateStart(dateF);
-        const { data } = await supabase
-          .from('redemptions')
-          .select(
-            `
-          id, status, redeemed_at,
-          user_profiles:user_id(full_name),
-          meals:meal_id(name),
-          partners:partner_id(name),
-          subscriptions:subscription_id(
-            meal_plans:meal_plan_id(name)
-          )
-        `
-          )
-          .gte('redeemed_at', since)
-          .order('redeemed_at', { ascending: false })
-          .limit(100);
-
-        const mapped: RedemptionRow[] = (data || []).map((r: any) => ({
-          id: r.id,
-          time: new Date(r.redeemed_at).toLocaleTimeString('en-MY', {
-            hour: '2-digit',
-            minute: '2-digit',
-          }),
-          student: r.user_profiles?.full_name || 'Unknown',
-          meal: r.meals?.name || 'Unknown Meal',
-          partner: r.partners?.name || 'Unknown Partner',
-          plan: r.subscriptions?.meal_plans?.name || 'Standard',
-          status: r.status || 'pending',
-          redeemed_at: r.redeemed_at,
-        }));
-
-        setRows(mapped);
-
-        // Build partner list
-        const uniquePartners = [
-          'All Partners',
-          ...Array.from(new Set(mapped.map((r) => r.partner).filter(Boolean))),
-        ];
-        setPartners(uniquePartners);
-      } catch (err) {
-        console.log('Redemptions load error:', err);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [supabase]
-  );
+  }, []);
 
   useEffect(() => {
-    loadRedemptions(dateFilter);
-  }, [dateFilter, loadRedemptions]);
-
-  // Real-time subscription
-  useEffect(() => {
-    const channel = supabase
-      .channel('admin-redemptions-live')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'redemptions',
-        },
-        (payload) => {
-          setLiveCount((c) => c + 1);
-          if (payload.eventType === 'INSERT') {
-            // Reload to get joined data
-            loadRedemptions(dateFilter);
-          } else if (payload.eventType === 'UPDATE') {
-            setRows((prev) =>
-              prev.map((r) =>
-                r.id === (payload.new as any).id ? { ...r, status: (payload.new as any).status } : r
-              )
-            );
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [supabase, dateFilter, loadRedemptions]);
+    loadRedemptions();
+    const interval = setInterval(loadRedemptions, 15000);
+    return () => clearInterval(interval);
+  }, [loadRedemptions]);
 
   const filtered = rows.filter((r) => {
     if (partnerFilter !== 'All Partners' && r.partner !== partnerFilter) return false;

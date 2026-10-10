@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import PartnerLayout from '../components/PartnerLayout';
-import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 
 type FilterTab = 'today' | 'week' | 'month';
 
@@ -106,13 +106,11 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function RedemptionsPage() {
-  const supabase = createClient();
   const [tab, setTab] = useState<FilterTab>('today');
   const [search, setSearch] = useState('');
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
   const [filtered, setFiltered] = useState<Redemption[]>([]);
   const [loading, setLoading] = useState(true);
-  const [partnerId, setPartnerId] = useState('');
 
   const getDateRange = (filter: FilterTab) => {
     const now = new Date();
@@ -125,93 +123,47 @@ export default function RedemptionsPage() {
       start.setDate(1);
       start.setHours(0, 0, 0, 0);
     }
-    return start.toISOString();
+    return start.getTime();
   };
 
-  const loadRedemptions = async (filter: FilterTab, pid: string) => {
-    setLoading(true);
-    const since = getDateRange(filter);
+  const loadRedemptions = async (filter: FilterTab) => {
+    try {
+      const since = getDateRange(filter);
+      const data = await api.getPartnerRedemptions();
+      const filteredData = (data || []).filter((r: any) => {
+        const time = new Date(r.redeemed_at || r.created_at).getTime();
+        return time >= since;
+      });
 
-    const { data } = await supabase
-      .from('redemptions')
-      .select(
-        `
-        id, status, redeemed_at,
-        user_profiles:user_id(full_name),
-        meals:meal_id(name),
-        subscriptions:subscription_id(
-          meal_plans:meal_plan_id(name)
-        )
-      `
-      )
-      .eq('partner_id', pid)
-      .gte('redeemed_at', since)
-      .order('redeemed_at', { ascending: false });
+      const mapped: Redemption[] = filteredData.map((r: any) => ({
+        id: r.id,
+        time: new Date(r.redeemed_at || r.created_at).toLocaleString('en-MY', {
+          hour: '2-digit',
+          minute: '2-digit',
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        }),
+        studentName: (r.user_profiles as any)?.full_name || r.student_name || 'Student',
+        mealName: (r.meals as any)?.name || r.meal_name || 'Meal',
+        planName: (r.subscriptions as any)?.meal_plans?.name || 'Meal Plan',
+        status: r.status,
+      }));
 
-    const mapped: Redemption[] = (data || []).map((r) => ({
-      id: r.id,
-      time: new Date(r.redeemed_at).toLocaleString('en-MY', {
-        hour: '2-digit',
-        minute: '2-digit',
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      }),
-      studentName: (r.user_profiles as any)?.full_name || 'Unknown',
-      mealName: (r.meals as any)?.name || 'Unknown Meal',
-      planName: (r.subscriptions as any)?.meal_plans?.name || 'Unknown Plan',
-      status: r.status,
-    }));
-
-    setRedemptions(mapped);
-    setFiltered(mapped);
-    setLoading(false);
+      setRedemptions(mapped);
+      setFiltered(mapped);
+    } catch (err) {
+      console.warn('Load redemptions error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    const init = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: partner } = await supabase
-        .from('partners')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-      if (!partner) return;
-      setPartnerId(partner.id);
-      await loadRedemptions(tab, partner.id);
-    };
-    init();
-  }, []);
-
-  useEffect(() => {
-    if (partnerId) loadRedemptions(tab, partnerId);
+    loadRedemptions(tab);
+    const interval = setInterval(() => loadRedemptions(tab), 10000);
+    return () => clearInterval(interval);
   }, [tab]);
-
-  // Real-time subscription for new/updated redemptions
-  useEffect(() => {
-    if (!partnerId) return;
-    const channel = supabase
-      .channel(`partner-redemptions-${partnerId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'redemptions',
-          filter: `partner_id=eq.${partnerId}`,
-        },
-        () => {
-          loadRedemptions(tab, partnerId);
-        }
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [partnerId, tab]);
 
   useEffect(() => {
     const q = search.toLowerCase();

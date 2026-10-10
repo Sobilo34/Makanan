@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import RedemptionModal from '../components/RedemptionModal';
 
@@ -47,27 +47,20 @@ export default function MealsPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const supabase = createClient();
       try {
-        const [mealsRes, subRes] = await Promise.all([
-          supabase
-            .from('meals')
-            .select('*, partners(name)')
-            .eq('is_active', true)
-            .order('rating', { ascending: false }),
-          user
-            ? supabase
-                .from('subscriptions')
-                .select('*')
-                .eq('user_id', user.id)
-                .eq('status', 'active')
-                .limit(1)
-                .maybeSingle()
-            : Promise.resolve({ data: null }),
+        const [mealsData, dashSummary] = await Promise.all([
+          api.getMeals().catch(() => []),
+          user ? api.getStudentDashboardSummary().catch(() => null) : Promise.resolve(null),
         ]);
-        setMeals(mealsRes.data || []);
-        setFiltered(mealsRes.data || []);
-        if (subRes && 'data' in subRes) setSubscription(subRes.data);
+        const formatted = (mealsData || []).map((m: any) => ({
+          ...m,
+          partners: m.partners || m.partner || { name: 'AIU Cafeteria' },
+        }));
+        setMeals(formatted);
+        setFiltered(formatted);
+        if (dashSummary?.subscription) {
+          setSubscription(dashSummary.subscription);
+        }
       } catch (err) {
         console.log('Meals fetch error:', err);
       } finally {
@@ -371,7 +364,7 @@ export default function MealsPage() {
       )}
 
       {/* Redemption modal */}
-      {showModal && selectedMeal && (
+      {showModal && selectedMeal && subscription && (
         <RedemptionModal
           meal={selectedMeal as any}
           subscription={subscription as any}

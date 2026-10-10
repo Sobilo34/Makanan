@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { api } from '@/lib/api';
 
 interface Profile {
   full_name: string;
@@ -135,28 +135,21 @@ export default function SettingsPage() {
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
-      const supabase = createClient();
       try {
-        const [profileRes, subRes] = await Promise.all([
-          supabase.from('user_profiles').select('*').eq('id', user.id).maybeSingle(),
-          supabase
-            .from('subscriptions')
-            .select('*, meal_plans(name)')
-            .eq('user_id', user.id)
-            .eq('status', 'active')
-            .limit(1)
-            .maybeSingle(),
+        const [meData, dashSummary] = await Promise.all([
+          api.getMe().catch(() => user),
+          api.getStudentDashboardSummary().catch(() => null),
         ]);
-        const p = profileRes.data || {
-          full_name: user.user_metadata?.full_name || '',
-          email: user.email || '',
-          student_id: user.user_metadata?.student_id || '',
-          phone: '',
-          university: 'Albukhary International University',
+        const p: Profile = {
+          full_name: meData?.full_name || user.full_name || '',
+          email: meData?.email || user.email || '',
+          student_id: meData?.student_id || user.student_id || '',
+          phone: meData?.phone || '',
+          university: meData?.university || 'Albukhary International University',
         };
-        setProfile(p as Profile);
+        setProfile(p);
         setForm(p);
-        setSubscription(subRes.data || null);
+        setSubscription(dashSummary?.subscription || null);
       } catch (err) {
         console.log('Settings fetch error:', err);
       } finally {
@@ -170,17 +163,17 @@ export default function SettingsPage() {
     if (!user) return;
     setSaving(true);
     try {
-      const supabase = createClient();
-      await supabase
-        .from('user_profiles')
-        .update({
-          full_name: form.full_name,
-          student_id: form.student_id,
-          phone: form.phone,
-          university: form.university,
-        })
-        .eq('id', user.id);
-      setProfile({ ...profile!, ...form });
+      const updated = await api.updateStudentProfile({
+        full_name: form.full_name,
+        student_id: form.student_id,
+        phone: form.phone,
+      });
+      setProfile({
+        ...profile!,
+        full_name: updated.full_name,
+        student_id: updated.student_id || '',
+        phone: updated.phone || '',
+      });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import PartnerLayout from '../components/PartnerLayout';
-import { createClient } from '@/lib/supabase/client';
 import { api } from '@/lib/api';
 
 interface Settlement {
@@ -46,7 +45,6 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function SettlementPage() {
-  const supabase = createClient();
   const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [kpis, setKpis] = useState<SummaryKPIs>({
     totalPaid: 0,
@@ -62,10 +60,8 @@ export default function SettlementPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  const loadData = async (pid: string) => {
+  const loadData = async () => {
     setLoading(true);
-
-    // 1. Try FastAPI backend first
     try {
       const res = await api.getPartnerSettlements();
       if (res && res.settlements) {
@@ -76,159 +72,54 @@ export default function SettlementPage() {
           totalRedemptions: Number(res.kpis?.total_redemptions || 0),
           lastPaidDate: res.kpis?.last_paid_date || null,
         });
-        setLoading(false);
-        return;
       }
-    } catch (err) {
-      console.warn('FastAPI getPartnerSettlements fallback to Supabase:', err);
+    } catch (err: any) {
+      console.error('Failed to load settlements:', err);
+    } finally {
+      setLoading(false);
     }
-
-    // 2. Supabase fallback
-    const { data, error } = await supabase
-      .from('settlements')
-      .select('*')
-      .eq('partner_id', pid)
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      setSettlements(data);
-      const paid = data.filter((s) => s.status === 'paid');
-      const pending = data.filter((s) => s.status === 'pending' || s.status === 'requested');
-      setKpis({
-        totalPaid: paid.reduce((sum, s) => sum + Number(s.total_amount_myr), 0),
-        pendingAmount: pending.reduce((sum, s) => sum + Number(s.total_amount_myr), 0),
-        totalRedemptions: data.reduce((sum, s) => sum + (s.total_redemptions || 0), 0),
-        lastPaidDate: paid[0]?.paid_at || null,
-      });
-    }
-    setLoading(false);
   };
 
   useEffect(() => {
     const init = async () => {
-      // 1. Check if authenticated via FastAPI
       try {
         const partnerProfile = await api.getPartnerProfile();
         if (partnerProfile && partnerProfile.id) {
           setPartnerId(partnerProfile.id);
           setPartnerName(partnerProfile.name);
           setPartnerEmail(partnerProfile.email || '');
-          await loadData(partnerProfile.id);
-          return;
+          await loadData();
         }
       } catch (err) {
-        console.warn('FastAPI getPartnerProfile fallback to Supabase auth:', err);
+        console.error('Error loading partner profile:', err);
       }
-
-      // 2. Fallback to Supabase auth
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: partner } = await supabase
-        .from('partners')
-        .select('id, name, email')
-        .eq('user_id', user.id)
-        .single();
-      if (!partner) return;
-      setPartnerId(partner.id);
-      setPartnerName(partner.name);
-      setPartnerEmail(partner.email || user.email || '');
-      await loadData(partner.id);
     };
     init();
+
+    const interval = setInterval(() => {
+      loadData();
+    }, 15000);
+    return () => clearInterval(interval);
   }, []);
 
-  // Real-time subscription
-  useEffect(() => {
-    if (!partnerId) return;
-    const channel = supabase
-      .channel('settlements_realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'settlements',
-          filter: `partner_id=eq.${partnerId}`,
-        },
-        () => {
-          loadData(partnerId);
-        }
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [partnerId]);
-
   const handleRequestPayout = async () => {
-    if (!partnerId) return;
     setRequesting(true);
     setErrorMsg('');
     setSuccessMsg('');
 
-    // 1. Try FastAPI authoritative payout request
     try {
       const res = await api.requestPartnerPayout();
       if (res && res.success) {
         setSuccessMsg(
           `Payout request for RM${Number(res.total_amount_myr).toFixed(2)} (${res.total_redemptions} meals) submitted successfully! Admin will process it shortly.`
         );
-        await loadData(partnerId);
-        setRequesting(false);
-        return;
+        await loadData();
       }
     } catch (apiErr: any) {
-      console.warn('FastAPI requestPartnerPayout error, checking details:', apiErr);
-      if (apiErr?.message && !apiErr.message.includes('Failed to fetch')) {
-        setErrorMsg(apiErr.message);
-        setRequesting(false);
-        return;
-      }
-    }
-
-    // 2. Fallback to client-side Supabase calculation
-    const { data: redemptions } = await supabase
-      .from('redemptions')
-      .select('id, redeemed_at, meals:meal_id(price_myr)')
-      .eq('partner_id', partnerId)
-      .eq('status', 'confirmed');
-
-    if (!redemptions || redemptions.length === 0) {
-      setErrorMsg('No confirmed redemptions available for settlement.');
+      setErrorMsg(apiErr?.message || 'Failed to submit payout request. Please try again.');
+    } finally {
       setRequesting(false);
-      return;
     }
-
-    const totalAmount = redemptions.reduce(
-      (sum, r) => sum + Number((r.meals as any)?.price_myr || 0),
-      0
-    );
-    const now = new Date().toISOString();
-    const periodStart = redemptions.reduce(
-      (min, r) => (r.redeemed_at < min ? r.redeemed_at : min),
-      redemptions[0].redeemed_at
-    );
-
-    const { error } = await supabase.from('settlements').insert({
-      partner_id: partnerId,
-      period_start: periodStart,
-      period_end: now,
-      total_redemptions: redemptions.length,
-      total_amount_myr: totalAmount,
-      settlement_rate_myr: totalAmount / redemptions.length,
-      status: 'requested',
-      payout_requested_at: now,
-    });
-
-    if (error) {
-      setErrorMsg('Failed to submit payout request. Please try again.');
-    } else {
-      setSuccessMsg('Payout request submitted successfully! Admin will process it shortly.');
-      await loadData(partnerId);
-    }
-    setRequesting(false);
   };
 
   const formatDate = (d: string | null) => {

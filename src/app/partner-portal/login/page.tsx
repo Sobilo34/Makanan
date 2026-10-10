@@ -4,11 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 
 export default function PartnerLoginPage() {
   const router = useRouter();
-  const supabase = createClient();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -30,25 +29,12 @@ export default function PartnerLoginPage() {
     setError('');
 
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (signInError) throw signInError;
-
-      // Check if user has a partner record
-      const { data: partner, error: partnerError } = await supabase
-        .from('partners')
-        .select('id, name')
-        .eq('user_id', data.user.id)
-        .single();
-
-      if (partnerError || !partner) {
-        await supabase.auth.signOut();
+      const res = await api.login(email, password);
+      if (res.user.role !== 'partner' && res.user.role !== 'admin') {
+        api.logout();
         setError('No partner account found for this email. Please contact support.');
         return;
       }
-
       router.push('/partner-portal/dashboard');
     } catch (err: any) {
       setError(err.message || 'Login failed. Please try again.');

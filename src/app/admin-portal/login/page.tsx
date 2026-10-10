@@ -3,11 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [email, setEmail] = useState('admin@makanan.app');
@@ -29,18 +28,9 @@ export default function AdminLoginPage() {
     setError('');
 
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (signInError) throw signInError;
-
-      // Verify admin role
-      const user = data.user;
-      const isAdmin = user?.user_metadata?.role === 'admin' || user?.app_metadata?.role === 'admin';
-
-      if (!isAdmin) {
-        await supabase.auth.signOut();
+      const res = await api.login({ email, password });
+      if (res.user?.role !== 'admin') {
+        api.clearToken();
         setError('Access denied. This portal is for administrators only.');
         return;
       }

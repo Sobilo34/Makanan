@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 
 interface Redemption {
   id: string;
@@ -62,14 +62,14 @@ export default function OrdersPage() {
   useEffect(() => {
     if (!user) return;
     const fetchOrders = async () => {
-      const supabase = createClient();
       try {
-        const { data } = await supabase
-          .from('redemptions')
-          .select('*, meals(name, category, image_url), partners(name)')
-          .eq('user_id', user.id)
-          .order('redeemed_at', { ascending: false });
-        setRedemptions(data || []);
+        const data = await api.getRedemptionHistory();
+        const formatted = (data || []).map((r: any) => ({
+          ...r,
+          meals: r.meals || r.meal || { name: 'Meal', category: 'lunch', image_url: '' },
+          partners: r.partners || r.partner || { name: 'AIU Cafeteria' },
+        }));
+        setRedemptions(formatted);
       } catch (err) {
         console.log('Orders fetch error:', err);
       } finally {
@@ -78,35 +78,8 @@ export default function OrdersPage() {
     };
     fetchOrders();
 
-    // Real-time: update when redemption status changes (e.g., partner confirms)
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`student-orders-${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'redemptions',
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setRedemptions((prev) => [payload.new as any, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            setRedemptions((prev) =>
-              prev.map((r) =>
-                r.id === (payload.new as any).id ? { ...r, status: (payload.new as any).status } : r
-              )
-            );
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    const interval = setInterval(fetchOrders, 10000);
+    return () => clearInterval(interval);
   }, [user]);
 
   const isToday = (dateStr: string) => {

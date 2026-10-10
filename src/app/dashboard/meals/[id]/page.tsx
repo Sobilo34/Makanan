@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 import RedemptionModal from '../../components/RedemptionModal';
 
 interface Meal {
@@ -46,27 +46,30 @@ export default function MealDetailPage() {
   useEffect(() => {
     if (!params?.id) return;
     const fetchData = async () => {
-      const supabase = createClient();
       try {
-        const { data: mealData } = await supabase
-          .from('meals')
-          .select('*, partners(name, location)')
-          .eq('id', params.id as string)
-          .single();
+        const mealData: any = await api.getMeal(params.id as string);
+        const formattedMeal: Meal = {
+          ...mealData,
+          partners: mealData.partners || mealData.partner || { name: 'AIU Cafeteria', location: 'Ground Floor' },
+        };
+        setMeal(formattedMeal);
 
-        const subResult = user
-          ? await supabase
-              .from('subscriptions')
-              .select('*, meal_plans(name, tier)')
-              .eq('user_id', user.id)
-              .eq('status', 'active')
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .maybeSingle()
-          : { data: null };
-
-        setMeal(mealData);
-        setSubscription(subResult?.data || null);
+        if (user) {
+          try {
+            const summary = await api.getStudentDashboardSummary();
+            if (summary?.subscription) {
+              setSubscription({
+                ...summary.subscription,
+                credits_total: summary.subscription.credits_total || (summary.credits_remaining + summary.credits_used),
+                credits_used: summary.credits_used || 0,
+                status: summary.subscription.status || 'active',
+                meal_plans: summary.subscription.meal_plan || { name: 'Active Plan', tier: 'regular' },
+              });
+            }
+          } catch {
+            // ignore
+          }
+        }
       } catch (err) {
         console.log('Meal detail fetch error:', err);
       } finally {

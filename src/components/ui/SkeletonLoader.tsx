@@ -3,7 +3,7 @@
 import React from 'react';
 
 /* ── Base shimmer block ── */
-function Bone({ className = '' }: { className?: string }) {
+function Bone({ className = '', style }: { className?: string; style?: React.CSSProperties }) {
   return (
     <div
       className={`rounded-lg bg-[#E8F7EF] relative overflow-hidden ${className}`}
@@ -11,6 +11,7 @@ function Bone({ className = '' }: { className?: string }) {
         backgroundImage: 'linear-gradient(90deg, #E8F7EF 25%, #CDEFD9 50%, #E8F7EF 75%)',
         backgroundSize: '200% 100%',
         animation: 'shimmer 2s linear infinite',
+        ...style,
       }}
     />
   );

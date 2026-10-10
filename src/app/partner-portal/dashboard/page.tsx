@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import PartnerLayout from '../components/PartnerLayout';
-import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 
 interface Stats {
   todayMeals: number;
@@ -100,7 +100,6 @@ function AvailabilityBadge({ status }: { status: string }) {
 }
 
 export default function PartnerDashboardPage() {
-  const supabase = createClient();
   const [partnerName, setPartnerName] = useState('');
   const [partnerId, setPartnerId] = useState('');
   const [pricePerMeal, setPricePerMeal] = useState(15);
@@ -114,53 +113,32 @@ export default function PartnerDashboardPage() {
   const [recentRedemptions, setRecentRedemptions] = useState<RecentRedemption[]>([]);
   const [loading, setLoading] = useState(true);
   const [liveIndicator, setLiveIndicator] = useState(false);
-  const partnerIdRef = useRef('');
-  const pricePerMealRef = useRef(15);
 
-  const fetchRedemptionsData = useCallback(
-    async (pid: string, ppm: number) => {
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-      const { data: redemptions } = await supabase
-        .from('redemptions')
-        .select(
-          `id, status, redeemed_at, user_profiles:user_id(full_name), meals:meal_id(name, price_myr)`
-        )
-        .eq('partner_id', pid)
-        .gte('redeemed_at', todayStart.toISOString())
-        .order('redeemed_at', { ascending: false });
-      return redemptions || [];
-    },
-    [supabase]
-  );
-
-  const fetchMealsData = useCallback(
-    async (pid: string) => {
-      const { data: meals } = await supabase
-        .from('meals')
-        .select('id, name, serving_quantity, redemption_count, availability')
-        .eq('partner_id', pid)
-        .eq('is_active', true);
-      return meals || [];
-    },
-    [supabase]
-  );
-
-  const refreshDashboard = useCallback(
-    async (pid: string, ppm: number) => {
-      const [meals, redemptions] = await Promise.all([
-        fetchMealsData(pid),
-        fetchRedemptionsData(pid, ppm),
+  const refreshDashboard = useCallback(async () => {
+    try {
+      const [partner, meals, redemptions] = await Promise.all([
+        api.getPartnerProfile().catch(() => null),
+        api.getPartnerMeals().catch(() => []),
+        api.getPartnerRedemptions().catch(() => []),
       ]);
-      const todayMeals = meals.reduce((sum, m) => sum + (m.serving_quantity || 0), 0);
-      const redeemed = redemptions.filter((r) => r.status === 'confirmed').length;
-      const pending = redemptions.filter((r) => r.status === 'pending').length;
-      const earnings = redemptions
-        .filter((r) => r.status === 'confirmed')
-        .reduce((sum, r) => sum + ((r.meals as any)?.price_myr || ppm), 0);
+
+      if (partner) {
+        setPartnerName(partner.name || '');
+        setPartnerId(partner.id || '');
+        setPricePerMeal(partner.price_per_meal || 15);
+      }
+
+      const ppm = partner?.price_per_meal || 15;
+      const todayMeals = (meals || []).reduce((sum: number, m: any) => sum + (m.serving_quantity || 0), 0);
+      const redeemed = (redemptions || []).filter((r: any) => r.status === 'confirmed').length;
+      const pending = (redemptions || []).filter((r: any) => r.status === 'pending').length;
+      const earnings = (redemptions || [])
+        .filter((r: any) => r.status === 'confirmed')
+        .reduce((sum: number, r: any) => sum + ((r.meals as any)?.price_myr || (r.meal as any)?.price_myr || ppm), 0);
+
       setStats({ todayMeals, mealsRedeemed: redeemed, pending, estimatedEarnings: earnings });
       setSchedule(
-        meals.slice(0, 4).map((m) => ({
+        (meals || []).slice(0, 4).map((m: any) => ({
           id: m.id,
           name: m.name,
           servingQuantity: m.serving_quantity || 0,
@@ -169,74 +147,29 @@ export default function PartnerDashboardPage() {
         }))
       );
       setRecentRedemptions(
-        redemptions.slice(0, 5).map((r) => ({
+        (redemptions || []).slice(0, 5).map((r: any) => ({
           id: r.id,
-          studentName: (r.user_profiles as any)?.full_name || 'Student',
-          mealName: (r.meals as any)?.name || 'Meal',
-          time: new Date(r.redeemed_at).toLocaleTimeString('en-MY', {
+          studentName: (r.user_profiles as any)?.full_name || (r.user as any)?.full_name || 'Student',
+          mealName: (r.meals as any)?.name || (r.meal as any)?.name || 'Meal',
+          time: new Date(r.redeemed_at || r.created_at || Date.now()).toLocaleTimeString('en-MY', {
             hour: '2-digit',
             minute: '2-digit',
           }),
           status: r.status,
         }))
       );
-    },
-    [fetchMealsData, fetchRedemptionsData]
-  );
-
-  useEffect(() => {
-    const load = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: partner } = await supabase
-        .from('partners')
-        .select('id, name, price_per_meal')
-        .eq('user_id', user.id)
-        .single();
-      if (!partner) return;
-      setPartnerName(partner.name);
-      setPartnerId(partner.id);
-      setPricePerMeal(partner.price_per_meal || 15);
-      partnerIdRef.current = partner.id;
-      pricePerMealRef.current = partner.price_per_meal || 15;
-      await refreshDashboard(partner.id, partner.price_per_meal || 15);
+    } catch (err) {
+      console.warn('Dashboard refresh error:', err);
+    } finally {
       setLoading(false);
-    };
-    load();
+    }
   }, []);
 
   useEffect(() => {
-    if (!partnerId) return;
-    const channel = supabase
-      .channel(`partner-dashboard-${partnerId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'redemptions',
-          filter: `partner_id=eq.${partnerId}`,
-        },
-        async () => {
-          setLiveIndicator(true);
-          setTimeout(() => setLiveIndicator(false), 1500);
-          await refreshDashboard(partnerIdRef.current, pricePerMealRef.current);
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'meals', filter: `partner_id=eq.${partnerId}` },
-        async () => {
-          await refreshDashboard(partnerIdRef.current, pricePerMealRef.current);
-        }
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [partnerId, supabase, refreshDashboard]);
+    refreshDashboard();
+    const interval = setInterval(refreshDashboard, 10000);
+    return () => clearInterval(interval);
+  }, [refreshDashboard]);
 
   const statCards = [
     {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 
 interface Ticket {
   id: string;
@@ -59,23 +59,19 @@ export default function SupportPage() {
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
-      const supabase = createClient();
       try {
-        const [ticketsRes, redemptionsRes] = await Promise.all([
-          supabase
-            .from('support_tickets')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false }),
-          supabase
-            .from('redemptions')
-            .select('id, redeemed_at, meals(name), partners(name)')
-            .eq('user_id', user.id)
-            .order('redeemed_at', { ascending: false })
-            .limit(10),
+        const [ticketsData, redemptionsData] = await Promise.all([
+          api.getTickets().catch(() => []),
+          api.getRedemptionHistory().catch(() => []),
         ]);
-        setTickets(ticketsRes.data || []);
-        setRecentRedemptions(redemptionsRes.data || []);
+        setTickets(ticketsData || []);
+        const formattedRedemptions = (redemptionsData || []).map((r: any) => ({
+          id: r.id,
+          redeemed_at: r.redeemed_at,
+          meals: r.meals || r.meal || { name: 'Meal' },
+          partners: r.partners || r.partner || { name: 'Cafeteria' },
+        }));
+        setRecentRedemptions(formattedRedemptions);
       } catch (err) {
         console.log('Support fetch error:', err);
       } finally {
@@ -90,14 +86,10 @@ export default function SupportPage() {
     setSubmittingFeedback(true);
     setFormError('');
     try {
-      const supabase = createClient();
-      await supabase.from('feedback').insert({
-        user_id: user.id,
-        redemption_id: selectedRedemption || null,
-        meal_id: null,
-        partner_id: null,
-        rating: String(rating) as any,
-        comment: feedbackComment || null,
+      await api.submitFeedback({
+        rating,
+        comment: feedbackComment || '',
+        redemption_id: selectedRedemption || undefined,
       });
       setFeedbackSuccess(true);
       setRating(0);
@@ -119,18 +111,11 @@ export default function SupportPage() {
     setSubmittingTicket(true);
     setFormError('');
     try {
-      const supabase = createClient();
-      const { data: newTicket } = await supabase
-        .from('support_tickets')
-        .insert({
-          user_id: user.id,
-          category: ticketCategory as any,
-          subject: ticketSubject,
-          description: ticketDescription,
-          status: 'open',
-        })
-        .select()
-        .single();
+      const newTicket = await api.createTicket({
+        category: ticketCategory,
+        subject: ticketSubject,
+        description: ticketDescription,
+      });
       if (newTicket) setTickets([newTicket, ...tickets]);
       setTicketSuccess(true);
       setTicketSubject('');

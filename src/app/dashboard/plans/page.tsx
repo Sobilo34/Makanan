@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-
 import { api } from '@/lib/api';
 
 interface MealPlan {
@@ -55,26 +53,12 @@ export default function PlansPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Try FastAPI backend first
         const plansData = await api.getPlans();
         if (plansData && plansData.length > 0) {
           setPlans(plansData as any);
-        } else {
-          throw new Error('No plans from FastAPI');
         }
       } catch (err) {
-        console.warn('FastAPI getPlans fallback to Supabase:', err);
-        try {
-          const supabase = createClient();
-          const plansRes = await supabase
-            .from('meal_plans')
-            .select('*')
-            .eq('is_active', true)
-            .order('price_myr');
-          setPlans(plansRes.data || []);
-        } catch (sErr) {
-          console.error('Supabase getPlans error:', sErr);
-        }
+        console.warn('FastAPI getPlans error:', err);
       }
 
       if (user) {
@@ -82,20 +66,9 @@ export default function PlansPage() {
           const summary = await api.getStudentDashboardSummary();
           if (summary && summary.subscription) {
             setSubscription(summary.subscription);
-          } else {
-            const supabase = createClient();
-            const subRes = await supabase
-              .from('subscriptions')
-              .select('*, meal_plans(name, tier, price_myr)')
-              .eq('user_id', user.id)
-              .eq('status', 'active')
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .maybeSingle();
-            setSubscription(subRes.data || null);
           }
         } catch {
-          // silent fallback
+          // silent error handling
         }
       }
       setLoading(false);

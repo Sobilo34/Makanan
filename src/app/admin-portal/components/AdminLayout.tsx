@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 import NotificationCenter from '@/components/NotificationCenter';
 
 interface AdminUser {
@@ -216,7 +216,6 @@ const allNavItems = navGroups.flatMap((g) => g.items);
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const supabase = createClient();
   const [admin, setAdmin] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -224,32 +223,31 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     const loadAdmin = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
+      try {
+        const user = await api.getMe();
+        if (!user || user.role !== 'admin') {
+          api.clearToken();
+          router.push('/admin-portal/login');
+          return;
+        }
+        setAdmin({ email: user.email || '', full_name: user.full_name || 'Admin' });
+        setAdminUserId(user.id);
+        setLoading(false);
+      } catch (err) {
+        api.clearToken();
         router.push('/admin-portal/login');
-        return;
       }
-      const isAdmin = user.user_metadata?.role === 'admin' || user.app_metadata?.role === 'admin';
-      if (!isAdmin) {
-        await supabase.auth.signOut();
-        router.push('/admin-portal/login');
-        return;
-      }
-      setAdmin({ email: user.email || '', full_name: user.user_metadata?.full_name || 'Admin' });
-      setAdminUserId(user.id);
-      setLoading(false);
     };
     loadAdmin();
   }, []);
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
+  const handleSignOut = () => {
+    api.logout();
     router.push('/admin-portal/login');
   };
 
   const isActive = (href: string) => {
+    if (!pathname) return false;
     if (href === '/admin-portal/dashboard') return pathname === '/admin-portal/dashboard';
     return pathname.startsWith(href);
   };

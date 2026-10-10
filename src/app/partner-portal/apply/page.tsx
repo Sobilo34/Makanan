@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 
 type Step = 1 | 2 | 3;
 
@@ -57,7 +57,6 @@ const initialForm: FormData = {
 };
 
 export default function PartnerApplyPage() {
-  const supabase = createClient();
   const router = useRouter();
   const [step, setStep] = useState<Step>(1);
   const [form, setForm] = useState<FormData>(initialForm);
@@ -149,62 +148,16 @@ export default function PartnerApplyPage() {
     setError('');
 
     try {
-      // Step 1: Create auth user
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      await api.partnerApply({
         email: form.email.trim().toLowerCase(),
         password: form.password,
-        options: {
-          data: {
-            full_name: form.ownerName.trim(),
-            role: 'partner',
-          },
-        },
-      });
-
-      if (signUpError) throw signUpError;
-      if (!signUpData.user) throw new Error('Account creation failed. Please try again.');
-
-      const userId = signUpData.user.id;
-
-      // Step 2: Insert partner record linked to the new auth user
-      const { error: partnerError } = await supabase.from('partners').insert({
-        user_id: userId,
-        name: form.businessName.trim(),
-        location: form.location.trim(),
-        email: form.email.trim().toLowerCase(),
-        phone: form.phone.trim(),
-        description: form.description.trim(),
-        is_active: true,
-      });
-
-      if (partnerError) throw partnerError;
-
-      // Step 3: Also store full application details for records
-      await supabase.from('partner_applications').insert({
         business_name: form.businessName.trim(),
         owner_name: form.ownerName.trim(),
-        email: form.email.trim().toLowerCase(),
         phone: form.phone.trim(),
         location: form.location.trim(),
-        address: form.address.trim() || null,
-        opening_time: form.openingTime,
-        closing_time: form.closingTime,
-        operating_days: form.operatingDays,
+        address: form.address.trim(),
         description: form.description.trim(),
-        cuisine_types: form.cuisineTypes,
-        seating_capacity: form.seatingCapacity ? parseInt(form.seatingCapacity, 10) : null,
-        status: 'approved',
       });
-
-      // Step 4: Sign in the new partner
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: form.email.trim().toLowerCase(),
-        password: form.password,
-      });
-
-      if (signInError) throw signInError;
-
-      // Step 5: Redirect to partner dashboard
       router.push('/partner-portal/dashboard');
     } catch (err: any) {
       setError(err.message || 'Submission failed. Please try again.');

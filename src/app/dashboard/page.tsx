@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 import RedemptionModal from './components/RedemptionModal';
 
 interface Subscription {
@@ -44,7 +44,7 @@ export default function DashboardHome() {
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [showModal, setShowModal] = useState(false);
 
-  const firstName = user?.user_metadata?.full_name?.split(' ')[0] || 'Student';
+  const firstName = user?.full_name?.split(' ')[0] || 'Student';
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const greetingEmoji = hour < 12 ? '👋' : hour < 17 ? '☀️' : '🌙';
@@ -52,33 +52,38 @@ export default function DashboardHome() {
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
-      const supabase = createClient();
       try {
-        const { data: sub } = await supabase
-          .from('subscriptions')
-          .select('*, meal_plans(name, tier)')
-          .eq('user_id', user.id)
-          .eq('status', 'active')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        setSubscription(sub);
+        const [dashSummary, mealsData, historyData] = await Promise.all([
+          api.getStudentDashboardSummary().catch(() => null),
+          api.getMeals().catch(() => []),
+          api.getRedemptionHistory().catch(() => []),
+        ]);
 
-        const { data: meals } = await supabase
-          .from('meals')
-          .select('*, partners(id, name)')
-          .eq('is_active', true)
-          .neq('availability', 'unavailable')
-          .limit(4);
-        setTodayMeals(meals || []);
+        if (dashSummary?.subscription) {
+          setSubscription({
+            ...dashSummary.subscription,
+            credits_total: dashSummary.subscription.credits_total || (dashSummary.credits_remaining + dashSummary.credits_used),
+            credits_used: dashSummary.credits_used || 0,
+            status: dashSummary.subscription.status || 'active',
+            expires_at: dashSummary.subscription.expires_at || '',
+            meal_plans: dashSummary.subscription.meal_plan || { name: 'Active Plan', tier: 'regular' },
+          });
+        } else {
+          setSubscription(null);
+        }
 
-        const { data: orders } = await supabase
-          .from('redemptions')
-          .select('*, meals(name, category), partners(name)')
-          .eq('user_id', user.id)
-          .order('redeemed_at', { ascending: false })
-          .limit(5);
-        setRecentOrders(orders || []);
+        const formattedMeals = (mealsData || []).slice(0, 4).map((m: any) => ({
+          ...m,
+          partners: m.partners || m.partner || { id: m.partner_id, name: 'AIU Cafeteria' },
+        }));
+        setTodayMeals(formattedMeals);
+
+        const formattedOrders = (historyData || []).slice(0, 5).map((o: any) => ({
+          ...o,
+          meals: o.meals || o.meal || { name: 'Meal', category: 'lunch' },
+          partners: o.partners || o.partner || { name: 'AIU Cafeteria' },
+        }));
+        setRecentOrders(formattedOrders);
       } catch (err) {
         console.log('Dashboard fetch error:', err);
       } finally {
@@ -87,48 +92,8 @@ export default function DashboardHome() {
     };
     fetchData();
 
-    // Real-time: update subscription credits when redemption happens
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`student-dashboard-${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'subscriptions',
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          if (payload.new) {
-            setSubscription((prev) => (prev ? { ...prev, ...(payload.new as any) } : null));
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'redemptions',
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => {
-          // Refresh orders
-          supabase
-            .from('redemptions')
-            .select('*, meals(name, category), partners(name)')
-            .eq('user_id', user.id)
-            .order('redeemed_at', { ascending: false })
-            .limit(5)
-            .then(({ data }) => setRecentOrders(data || []));
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    const interval = setInterval(fetchData, 10000);
+    return () => clearInterval(interval);
   }, [user]);
 
   const creditsRemaining = subscription

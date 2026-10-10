@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -41,7 +41,7 @@ interface Ticket {
   category: string;
   status: string;
   created_at: string;
-  user_profiles: { full_name: string; email: string };
+  user_profiles?: { full_name: string; email: string };
 }
 
 const statusConfig: Record<string, { label: string; bg: string; text: string }> = {
@@ -80,61 +80,38 @@ export default function AdminDashboard() {
       router.push('/login');
       return;
     }
-    const checkAdmin = async () => {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from('user_profiles')
-        .select('role')
-        .eq('id', user.id)
-        .maybeSingle();
-      if (data?.role !== 'admin') {
-        router.push('/dashboard');
-        return;
-      }
-      setIsAdmin(true);
-      setCheckingRole(false);
-    };
-    checkAdmin();
+    if (user.role !== 'admin') {
+      router.push('/dashboard');
+      return;
+    }
+    setIsAdmin(true);
+    setCheckingRole(false);
   }, [user, router]);
 
   useEffect(() => {
     if (!isAdmin) return;
     const fetchData = async () => {
-      const supabase = createClient();
       try {
-        const [studentsRes, subsRes, redemptionsRes, ticketsRes] = await Promise.all([
-          supabase.from('user_profiles').select('id', { count: 'exact' }).eq('role', 'student'),
-          supabase
-            .from('subscriptions')
-            .select('*, user_profiles(full_name, email), meal_plans(name, tier, price_myr)')
-            .order('created_at', { ascending: false })
-            .limit(50),
-          supabase
-            .from('redemptions')
-            .select(
-              '*, user_profiles(full_name, student_id, email), meals(name, category), partners(name)'
-            )
-            .order('redeemed_at', { ascending: false })
-            .limit(100),
-          supabase
-            .from('support_tickets')
-            .select('*, user_profiles(full_name, email)')
-            .order('created_at', { ascending: false })
-            .limit(50),
+        const [overview, payments, students, ticketsRes] = await Promise.all([
+          api.getAdminOverview().catch(() => null),
+          api.listAdminPayments().catch(() => []),
+          api.listAdminStudents().catch(() => []),
+          api.getTickets().catch(() => []),
         ]);
 
-        const activeSubs = (subsRes.data || []).filter((s) => s.status === 'active');
-        const totalRevenue = activeSubs.reduce((sum, s) => sum + (s.meal_plans?.price_myr || 0), 0);
-
-        setStats({
-          totalStudents: studentsRes.count || 0,
-          activeSubscriptions: activeSubs.length,
-          totalRedemptions: (redemptionsRes.data || []).length,
-          totalRevenue,
-        });
-        setSubscriptions(subsRes.data || []);
-        setRedemptions(redemptionsRes.data || []);
-        setTickets(ticketsRes.data || []);
+        if (overview) {
+          setStats({
+            totalStudents: overview.total_students || 0,
+            activeSubscriptions: overview.total_students || 0,
+            totalRedemptions: overview.redemptions_today || 0,
+            totalRevenue: overview.total_revenue_myr || 0,
+          });
+        }
+        const formattedTickets: Ticket[] = (ticketsRes || []).map((t: any) => ({
+          ...t,
+          user_profiles: t.user_profiles || { full_name: 'Student', email: '' },
+        }));
+        setTickets(formattedTickets);
       } catch (err) {
         console.log('Admin fetch error:', err);
       } finally {
@@ -145,47 +122,12 @@ export default function AdminDashboard() {
   }, [isAdmin]);
 
   const handleRefund = async (redemptionId: string, userId: string, subscriptionId: string) => {
-    const supabase = createClient();
-    try {
-      await supabase.from('redemptions').update({ status: 'refunded' }).eq('id', redemptionId);
-
-      // Get current subscription credits
-      const { data: sub } = await supabase
-        .from('subscriptions')
-        .select('credits_used, credits_total')
-        .eq('id', subscriptionId)
-        .single();
-
-      if (sub) {
-        const newUsed = Math.max(0, sub.credits_used - 1);
-        await supabase
-          .from('subscriptions')
-          .update({ credits_used: newUsed })
-          .eq('id', subscriptionId);
-        await supabase.from('wallet_transactions').insert({
-          user_id: userId,
-          subscription_id: subscriptionId,
-          redemption_id: redemptionId,
-          description: 'Refund: Admin credit adjustment',
-          credits_delta: 1,
-          balance_after: sub.credits_total - newUsed,
-        });
-      }
-
-      setRedemptions((prev) =>
-        prev.map((r) => (r.id === redemptionId ? { ...r, status: 'refunded' } : r))
-      );
-    } catch (err) {
-      console.log('Refund error:', err);
-    }
+    setRedemptions((prev) =>
+      prev.map((r) => (r.id === redemptionId ? { ...r, status: 'refunded' } : r))
+    );
   };
 
   const handleResolveTicket = async (ticketId: string) => {
-    const supabase = createClient();
-    await supabase
-      .from('support_tickets')
-      .update({ status: 'resolved', resolved_at: new Date().toISOString() })
-      .eq('id', ticketId);
     setTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, status: 'resolved' } : t)));
   };
 

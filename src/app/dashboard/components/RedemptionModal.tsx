@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { createClient } from '@/lib/supabase/client';
 import { api } from '@/lib/api';
 
 interface Meal {
@@ -23,7 +22,7 @@ interface Subscription {
 interface Props {
   meal: Meal;
   subscription: Subscription;
-  creditsRemaining: number;
+  creditsRemaining?: number;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -46,6 +45,10 @@ export default function RedemptionModal({
   onSuccess,
 }: Props) {
   const { user } = useAuth();
+  const effectiveCreditsRemaining =
+    creditsRemaining !== undefined
+      ? creditsRemaining
+      : (subscription?.credits_total || 0) - (subscription?.credits_used || 0);
   const [step, setStep] = useState<'confirm' | 'success'>('confirm');
   const [loading, setLoading] = useState(false);
   const [qrCode, setQrCode] = useState('');
@@ -56,41 +59,9 @@ export default function RedemptionModal({
     setLoading(true);
     setError('');
     try {
-      let partnerId: string | undefined = meal.partners?.id;
-
-      // Try FastAPI backend first
-      try {
-        const result = await api.redeemMeal(subscription.id, meal.id, partnerId);
-        setQrCode(result.qr_token || result.qr_code);
-        onSuccess();
-        setStep('success');
-        return;
-      } catch (backendErr: any) {
-        console.warn('FastAPI backend redeem error, attempting Supabase RPC:', backendErr);
-      }
-
-      // Fallback to Supabase RPC
-      const supabase = createClient();
-      if (!partnerId) {
-        const { data: mealData } = await supabase
-          .from('meals')
-          .select('partner_id')
-          .eq('id', meal.id)
-          .single();
-        partnerId = mealData?.partner_id || undefined;
-      }
-
-      const { data: result, error: rpcErr } = await supabase.rpc('redeem_meal', {
-        p_user_id: user.id,
-        p_subscription_id: subscription.id,
-        p_meal_id: meal.id,
-        p_partner_id: partnerId,
-      });
-
-      if (rpcErr) throw rpcErr;
-      if (!result?.success) throw new Error(result?.error || 'Redemption failed');
-
-      setQrCode(result.qr_code);
+      const partnerId: string | undefined = meal.partners?.id;
+      const result = await api.redeemMeal(subscription.id, meal.id, partnerId);
+      setQrCode(result.qr_token || result.qr_code);
       onSuccess();
       setStep('success');
     } catch (err: any) {
@@ -145,7 +116,7 @@ export default function RedemptionModal({
                 <p className="text-[#9CA3AF] text-xs">{meal.partners?.name}</p>
                 <div className="mt-3 pt-3 border-t border-[#EBEBEB] flex items-center justify-between">
                   <span className="text-[#6B7280] text-sm">Meals remaining after</span>
-                  <span className="text-[#1A1A1A] font-bold text-lg">{creditsRemaining - 1}</span>
+                  <span className="text-[#1A1A1A] font-bold text-lg">{Math.max(0, effectiveCreditsRemaining - 1)}</span>
                 </div>
               </div>
 

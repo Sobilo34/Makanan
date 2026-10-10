@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 
 interface Redemption {
   id: string;
@@ -62,14 +62,14 @@ export default function OrderHistoryPage() {
   useEffect(() => {
     if (!user) return;
     const fetchOrders = async () => {
-      const supabase = createClient();
       try {
-        const { data } = await supabase
-          .from('redemptions')
-          .select('*, meals(name, category, image_url), partners(name)')
-          .eq('user_id', user.id)
-          .order('redeemed_at', { ascending: false });
-        setRedemptions(data || []);
+        const data = await api.getRedemptionHistory();
+        const formatted = (data || []).map((r: any) => ({
+          ...r,
+          meals: r.meals || r.meal || { name: 'Meal', category: 'lunch', image_url: '' },
+          partners: r.partners || r.partner || { name: 'AIU Cafeteria' },
+        }));
+        setRedemptions(formatted);
       } catch (err) {
         console.log('Order history fetch error:', err);
       } finally {

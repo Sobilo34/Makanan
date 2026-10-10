@@ -1,17 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { api, NotificationItem } from '@/lib/api';
 
-interface Notification {
-  id: string;
-  type: string;
-  title: string;
-  message: string;
-  is_read: boolean;
-  created_at: string;
-  metadata?: any;
-}
+type Notification = NotificationItem;
 
 interface NotificationCenterProps {
   userId?: string;
@@ -24,7 +16,6 @@ export default function NotificationCenter({
   partnerId,
   recipientType,
 }: NotificationCenterProps) {
-  const supabase = createClient();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
@@ -33,65 +24,44 @@ export default function NotificationCenter({
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   const loadNotifications = async () => {
-    setLoading(true);
-    let query = supabase
-      .from('notifications')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(30);
-
-    if (recipientType === 'student' && userId) {
-      query = query.eq('user_id', userId);
-    } else if (recipientType === 'partner' && partnerId) {
-      query = query.eq('partner_id', partnerId);
-    } else if (recipientType === 'admin') {
-      query = query.eq('recipient_type', 'admin');
+    if (!api.hasToken()) return;
+    try {
+      setLoading(true);
+      const res = await api.getNotifications();
+      if (res?.notifications) {
+        setNotifications(res.notifications);
+      }
+    } catch (err) {
+      console.warn('Failed to fetch notifications:', err);
+    } finally {
+      setLoading(false);
     }
-
-    const { data } = await query;
-    if (data) setNotifications(data);
-    setLoading(false);
   };
 
   const markAllRead = async () => {
     const unread = notifications.filter((n) => !n.is_read).map((n) => n.id);
     if (unread.length === 0) return;
-    await supabase.from('notifications').update({ is_read: true }).in('id', unread);
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    try {
+      await api.markNotificationsRead(unread, true);
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    } catch (err) {
+      console.error('Failed to mark all notifications read:', err);
+    }
   };
 
   const markRead = async (id: string) => {
-    await supabase.from('notifications').update({ is_read: true }).eq('id', id);
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
+    try {
+      await api.markNotificationsRead([id], false);
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
+    } catch (err) {
+      console.error('Failed to mark notification read:', err);
+    }
   };
 
   useEffect(() => {
-    if (userId || partnerId) loadNotifications();
-  }, [userId, partnerId]);
-
-  // Real-time subscription
-  useEffect(() => {
-    if (!userId && !partnerId) return;
-    const channel = supabase
-      .channel('notifications_realtime')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'notifications' },
-        (payload) => {
-          const n = payload.new as Notification;
-          const isForMe =
-            (recipientType === 'student' && n.user_id === userId) ||
-            (recipientType === 'partner' && n.partner_id === partnerId) ||
-            (recipientType === 'admin' && n.recipient_type === 'admin');
-          if (isForMe) {
-            setNotifications((prev) => [n, ...prev]);
-          }
-        }
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    loadNotifications();
+    const interval = setInterval(loadNotifications, 30000);
+    return () => clearInterval(interval);
   }, [userId, partnerId]);
 
   // Close on outside click

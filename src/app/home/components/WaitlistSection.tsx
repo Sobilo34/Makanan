@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 
 const initialForm = {
   full_name: '',
@@ -17,33 +17,25 @@ export default function WaitlistSection() {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
-    const supabase = createClient();
     let active = true;
 
     const fetchCount = async () => {
-      const { count, error: countError } = await supabase
-        .from('waitlist')
-        .select('id', { count: 'exact', head: true });
-
-      if (!active) return;
-
-      if (!countError) {
-        setCount(count ?? 0);
+      try {
+        const res = await api.getWaitlistCount();
+        if (active && res?.count !== undefined) {
+          setCount(res.count);
+        }
+      } catch (err) {
+        console.warn('Waitlist count fetch:', err);
       }
     };
 
     fetchCount();
-
-    const channel = supabase
-      .channel('waitlist-live-count')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'waitlist' }, () => {
-        setCount((current) => current + 1);
-      })
-      .subscribe();
+    const interval = setInterval(fetchCount, 30000);
 
     return () => {
       active = false;
-      supabase.removeChannel(channel);
+      clearInterval(interval);
     };
   }, []);
 
@@ -58,34 +50,14 @@ export default function WaitlistSection() {
     setError('');
 
     try {
-      const supabase = createClient();
-      const payload = {
-        full_name: form.full_name.trim(),
-        email: form.email.trim().toLowerCase(),
-        university: form.university.trim() || 'Not specified',
-        phone: form.phone.trim() || null,
-        source: 'landing_page',
-      };
-
-      const { error: insertError } = await supabase.from('waitlist').insert([payload]);
-
-      if (insertError) {
-        throw insertError;
-      }
-
+      await api.joinWaitlist(form.email.trim().toLowerCase(), form.full_name.trim());
       setSubmitted(true);
       setForm(initialForm);
       setCount((current) => current + 1);
     } catch (insertError: unknown) {
-      const message =
-        typeof insertError === 'object' &&
-        insertError !== null &&
-        'code' in insertError &&
-        (insertError as { code?: string }).code === 'PGRST205'
-          ? 'The waitlist table is not set up in Supabase yet. Apply the waitlist migration before collecting signups.'
-          : insertError instanceof Error
-            ? insertError.message
-            : 'Something went wrong while joining the waitlist.';
+      const message = insertError instanceof Error
+        ? insertError.message
+        : 'Something went wrong while joining the waitlist.';
       setError(message);
     } finally {
       setLoading(false);

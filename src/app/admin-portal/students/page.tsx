@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import AdminLayout from '../components/AdminLayout';
-import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 
 interface Student {
   id: string;
@@ -63,7 +63,6 @@ function MealsProgress({ used, total }: { used: number; total: number }) {
 }
 
 export default function StudentsPage() {
-  const supabase = createClient();
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -73,55 +72,33 @@ export default function StudentsPage() {
     const loadStudents = async () => {
       setLoading(true);
       try {
-        const { data: profiles } = await supabase
-          .from('user_profiles')
-          .select('id, full_name, email, student_id, is_active, created_at')
-          .eq('role', 'student')
-          .order('created_at', { ascending: false });
-
-        if (!profiles) {
-          setLoading(false);
-          return;
+        const data = await api.listAdminStudents();
+        if (data && Array.isArray(data)) {
+          const mapped: Student[] = data.map((s: any) => ({
+            id: s.id,
+            full_name: s.full_name,
+            email: s.email,
+            student_id: s.student_id || null,
+            is_active: s.is_active !== undefined ? s.is_active : true,
+            created_at: s.created_at || new Date().toISOString(),
+            subscription: s.subscription
+              ? {
+                  id: s.subscription.id,
+                  status: s.subscription.status,
+                  credits_total: s.subscription.credits_total || 60,
+                  credits_used: s.subscription.credits_used || 0,
+                  meal_plan: s.subscription.meal_plan
+                    ? {
+                        name: s.subscription.meal_plan.name,
+                        price_myr: s.subscription.meal_plan.price_myr,
+                      }
+                    : undefined,
+                }
+              : null,
+            last_activity: s.last_activity || s.created_at,
+          }));
+          setStudents(mapped);
         }
-
-        const enriched: Student[] = await Promise.all(
-          profiles.map(async (p) => {
-            const { data: sub } = await supabase
-              .from('subscriptions')
-              .select('id, status, credits_total, credits_used, meal_plan_id')
-              .eq('user_id', p.id)
-              .eq('status', 'active')
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .maybeSingle();
-
-            let subscription: Student['subscription'] = null;
-            if (sub) {
-              const { data: plan } = await supabase
-                .from('meal_plans')
-                .select('name, price_myr')
-                .eq('id', sub.meal_plan_id)
-                .maybeSingle();
-              subscription = { ...sub, meal_plan: plan || undefined };
-            }
-
-            const { data: lastRed } = await supabase
-              .from('redemptions')
-              .select('redeemed_at')
-              .eq('user_id', p.id)
-              .order('redeemed_at', { ascending: false })
-              .limit(1)
-              .maybeSingle();
-
-            return {
-              ...p,
-              subscription,
-              last_activity: lastRed?.redeemed_at || p.created_at,
-            };
-          })
-        );
-
-        setStudents(enriched);
       } catch (err) {
         console.error('Students load error:', err);
       } finally {

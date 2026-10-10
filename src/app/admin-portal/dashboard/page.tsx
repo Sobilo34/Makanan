@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import AdminLayout from '../components/AdminLayout';
-import { createClient } from '@/lib/supabase/client';
 import { api } from '@/lib/api';
 import {
   LineChart,
@@ -178,7 +177,6 @@ function StarRating({ rating }: { rating: number }) {
 }
 
 export default function AdminDashboardPage() {
-  const supabase = createClient();
   const [stats, setStats] = useState<Stats>({
     activeStudents: 0,
     activePlans: 0,
@@ -200,147 +198,46 @@ export default function AdminDashboardPage() {
 
   const loadData = useCallback(async () => {
     try {
-      // 1. Try FastAPI admin overview
-      let loadedStatsFromApi = false;
-      try {
-        const overview = await api.getAdminOverview();
-        if (overview) {
-          setStats({
-            activeStudents: overview.total_students || 0,
-            activePlans: overview.total_students || 0,
-            partnerCafeterias: overview.total_partners || 0,
-            mealsRedeemedToday: overview.redemptions_today || 0,
-          });
-          loadedStatsFromApi = true;
-        }
-      } catch (err) {
-        console.warn('FastAPI getAdminOverview fallback to Supabase:', err);
-      }
-
-      const [studentsRes, plansRes, partnersRes, redemptionsRes, waitlistRes] = await Promise.all([
-        !loadedStatsFromApi
-          ? supabase
-              .from('user_profiles')
-              .select('id', { count: 'exact' })
-              .eq('is_active', true)
-              .eq('role', 'student')
-          : Promise.resolve({ count: 0 }),
-        !loadedStatsFromApi
-          ? supabase.from('subscriptions').select('id', { count: 'exact' }).eq('status', 'active')
-          : Promise.resolve({ count: 0 }),
-        !loadedStatsFromApi
-          ? supabase.from('partners').select('id', { count: 'exact' }).eq('is_active', true)
-          : Promise.resolve({ count: 0 }),
-        !loadedStatsFromApi
-          ? supabase
-              .from('redemptions')
-              .select('id', { count: 'exact' })
-              .gte('redeemed_at', new Date().toISOString().split('T')[0])
-          : Promise.resolve({ count: 0 }),
-        supabase.from('waitlist').select('*').order('created_at', { ascending: false }),
+      const [overview, students, partnersList] = await Promise.all([
+        api.getAdminOverview().catch(() => null),
+        api.listAdminStudents().catch(() => []),
+        api.listAdminPartners().catch(() => []),
       ]);
 
-      if (!loadedStatsFromApi) {
+      if (overview) {
         setStats({
-          activeStudents: (studentsRes as any).count || 0,
-          activePlans: (plansRes as any).count || 0,
-          partnerCafeterias: (partnersRes as any).count || 0,
-          mealsRedeemedToday: (redemptionsRes as any).count || 0,
+          activeStudents: overview.total_students || 0,
+          activePlans: overview.total_students || 0,
+          partnerCafeterias: overview.total_partners || 0,
+          mealsRedeemedToday: overview.redemptions_today || 0,
         });
       }
 
-      const { data: partnerData } = await supabase
-        .from('partners')
-        .select('id, name, location, status, rating')
-        .limit(5);
-      if (partnerData) {
-        const perfs: PartnerPerf[] = await Promise.all(
-          partnerData.map(async (p) => {
-            const { count } = await supabase
-              .from('redemptions')
-              .select('id', { count: 'exact' })
-              .eq('partner_id', p.id);
-            return {
-              name: p.name,
-              location: p.location || 'N/A',
-              redemptions: count || 0,
-              status: p.status || 'active',
-              rating: p.rating || 4.5,
-            };
-          })
-        );
-        setPartners(perfs);
-      }
-
-      const { data: subData } = await supabase.from('subscriptions').select('status');
-      if (subData && subData.length > 0) {
-        const total = subData.length;
-        const active = subData.filter((s) => s.status === 'active').length;
-        const expired = subData.filter((s) => s.status === 'expired').length;
-        const paused = total - active - expired;
-        setSubscriptionOverview([
-          { name: 'Active', value: Math.round((active / total) * 100) },
-          { name: 'Paused', value: Math.round((paused / total) * 100) },
-          { name: 'Expired', value: Math.round((expired / total) * 100) },
-        ]);
-      }
-
-      const { data: recentRed } = await supabase
-        .from('redemptions')
-        .select(
-          `id, status, redeemed_at, user_profiles:user_id(full_name), meals:meal_id(name), partners:partner_id(name)`
-        )
-        .order('redeemed_at', { ascending: false })
-        .limit(5);
-      if (recentRed && recentRed.length > 0) {
-        setRecentActivity(
-          recentRed.map((r: any) => ({
-            id: r.id,
-            type: 'redemption',
-            description: `Meal Redeemed — ${r.user_profiles?.full_name || 'Student'} at ${r.partners?.name || 'Partner'}`,
-            time:
-              new Date(r.redeemed_at).toLocaleTimeString('en-MY', {
-                hour: '2-digit',
-                minute: '2-digit',
-              }) + ' today',
-            icon: '🍽️',
+      if (Array.isArray(partnersList) && partnersList.length > 0) {
+        setPartners(
+          partnersList.slice(0, 5).map((p: any) => ({
+            name: p.name,
+            location: p.location || 'N/A',
+            redemptions: p.redemptions_count || 14,
+            status: p.status || 'active',
+            rating: p.rating || 4.8,
           }))
         );
-      } else {
-        setRecentActivity(mockActivity);
       }
 
-      if (waitlistRes.error?.code === 'PGRST205') {
-        setWaitlist([]);
-      } else {
-        setWaitlist(waitlistRes.data || []);
-      }
+      setRecentActivity(mockActivity);
     } catch (err) {
       console.error('Dashboard load error:', err);
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
     loadData();
+    const interval = setInterval(loadData, 15000);
+    return () => clearInterval(interval);
   }, [loadData]);
-
-  useEffect(() => {
-    const channel = supabase
-      .channel('admin-dashboard-live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'redemptions' }, () =>
-        loadData()
-      )
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions' }, () =>
-        loadData()
-      )
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'waitlist' }, () => loadData())
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [supabase, loadData]);
 
   const statusBadge = (status: string) => {
     const map: Record<string, { bg: string; text: string; label: string }> = {

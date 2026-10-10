@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 
 interface VerificationResult {
   valid: boolean;
@@ -25,52 +25,23 @@ export default function PartnerVerificationPage() {
     setResult(null);
 
     try {
-      const supabase = createClient();
-
-      // Look up redemption by QR code
-      const { data: redemption, error } = await supabase
-        .from('redemptions')
-        .select(
-          `
-          id,
-          status,
-          redeemed_at,
-          qr_code,
-          subscription_id,
-          user_profiles!redemptions_user_id_fkey(full_name, student_id),
-          meals(name),
-          partners(name),
-          subscriptions(credits_total, credits_used)
-        `
-        )
-        .eq('qr_code', qrInput.trim())
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (!redemption) {
+      const res = await api.verifyQr(qrInput.trim());
+      if (!res.valid) {
         setResult({
           valid: false,
-          message: 'QR code not found. Please check the code and try again.',
+          message: res.error || (res.already_confirmed ? 'QR code has already been confirmed.' : 'Invalid or expired QR code.'),
         });
         return;
       }
 
-      const sub = (redemption as any).subscriptions;
-      const creditsRemaining = sub ? sub.credits_total - sub.credits_used : 0;
-
       setResult({
-        valid: redemption.status === 'confirmed',
-        studentName: (redemption as any).user_profiles?.full_name || 'Unknown Student',
-        mealName: (redemption as any).meals?.name || 'Unknown Meal',
-        partnerName: (redemption as any).partners?.name || 'Unknown Partner',
-        creditsRemaining,
-        redeemedAt: redemption.redeemed_at,
-        status: redemption.status,
-        message:
-          redemption.status !== 'confirmed'
-            ? `This redemption has status: ${redemption.status}`
-            : undefined,
+        valid: true,
+        studentName: res.student_name || 'Student',
+        mealName: res.meal_name || 'Meal',
+        partnerName: 'Cafeteria',
+        creditsRemaining: res.credits_remaining ?? 0,
+        status: res.already_confirmed ? 'already_confirmed' : 'valid',
+        message: res.already_confirmed ? 'Already verified and served' : 'Valid meal redemption',
       });
     } catch (err: any) {
       setResult({ valid: false, message: err.message || 'Verification failed. Please try again.' });

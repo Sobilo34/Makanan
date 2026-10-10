@@ -179,12 +179,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   const isActive = (href: string) => {
+    if (!pathname) return false;
     if (href === '/dashboard') return pathname === '/dashboard';
     return pathname.startsWith(href);
   };
 
-  const initials = user?.user_metadata?.full_name
-    ? user.user_metadata.full_name
+  const fullName = user?.full_name || (user as any)?.user_metadata?.full_name || '';
+  const initials = fullName
+    ? fullName
         .split(' ')
         .map((n: string) => n[0])
         .join('')
@@ -192,7 +194,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         .slice(0, 2)
     : user?.email?.[0]?.toUpperCase() || 'U';
 
-  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Student';
+  const displayName = fullName || user?.email?.split('@')[0] || 'Student';
 
   return (
     <div className="min-h-screen bg-[#F0F2F5] flex" style={{ fontFamily: "'DM Sans', sans-serif" }}>
@@ -252,7 +254,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             Account
           </p>
           {bottomNavItems.map((item) => {
-            const active = pathname.startsWith(item.href);
+            const active = pathname?.startsWith(item.href) || false;
             return (
               <Link
                 key={item.href}
@@ -304,7 +306,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Breadcrumb */}
             <span className="text-[#9CA3AF] text-sm">
               {navItems.find((n) => isActive(n.href))?.label ||
-                bottomNavItems.find((n) => pathname.startsWith(n.href))?.label ||
+                bottomNavItems.find((n) => pathname?.startsWith(n.href))?.label ||
                 'Dashboard'}
             </span>
           </div>

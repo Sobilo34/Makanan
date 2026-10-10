@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import PartnerLayout from '../components/PartnerLayout';
-import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 
 interface FulfilmentMeal {
   id: string;
@@ -44,7 +44,6 @@ function AvailabilityBadge({ status }: { status: string }) {
 }
 
 export default function FulfilmentPage() {
-  const supabase = createClient();
   const [meals, setMeals] = useState<FulfilmentMeal[]>([]);
   const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,106 +55,61 @@ export default function FulfilmentPage() {
     return new Date().toLocaleDateString('en-US', { weekday: 'long' });
   };
 
-  const loadData = async (pid: string) => {
-    setLoading(true);
+  const loadData = async () => {
     const today = getTodayDayName();
+    try {
+      const [partner, mealsData, reds] = await Promise.all([
+        api.getPartnerProfile().catch(() => null),
+        api.getPartnerMeals().catch(() => []),
+        api.getPartnerRedemptions().catch(() => []),
+      ]);
 
-    // Load meals
-    const { data: mealsData } = await supabase
-      .from('meals')
-      .select(
-        'id, name, category, serving_quantity, redemption_count, schedule_days, availability, image_url'
-      )
-      .eq('partner_id', pid)
-      .eq('is_active', true)
-      .order('category');
+      if (partner?.id) setPartnerId(partner.id);
+      if (mealsData) setMeals(mealsData as any);
 
-    if (mealsData) setMeals(mealsData);
+      // Today's redemptions
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const todays = (reds || []).filter((r: any) => new Date(r.redeemed_at || r.created_at) >= todayStart);
+      setTodayRedemptions(todays);
 
-    // Load today's redemptions
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const { data: reds } = await supabase
-      .from('redemptions')
-      .select('id, status, redeemed_at, meals:meal_id(name, category)')
-      .eq('partner_id', pid)
-      .gte('redeemed_at', todayStart.toISOString())
-      .order('redeemed_at', { ascending: false });
+      // Weekly stats
+      const stats: DailyStats[] = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dayStart = new Date(d);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(d);
+        dayEnd.setHours(23, 59, 59, 999);
 
-    if (reds) setTodayRedemptions(reds);
+        const dayData = (reds || []).filter((r: any) => {
+          const t = new Date(r.redeemed_at || r.created_at);
+          return t >= dayStart && t <= dayEnd;
+        });
 
-    // Build weekly stats (last 7 days)
-    const stats: DailyStats[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const dayStart = new Date(d);
-      dayStart.setHours(0, 0, 0, 0);
-      const dayEnd = new Date(d);
-      dayEnd.setHours(23, 59, 59, 999);
-
-      const { data: dayReds } = await supabase
-        .from('redemptions')
-        .select('id, status')
-        .eq('partner_id', pid)
-        .gte('redeemed_at', dayStart.toISOString())
-        .lte('redeemed_at', dayEnd.toISOString());
-
-      const dayData = dayReds || [];
-      stats.push({
-        date: d.toISOString(),
-        label:
-          i === 0 ? 'Today' : d.toLocaleDateString('en-MY', { weekday: 'short', day: 'numeric' }),
-        total: dayData.length,
-        completed: dayData.filter((r) => r.status === 'confirmed').length,
-        pending: dayData.filter((r) => r.status === 'pending').length,
-      });
+        stats.push({
+          date: d.toISOString(),
+          label: i === 0 ? 'Today' : d.toLocaleDateString('en-MY', { weekday: 'short', day: 'numeric' }),
+          total: dayData.length,
+          completed: dayData.filter((r: any) => r.status === 'confirmed').length,
+          pending: dayData.filter((r: any) => r.status === 'pending').length,
+        });
+      }
+      setDailyStats(stats);
+      setSelectedDay(today);
+    } catch (err) {
+      console.warn('Fulfilment load error:', err);
+    } finally {
+      setLoading(false);
     }
-    setDailyStats(stats);
-    setSelectedDay(today);
-    setLoading(false);
   };
 
   useEffect(() => {
-    const init = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: partner } = await supabase
-        .from('partners')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-      if (!partner) return;
-      setPartnerId(partner.id);
-      await loadData(partner.id);
-    };
-    init();
+    loadData();
+    const interval = setInterval(loadData, 15000);
+    return () => clearInterval(interval);
   }, []);
-
-  // Real-time subscription for redemptions
-  useEffect(() => {
-    if (!partnerId) return;
-    const channel = supabase
-      .channel('fulfilment_realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'redemptions',
-          filter: `partner_id=eq.${partnerId}`,
-        },
-        () => {
-          loadData(partnerId);
-        }
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [partnerId]);
 
   const scheduledMealsForDay = meals.filter(
     (m) => m.schedule_days?.includes(selectedDay) || m.schedule_days?.length === 0

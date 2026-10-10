@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import PartnerLayout from '../components/PartnerLayout';
-import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 import {
   XAxis,
   YAxis,
@@ -79,7 +79,6 @@ const CustomTooltipEarnings = ({ active, payload, label }: any) => {
 };
 
 export default function EarningsPage() {
-  const supabase = createClient();
   const [period, setPeriod] = useState<PeriodFilter>('month');
   const [kpis, setKpis] = useState<KPIs>({
     currentPeriodEarnings: 0,
@@ -107,10 +106,10 @@ export default function EarningsPage() {
   };
 
   const buildChartData = (redemptions: any[], p: PeriodFilter, ppm: number): ChartPoint[] => {
-    const confirmed = redemptions.filter((r) => r.status === 'confirmed');
+    const confirmed = redemptions.filter((r: any) => r.status === 'confirmed');
     const buckets: Record<string, { meals: number; earnings: number }> = {};
 
-    confirmed.forEach((r) => {
+    confirmed.forEach((r: any) => {
       const d = new Date(r.redeemed_at);
       let key = '';
       if (p === 'week') {
@@ -122,7 +121,7 @@ export default function EarningsPage() {
       }
       if (!buckets[key]) buckets[key] = { meals: 0, earnings: 0 };
       buckets[key].meals += 1;
-      buckets[key].earnings += (r.meals as any)?.price_myr || ppm;
+      buckets[key].earnings += (r.meal || r.meals)?.price_myr || ppm;
     });
 
     return Object.entries(buckets).map(([label, v]) => ({
@@ -132,79 +131,72 @@ export default function EarningsPage() {
     }));
   };
 
-  const loadData = async (pid: string, ppm: number, p: PeriodFilter) => {
+  const loadData = async (ppm: number, p: PeriodFilter) => {
     setLoading(true);
-    const since = getPeriodStart(p);
+    try {
+      const allReds = await api.getPartnerRedemptions(200);
+      const since = new Date(getPeriodStart(p)).getTime();
+      const pr = allReds.filter((r: any) => new Date(r.redeemed_at).getTime() >= since);
 
-    const periodReds = await supabase
-      .from('redemptions')
-      .select('id, status, redeemed_at, meals:meal_id(name, price_myr)')
-      .eq('partner_id', pid)
-      .gte('redeemed_at', since)
-      .order('redeemed_at', { ascending: false });
-    const allReds = await supabase
-      .from('redemptions')
-      .select('id, status, redeemed_at, meals:meal_id(name, price_myr)')
-      .eq('partner_id', pid)
-      .order('redeemed_at', { ascending: false });
+      const currentPeriodEarnings = pr
+        .filter((r: any) => r.status === 'confirmed')
+        .reduce((s: number, r: any) => s + ((r.meal || r.meals)?.price_myr || ppm), 0);
 
-    const pr = periodReds.data || [];
-    const ar = allReds.data || [];
+      const totalMealsServed = allReds.filter((r: any) => r.status === 'confirmed').length;
 
-    const currentPeriodEarnings = pr
-      .filter((r) => r.status === 'confirmed')
-      .reduce((s, r) => s + ((r.meals as any)?.price_myr || ppm), 0);
+      const totalEarnings = allReds
+        .filter((r: any) => r.status === 'confirmed')
+        .reduce((s: number, r: any) => s + ((r.meal || r.meals)?.price_myr || ppm), 0);
 
-    const totalMealsServed = ar.filter((r) => r.status === 'confirmed').length;
+      const pendingSettlement = allReds
+        .filter((r: any) => r.status === 'pending')
+        .reduce((s: number, r: any) => s + ((r.meal || r.meals)?.price_myr || ppm), 0);
 
-    const totalEarnings = ar
-      .filter((r) => r.status === 'confirmed')
-      .reduce((s, r) => s + ((r.meals as any)?.price_myr || ppm), 0);
+      setKpis({ currentPeriodEarnings, totalMealsServed, totalEarnings, pendingSettlement });
+      setChartData(buildChartData(pr, p, ppm));
 
-    const pendingSettlement = ar
-      .filter((r) => r.status === 'pending')
-      .reduce((s, r) => s + ((r.meals as any)?.price_myr || ppm), 0);
-
-    setKpis({ currentPeriodEarnings, totalMealsServed, totalEarnings, pendingSettlement });
-    setChartData(buildChartData(pr, p, ppm));
-
-    const txns: Transaction[] = pr.slice(0, 50).map((r) => ({
-      id: r.id,
-      date: new Date(r.redeemed_at).toLocaleDateString('en-MY', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      }),
-      meal: (r.meals as any)?.name || 'Unknown Meal',
-      mealsServed: 1,
-      amount: (r.meals as any)?.price_myr || ppm,
-      status: r.status,
-    }));
-    setTransactions(txns);
-    setLoading(false);
+      const txns: Transaction[] = pr.slice(0, 50).map((r: any) => ({
+        id: r.id,
+        date: new Date(r.redeemed_at).toLocaleDateString('en-MY', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        }),
+        meal: (r.meal || r.meals)?.name || 'Redeemed Meal',
+        mealsServed: 1,
+        amount: (r.meal || r.meals)?.price_myr || ppm,
+        status: r.status,
+      }));
+      setTransactions(txns);
+    } catch (err) {
+      console.error('Failed to load earnings data:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     const init = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: partner } = await supabase
-        .from('partners')
-        .select('id, price_per_meal')
-        .eq('user_id', user.id)
-        .single();
-      if (!partner) return;
-      setPartnerId(partner.id);
-      setPricePerMeal(partner.price_per_meal || 15);
-      await loadData(partner.id, partner.price_per_meal || 15, period);
+      try {
+        const partner = await api.getPartnerProfile();
+        if (partner) {
+          setPartnerId(partner.id);
+          const ppm = partner.price_per_meal || 15;
+          setPricePerMeal(ppm);
+          await loadData(ppm, period);
+        }
+      } catch (err) {
+        console.error('Error fetching partner:', err);
+        setLoading(false);
+      }
     };
     init();
   }, []);
 
   useEffect(() => {
-    if (partnerId) loadData(partnerId, pricePerMeal, period);
+    if (partnerId) {
+      loadData(pricePerMeal, period);
+    }
   }, [period]);
 
   const periodTabs: { key: PeriodFilter; label: string }[] = [

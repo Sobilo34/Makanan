@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import AdminLayout from '../components/AdminLayout';
-import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 
 interface Transaction {
   id: string;
@@ -24,7 +24,6 @@ const statusStyle = (s: string) => {
 };
 
 export default function PaymentsPage() {
-  const supabase = createClient();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('All');
@@ -33,18 +32,7 @@ export default function PaymentsPage() {
   const loadPayments = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await supabase
-        .from('payments')
-        .select(
-          `
-          id, amount_myr, payment_method, status, created_at,
-          user_profiles:user_id(full_name),
-          meal_plans:meal_plan_id(name, price_myr, credits)
-        `
-        )
-        .order('created_at', { ascending: false })
-        .limit(100);
-
+      const data = await api.listAdminPayments();
       const mapped: Transaction[] = (data || []).map((p: any) => ({
         id: p.id,
         date: new Date(p.created_at).toLocaleDateString('en-MY', {
@@ -52,8 +40,8 @@ export default function PaymentsPage() {
           month: 'short',
           year: 'numeric',
         }),
-        student: p.user_profiles?.full_name || 'Unknown',
-        plan: p.meal_plans?.name || 'Meal Plan',
+        student: p.user?.full_name || p.user_profiles?.full_name || 'Student',
+        plan: p.meal_plan?.name || p.meal_plans?.name || 'Meal Plan',
         amount: `RM ${parseFloat(p.amount_myr || 0).toFixed(2)}`,
         method: formatMethod(p.payment_method),
         status: p.status || 'completed',
@@ -66,33 +54,13 @@ export default function PaymentsPage() {
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
     loadPayments();
+    const interval = setInterval(loadPayments, 15000);
+    return () => clearInterval(interval);
   }, [loadPayments]);
-
-  // Real-time subscription
-  useEffect(() => {
-    const channel = supabase
-      .channel('admin-payments-live')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'payments',
-        },
-        () => {
-          loadPayments();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [supabase, loadPayments]);
 
   function formatMethod(m: string) {
     if (m === 'card') return 'Credit Card';
