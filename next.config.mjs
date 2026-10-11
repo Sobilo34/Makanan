@@ -7,8 +7,6 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // produce a standalone output to enable a minimal runtime image
-  output: 'standalone',
   turbopack: {},
   images: {
     remotePatterns: imageHosts,
