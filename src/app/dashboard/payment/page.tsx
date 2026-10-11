@@ -356,8 +356,23 @@ function PaymentContent() {
               {activeOrder.instructions}
             </p>
 
+            {/* HitPay Malaysia Hosted Checkout Button */}
+            {activeOrder.checkout_url && (
+              <a
+                href={activeOrder.checkout_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full bg-[#111827] text-white font-bold py-3 rounded-xl text-xs mb-2 hover:bg-black transition-all shadow-md flex items-center justify-center gap-2"
+              >
+                <span>💳 Pay via HitPay Malaysia Checkout</span>
+                <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+            )}
+
             {/* Deep link button if mobile app available */}
-            {activeOrder.deep_link_url && (
+            {activeOrder.deep_link_url && activeOrder.deep_link_url !== activeOrder.checkout_url && (
               <a
                 href={activeOrder.deep_link_url}
                 className="block w-full bg-[#005BAC] text-white font-bold py-2.5 rounded-xl text-xs mb-2 hover:bg-[#004B8D] transition-colors"
@@ -365,6 +380,7 @@ function PaymentContent() {
                 Open e-Wallet App Directly
               </a>
             )}
+
 
             {/* Sandbox Simulation Button */}
             <button

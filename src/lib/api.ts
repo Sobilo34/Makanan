@@ -55,9 +55,12 @@ export interface PaymentOrder {
   qr_data: string;
   qr_image_url?: string;
   deep_link_url?: string;
+  checkout_url?: string;
+  hitpay_request_id?: string;
   expires_at: string;
   instructions: string;
 }
+
 
 export interface SupportTicket {
   id: string;

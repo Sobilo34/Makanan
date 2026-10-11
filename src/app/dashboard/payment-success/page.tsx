@@ -11,7 +11,13 @@ function PaymentSuccessContent() {
   const searchParams = useSearchParams();
   const { user } = useAuth();
 
-  const sessionId = searchParams?.get('session_id') || searchParams?.get('ref') || '';
+  const sessionId =
+    searchParams?.get('reference_code') ||
+    searchParams?.get('reference') ||
+    searchParams?.get('session_id') ||
+    searchParams?.get('ref') ||
+    '';
+
   const price = searchParams?.get('price') || '0';
   const credits = searchParams?.get('credits') || '0';
   const planName = searchParams?.get('name') || 'Meal Plan';
