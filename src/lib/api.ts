@@ -229,6 +229,13 @@ class ApiClient {
     );
   }
 
+  async confirmTouchNGoPayment(referenceCode: string) {
+    return this.request<{ success: boolean; subscription_id: string; payment_id: string; credits: number }>(
+      `/payments/sandbox-complete/${referenceCode}`,
+      { method: 'POST' }
+    );
+  }
+
   // ── Redemptions ────────────────────────────────────────────────────────────
   async redeemMeal(subscriptionId: string, mealId: string, partnerId?: string) {
     return this.request<{
