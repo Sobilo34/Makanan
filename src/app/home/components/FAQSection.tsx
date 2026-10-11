@@ -48,7 +48,7 @@ const faqs: FAQItem[] = [
     category: 'Account & Payments',
     question: 'Which payment methods are accepted?',
     answer:
-      "We accept all major credit and debit cards, FPX online banking, and e-wallets including Touch 'n Go and GrabPay. Payments are processed securely via Stripe. Your card details are never stored on our servers.",
+      "For launch, we accept Malaysia's two most convenient and seamless payment options: DuitNow QR (supported by all Malaysian bank apps including Maybank MAE, CIMB Octo, Bank Islam, RHB, and Public Bank) and Touch 'n Go eWallet. Payments are processed with zero user fees via HitPay Malaysia in full compliance with Bank Negara Malaysia security standards.",
   },
   {
     category: 'Account & Payments',

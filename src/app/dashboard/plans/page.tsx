@@ -37,7 +37,7 @@ const planMeta = [
 
 const steps = [
   { num: '01', title: 'Pick a plan', desc: 'Choose the meal count that fits your schedule.' },
-  { num: '02', title: 'Pay securely', desc: 'DuitNow QR or e-Wallets (TNG, GrabPay, ShopeePay).' },
+  { num: '02', title: 'Pay securely', desc: "DuitNow QR or Touch 'n Go eWallet." },
   { num: '03', title: 'Credits loaded', desc: 'Meal credits appear in your wallet instantly.' },
   { num: '04', title: 'Scan & eat', desc: 'Show your QR at any partner restaurant.' },
 ];
@@ -315,31 +315,42 @@ export default function PlansPage() {
               <p className="text-xs font-bold text-[#9CA3AF] uppercase tracking-widest mb-3">
                 Accepted Payments
               </p>
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {[
-                  { label: 'Visa / Mastercard', sub: 'Credit & debit cards' },
-                  { label: 'FPX Banking', sub: 'Maybank, CIMB, RHB & more' },
-                  { label: 'GrabPay', sub: 'GrabPay e-wallet' },
-                ].map(({ label, sub }) => (
-                  <div key={label} className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-xl">
-                    <div className="w-8 h-8 bg-white rounded-lg border border-gray-200 flex items-center justify-center flex-shrink-0">
-                      <svg
-                        className="w-4 h-4 text-[#3ECBA0]"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={1.8}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                        />
-                      </svg>
+                  {
+                    label: 'DuitNow QR',
+                    sub: 'Maybank MAE, CIMB, Bank Islam & all bank apps',
+                    color: '#ED0278',
+                    badge: 'National QR',
+                  },
+                  {
+                    label: "Touch 'n Go eWallet",
+                    sub: 'Direct e-wallet app checkout & QR scan',
+                    color: '#005BAC',
+                    badge: 'Direct e-Wallet',
+                  },
+                ].map(({ label, sub, color, badge }) => (
+                  <div key={label} className="flex items-center gap-3 p-3 bg-gray-50/80 rounded-2xl border border-gray-100">
+                    <div
+                      className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-white font-black text-xs shadow-sm"
+                      style={{ backgroundColor: color }}
+                    >
+                      {label.startsWith('Touch') ? (
+                        <span>TNG</span>
+                      ) : (
+                        <svg viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                      )}
                     </div>
-                    <div>
-                      <p className="text-[#111827] font-semibold text-xs">{label}</p>
-                      <p className="text-[#9CA3AF] text-xs">{sub}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-[#111827] font-bold text-xs truncate">{label}</p>
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white text-gray-600 border border-gray-200">
+                          {badge}
+                        </span>
+                      </div>
+                      <p className="text-[#9CA3AF] text-[11px] leading-tight truncate">{sub}</p>
                     </div>
                   </div>
                 ))}

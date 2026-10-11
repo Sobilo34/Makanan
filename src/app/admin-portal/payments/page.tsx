@@ -63,10 +63,9 @@ export default function PaymentsPage() {
   }, [loadPayments]);
 
   function formatMethod(m: string) {
-    if (m === 'card') return 'Credit Card';
-    if (m === 'online_banking') return 'Online Banking';
-    if (m === 'other') return 'eWallet';
-    return m || 'Online Banking';
+    if (m === 'tng_ewallet' || m === 'touch_n_go') return "Touch 'n Go eWallet";
+    if (m === 'duitnow_qr' || m === 'duitnow') return 'DuitNow QR';
+    return m ? m.replace(/_/g, ' ') : 'DuitNow QR';
   }
 
   const completed = transactions.filter((t) => t.status === 'completed');

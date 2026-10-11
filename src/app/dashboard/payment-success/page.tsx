@@ -21,6 +21,7 @@ function PaymentSuccessContent() {
   const price = searchParams?.get('price') || '0';
   const credits = searchParams?.get('credits') || '0';
   const planName = searchParams?.get('name') || 'Meal Plan';
+  const paymentMethod = searchParams?.get('method') || '';
 
   const [verifying, setVerifying] = useState(!!sessionId);
   const [verified, setVerified] = useState(!sessionId);
@@ -146,26 +147,49 @@ function PaymentSuccessContent() {
           </div>
 
           {/* Plan summary card */}
-          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm mb-8">
-            <h3 className="text-[#1A1A1A] font-bold text-base text-center mb-4">
-              Meal Plan Summary
-            </h3>
+          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm mb-8">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
+              <h3 className="text-gray-900 font-bold text-sm">
+                Payment Receipt
+              </h3>
+              <span
+                className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border"
+                style={{
+                  backgroundColor: paymentMethod === 'tng_ewallet' ? '#F0F9FF' : '#FDF2F8',
+                  color: paymentMethod === 'tng_ewallet' ? '#005BAC' : '#ED0278',
+                  borderColor: paymentMethod === 'tng_ewallet' ? '#BAE6FD' : '#FBCFE8',
+                }}
+              >
+                {paymentMethod === 'tng_ewallet' ? "Touch 'n Go eWallet" : "DuitNow QR"}
+              </span>
+            </div>
+
             <div className="flex items-center justify-center gap-8 mb-4">
               <div className="text-center">
-                <p className="text-[#9CA3AF] text-xs mb-1">Amount Paid</p>
-                <p className="text-[#1A1A1A] font-bold text-3xl">RM{price}</p>
+                <p className="text-gray-400 text-xs mb-1">Amount Paid</p>
+                <p className="text-gray-900 font-extrabold text-3xl">RM{parseFloat(price).toFixed(2)}</p>
               </div>
               <div className="w-px h-12 bg-gray-100" />
               <div className="text-center">
-                <p className="text-[#9CA3AF] text-xs mb-1">Meals Added</p>
-                <p className="text-[#3ECBA0] font-bold text-3xl">{credits}</p>
+                <p className="text-gray-400 text-xs mb-1">Meals Credited</p>
+                <p className="text-[#3ECBA0] font-extrabold text-3xl">{credits}</p>
               </div>
             </div>
-            <div className="border-t border-gray-100 pt-4 text-center">
-              <p className="text-[#6B7280] text-sm">{planName}</p>
-              <div className="flex items-center justify-center gap-1 mt-1">
+
+            <div className="border-t border-gray-100 pt-3 space-y-2 text-xs">
+              <div className="flex items-center justify-between text-gray-500">
+                <span>Plan:</span>
+                <span className="font-semibold text-gray-800">{planName}</span>
+              </div>
+              {sessionId && (
+                <div className="flex items-center justify-between text-gray-500 font-mono text-[11px]">
+                  <span>Reference:</span>
+                  <span className="font-medium text-gray-700">{sessionId}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-center gap-1.5 pt-2 text-[#3ECBA0]">
                 <svg
-                  className="w-3.5 h-3.5 text-[#3ECBA0]"
+                  className="w-4 h-4 text-[#3ECBA0]"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -173,8 +197,8 @@ function PaymentSuccessContent() {
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-[#3ECBA0] text-xs font-semibold">
-                  Credits added to wallet
+                <span className="text-xs font-bold">
+                  {credits} meals active in wallet
                 </span>
               </div>
             </div>

@@ -213,8 +213,10 @@ class ApiClient {
     return this.request<Meal>(`/meals/${id}`);
   }
 
-  // ── Payments (DuitNow QR & E-Wallets) ──────────────────────────────────────
-  async createPaymentOrder(planId: string, paymentMethod: string = 'duitnow_qr'): Promise<PaymentOrder> {
+  async createPaymentOrder(
+    planId: string,
+    paymentMethod: 'duitnow_qr' | 'tng_ewallet' = 'duitnow_qr'
+  ): Promise<PaymentOrder> {
     return this.request<PaymentOrder>('/payments/create-order', {
       method: 'POST',
       body: JSON.stringify({ plan_id: planId, payment_method: paymentMethod }),
