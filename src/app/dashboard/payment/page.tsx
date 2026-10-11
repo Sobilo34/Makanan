@@ -76,6 +76,40 @@ function PaymentContent() {
   // Active Payment Order State (Cashless Remittance Modal)
   const [activeOrder, setActiveOrder] = useState<PaymentOrder | null>(null);
   const [timeLeft, setTimeLeft] = useState(900); // 15 mins (900 seconds)
+  const [authorizing, setAuthorizing] = useState(false);
+  const [authStep, setAuthStep] = useState<string>('');
+
+  const handleAuthorizeSandboxPayment = async () => {
+    if (!activeOrder) return;
+    setAuthorizing(true);
+    setError('');
+    const isTng = activeOrder.payment_method === 'tng_ewallet';
+    setAuthStep(
+      isTng
+        ? "Connecting to Touch 'n Go eWallet & Verifying PIN..."
+        : "Authorizing bank transfer via DuitNow PayNet Rail..."
+    );
+
+    try {
+      await new Promise((r) => setTimeout(r, 650));
+      setAuthStep("Deducting eWallet balance & confirming transaction...");
+      await api.sandboxCompletePayment(activeOrder.reference_code);
+      setAuthStep("Payment Approved! Activating Meal Plan...");
+      await new Promise((r) => setTimeout(r, 450));
+      router.push(
+        `/dashboard/payment-success?price=${activeOrder.amount_myr}&credits=${activeOrder.credits}&name=${encodeURIComponent(
+          activeOrder.plan_name
+        )}&reference_code=${encodeURIComponent(activeOrder.reference_code)}&method=${encodeURIComponent(
+          activeOrder.payment_method
+        )}`
+      );
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Payment authorization failed. Please try again.';
+      setError(msg);
+      setAuthorizing(false);
+      setAuthStep('');
+    }
+  };
 
   const handleInitiatePayment = async () => {
     if (!planId) {
@@ -472,39 +506,130 @@ function PaymentContent() {
               </p>
             </div>
 
-            {/* Direct Action: Touch 'n Go App or HitPay Checkout */}
+            {/* Authentic Sandbox Clearance Card */}
+            {activeOrder.payment_method === 'tng_ewallet' ? (
+              <div className="bg-[#005BAC]/5 border border-[#005BAC]/20 rounded-2xl p-4 mb-3 text-left">
+                <div className="flex items-center justify-between mb-2.5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-[#005BAC] flex items-center justify-center text-white font-black text-xs">
+                      TNG
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-gray-900 leading-tight">Touch &apos;n Go Express Checkout</p>
+                      <p className="text-[10px] text-gray-500">HitPay Sandbox Test Mode</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-[#005BAC] bg-[#005BAC]/10 px-2 py-0.5 rounded-full">
+                    Ready to Authorize
+                  </span>
+                </div>
+                
+                <div className="bg-white rounded-xl p-2.5 border border-gray-100 mb-3 space-y-1 text-[11px] text-gray-600">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Merchant</span>
+                    <span className="font-semibold text-gray-800">Makanan Campus Dining</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Deduction</span>
+                    <span className="font-extrabold text-[#005BAC]">RM{activeOrder.amount_myr.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Account</span>
+                    <span className="font-medium text-gray-600">eWallet Balance (+60 1X-*** 8892)</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleAuthorizeSandboxPayment}
+                  disabled={authorizing}
+                  className="w-full bg-[#005BAC] hover:bg-[#004B8D] active:scale-[0.99] text-white font-bold py-3.5 rounded-xl text-xs transition-all shadow-md shadow-[#005BAC]/20 flex items-center justify-center gap-2 disabled:opacity-75"
+                >
+                  {authorizing ? (
+                    <>
+                      <svg className="w-4 h-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      <span className="font-semibold">{authStep}</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>Authorize RM{activeOrder.amount_myr.toFixed(2)} with Touch &apos;n Go eWallet</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div className="bg-[#ED0278]/5 border border-[#ED0278]/20 rounded-2xl p-4 mb-3 text-left">
+                <div className="flex items-center justify-between mb-2.5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-[#ED0278] flex items-center justify-center text-white">
+                      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-gray-900 leading-tight">DuitNow Bank Clearance</p>
+                      <p className="text-[10px] text-gray-500">National PayNet Rail (Sandbox)</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-[#ED0278] bg-[#ED0278]/10 px-2 py-0.5 rounded-full">
+                    Scan &amp; Pay Ready
+                  </span>
+                </div>
+
+                <button
+                  onClick={handleAuthorizeSandboxPayment}
+                  disabled={authorizing}
+                  className="w-full bg-[#ED0278] hover:bg-[#D0026A] active:scale-[0.99] text-white font-bold py-3.5 rounded-xl text-xs transition-all shadow-md shadow-[#ED0278]/20 flex items-center justify-center gap-2 disabled:opacity-75"
+                >
+                  {authorizing ? (
+                    <>
+                      <svg className="w-4 h-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      <span className="font-semibold">{authStep}</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>Authorize RM{activeOrder.amount_myr.toFixed(2)} via DuitNow (MAE/CIMB)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+
+            {/* HitPay Hosted Checkout Link */}
             {activeOrder.checkout_url && (
               <a
                 href={activeOrder.checkout_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full bg-gray-900 hover:bg-black text-white font-bold py-3.5 rounded-2xl text-xs mb-2.5 transition-all shadow-md flex items-center justify-center gap-2"
+                className="w-full bg-white hover:bg-gray-50 text-gray-600 font-medium py-2.5 rounded-xl text-xs border border-gray-200 transition-all flex items-center justify-center gap-1.5 mb-1.5"
               >
-                <span>
-                  {activeOrder.payment_method === 'tng_ewallet'
-                    ? "📱 Pay via Touch 'n Go / HitPay Checkout"
-                    : '💳 Pay via HitPay Hosted Checkout'}
-                </span>
-                <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <span>Open HitPay Hosted Checkout</span>
+                <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
               </a>
             )}
 
-            {/* Mobile App Deep-link if applicable */}
-            {activeOrder.deep_link_url && activeOrder.deep_link_url !== activeOrder.checkout_url && (
-              <a
-                href={activeOrder.deep_link_url}
-                className="w-full bg-[#005BAC] hover:bg-[#004B8D] text-white font-bold py-3 rounded-2xl text-xs mb-2.5 transition-colors flex items-center justify-center gap-2"
-              >
-                <span>Open Touch &apos;n Go App Directly</span>
-              </a>
-            )}
-
             {/* Cancel Button */}
             <button
-              onClick={() => setActiveOrder(null)}
-              className="w-full text-xs text-gray-400 hover:text-gray-600 font-semibold py-2 transition-colors mt-1"
+              onClick={() => {
+                setActiveOrder(null);
+                setAuthorizing(false);
+                setAuthStep('');
+              }}
+              disabled={authorizing}
+              className="w-full text-xs text-gray-400 hover:text-gray-600 font-semibold py-1.5 transition-colors"
             >
               Cancel and change payment method
             </button>
