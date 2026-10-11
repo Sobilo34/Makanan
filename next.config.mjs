@@ -9,6 +9,7 @@ const nextConfig = {
   },
   turbopack: {},
   images: {
+    unoptimized: true,
     remotePatterns: imageHosts,
   },
   async redirects() {
