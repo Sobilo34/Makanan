@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 import Link from 'next/link';
@@ -241,26 +241,27 @@ export default function WalletPage() {
   const [cancelError, setCancelError] = useState('');
   const [successRefund, setSuccessRefund] = useState<number | null>(null);
 
+  const fetchWalletData = useCallback(async () => {
+    try {
+      const walletData = await api.getStudentWallet();
+      if (walletData) {
+        setSubscription(walletData.active_subscription || null);
+        setTransactions(walletData.recent_transactions || []);
+      }
+    } catch (err) {
+      console.warn('FastAPI getStudentWallet error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!user) return;
-    const fetchData = async () => {
-      try {
-        const walletData = await api.getStudentWallet();
-        if (walletData) {
-          setSubscription(walletData.active_subscription || null);
-          setTransactions(walletData.recent_transactions || []);
-        }
-      } catch (err) {
-        console.warn('FastAPI getStudentWallet error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+    fetchWalletData();
 
-    const interval = setInterval(fetchData, 10000);
+    const interval = setInterval(fetchWalletData, 10000);
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user, fetchWalletData]);
 
   const creditsRemaining = subscription
     ? subscription.credits_total - subscription.credits_used
@@ -299,6 +300,7 @@ export default function WalletPage() {
         setSubscription(null);
         setShowCancelModal(false);
         setSuccessRefund(res.credits_refunded ?? 0);
+        await fetchWalletData();
       } else {
         setCancelError('Cancellation failed. Please try again.');
       }
