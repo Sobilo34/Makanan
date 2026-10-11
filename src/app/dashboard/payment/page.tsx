@@ -76,7 +76,6 @@ function PaymentContent() {
   // Active Payment Order State (Cashless Remittance Modal)
   const [activeOrder, setActiveOrder] = useState<PaymentOrder | null>(null);
   const [timeLeft, setTimeLeft] = useState(900); // 15 mins (900 seconds)
-  const [simulating, setSimulating] = useState(false);
 
   const handleInitiatePayment = async () => {
     if (!planId) {
@@ -145,25 +144,6 @@ function PaymentContent() {
 
     return () => clearInterval(interval);
   }, [activeOrder, router]);
-
-  const handleSimulateSuccess = async () => {
-    if (!activeOrder) return;
-    setSimulating(true);
-    try {
-      await api.simulatePaymentSuccess(activeOrder.reference_code);
-      router.push(
-        `/dashboard/payment-success?price=${activeOrder.amount_myr}&credits=${activeOrder.credits}&name=${encodeURIComponent(
-          activeOrder.plan_name
-        )}&reference_code=${encodeURIComponent(activeOrder.reference_code)}&method=${encodeURIComponent(
-          activeOrder.payment_method
-        )}`
-      );
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Simulation failed.';
-      setError(msg);
-      setSimulating(false);
-    }
-  };
 
   const copyReferenceCode = () => {
     if (!activeOrder) return;
@@ -521,31 +501,10 @@ function PaymentContent() {
               </a>
             )}
 
-            {/* Sandbox Simulation Button (Instant Test Remittance) */}
-            <button
-              onClick={handleSimulateSuccess}
-              disabled={simulating}
-              className="w-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 active:bg-emerald-200 border border-emerald-200/90 font-bold py-3 rounded-2xl text-xs mb-2.5 transition-colors flex items-center justify-center gap-2"
-            >
-              {simulating ? (
-                <>
-                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  <span>Simulating Bank Confirmation...</span>
-                </>
-              ) : (
-                <>
-                  <span>⚡ Simulate Payment Scan (Instant Test Mode)</span>
-                </>
-              )}
-            </button>
-
             {/* Cancel Button */}
             <button
               onClick={() => setActiveOrder(null)}
-              className="w-full text-xs text-gray-400 hover:text-gray-600 font-semibold py-2 transition-colors"
+              className="w-full text-xs text-gray-400 hover:text-gray-600 font-semibold py-2 transition-colors mt-1"
             >
               Cancel and change payment method
             </button>

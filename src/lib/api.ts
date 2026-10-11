@@ -229,13 +229,6 @@ class ApiClient {
     );
   }
 
-  async simulatePaymentSuccess(referenceCode: string) {
-    return this.request<{ success: boolean; subscription_id: string }>(
-      `/payments/simulate-success/${referenceCode}`,
-      { method: 'POST' }
-    );
-  }
-
   // ── Redemptions ────────────────────────────────────────────────────────────
   async redeemMeal(subscriptionId: string, mealId: string, partnerId?: string) {
     return this.request<{
