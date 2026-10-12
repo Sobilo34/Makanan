@@ -63,13 +63,18 @@ function PaymentContent() {
         return;
       }
 
+      if (!planId) {
+        throw new Error('No meal plan selected. Please return to the plans page and select a meal plan.');
+      }
+
       // Dynamic redirect URL targeting the exact origin (localhost:4028 or production)
       const redirectUrl = `${window.location.origin}/dashboard/payment-success`;
       const order = await api.createPaymentOrder(planId, selectedMethod, redirectUrl);
 
-      if (order && order.checkout_url) {
+      const targetUrl = order?.checkout_url || order?.deep_link_url;
+      if (targetUrl) {
         // Direct navigation to official HitPay Sandbox Hosted Checkout (No Mocks)
-        window.location.href = order.checkout_url;
+        window.location.href = targetUrl;
       } else {
         throw new Error('Unable to generate HitPay checkout URL. Please try again.');
       }
