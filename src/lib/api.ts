@@ -215,25 +215,30 @@ class ApiClient {
 
   async createPaymentOrder(
     planId: string,
-    paymentMethod: 'duitnow_qr' | 'tng_ewallet' = 'duitnow_qr'
+    paymentMethod: 'duitnow_qr' | 'tng_ewallet' = 'duitnow_qr',
+    redirectUrl?: string
   ): Promise<PaymentOrder> {
     return this.request<PaymentOrder>('/payments/create-order', {
       method: 'POST',
-      body: JSON.stringify({ plan_id: planId, payment_method: paymentMethod }),
+      body: JSON.stringify({
+        plan_id: planId,
+        payment_method: paymentMethod,
+        redirect_url: redirectUrl,
+      }),
     });
   }
 
   async getPaymentStatus(referenceCode: string) {
-    return this.request<{ reference_code: string; status: string; amount_myr: number; subscription_id?: string }>(
-      `/payments/status/${referenceCode}`
-    );
-  }
-
-  async confirmTouchNGoPayment(referenceCode: string) {
-    return this.request<{ success: boolean; subscription_id: string; payment_id: string; credits: number }>(
-      `/payments/sandbox-complete/${referenceCode}`,
-      { method: 'POST' }
-    );
+    return this.request<{
+      reference_code: string;
+      status: string;
+      amount_myr: number;
+      subscription_id?: string;
+      credits?: number;
+      plan_name?: string;
+      payment_method?: string;
+      paid_at?: string;
+    }>(`/payments/status/${referenceCode}`);
   }
 
   // ── Redemptions ────────────────────────────────────────────────────────────

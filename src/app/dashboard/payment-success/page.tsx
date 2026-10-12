@@ -26,6 +26,12 @@ function PaymentSuccessContent() {
   const [verifying, setVerifying] = useState(!!sessionId);
   const [verified, setVerified] = useState(!sessionId);
   const [verifyError, setVerifyError] = useState('');
+  const [paymentDetails, setPaymentDetails] = useState<{
+    amount_myr?: number;
+    credits?: number;
+    plan_name?: string;
+    payment_method?: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!sessionId || !user) {
@@ -37,12 +43,18 @@ function PaymentSuccessContent() {
     const verifyPayment = async () => {
       try {
         let attempts = 0;
-        const maxAttempts = 5;
+        const maxAttempts = 6;
 
         while (attempts < maxAttempts) {
           try {
             const status = await api.getPaymentStatus(sessionId);
             if (status.status === 'completed') {
+              setPaymentDetails({
+                amount_myr: status.amount_myr,
+                credits: status.credits,
+                plan_name: status.plan_name,
+                payment_method: status.payment_method,
+              });
               setVerified(true);
               setVerifying(false);
               return;
@@ -51,7 +63,7 @@ function PaymentSuccessContent() {
             // keep waiting
           }
           attempts++;
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1500));
         }
 
         setVerified(true);
@@ -147,62 +159,74 @@ function PaymentSuccessContent() {
           </div>
 
           {/* Plan summary card */}
-          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm mb-8">
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
-              <h3 className="text-gray-900 font-bold text-sm">
-                Payment Receipt
-              </h3>
-              <span
-                className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border"
-                style={{
-                  backgroundColor: paymentMethod === 'tng_ewallet' ? '#F0F9FF' : '#FDF2F8',
-                  color: paymentMethod === 'tng_ewallet' ? '#005BAC' : '#ED0278',
-                  borderColor: paymentMethod === 'tng_ewallet' ? '#BAE6FD' : '#FBCFE8',
-                }}
-              >
-                {paymentMethod === 'tng_ewallet' ? "Touch 'n Go eWallet" : "DuitNow QR"}
-              </span>
-            </div>
+          {(() => {
+            const displayPrice = paymentDetails?.amount_myr != null
+              ? paymentDetails.amount_myr.toFixed(2)
+              : parseFloat(price || '0').toFixed(2);
+            const displayCredits = paymentDetails?.credits ?? (credits || '0');
+            const displayPlanName = paymentDetails?.plan_name || planName || 'Meal Plan';
+            const displayMethod = paymentDetails?.payment_method || paymentMethod || 'tng_ewallet';
+            const isTng = displayMethod === 'tng_ewallet';
 
-            <div className="flex items-center justify-center gap-8 mb-4">
-              <div className="text-center">
-                <p className="text-gray-400 text-xs mb-1">Amount Paid</p>
-                <p className="text-gray-900 font-extrabold text-3xl">RM{parseFloat(price).toFixed(2)}</p>
-              </div>
-              <div className="w-px h-12 bg-gray-100" />
-              <div className="text-center">
-                <p className="text-gray-400 text-xs mb-1">Meals Credited</p>
-                <p className="text-[#3ECBA0] font-extrabold text-3xl">{credits}</p>
-              </div>
-            </div>
-
-            <div className="border-t border-gray-100 pt-3 space-y-2 text-xs">
-              <div className="flex items-center justify-between text-gray-500">
-                <span>Plan:</span>
-                <span className="font-semibold text-gray-800">{planName}</span>
-              </div>
-              {sessionId && (
-                <div className="flex items-center justify-between text-gray-500 font-mono text-[11px]">
-                  <span>Reference:</span>
-                  <span className="font-medium text-gray-700">{sessionId}</span>
+            return (
+              <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm mb-8">
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
+                  <h3 className="text-gray-900 font-bold text-sm">
+                    Payment Receipt
+                  </h3>
+                  <span
+                    className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border"
+                    style={{
+                      backgroundColor: isTng ? '#F0F9FF' : '#FDF2F8',
+                      color: isTng ? '#005BAC' : '#ED0278',
+                      borderColor: isTng ? '#BAE6FD' : '#FBCFE8',
+                    }}
+                  >
+                    {isTng ? "Touch 'n Go eWallet" : "DuitNow QR"}
+                  </span>
                 </div>
-              )}
-              <div className="flex items-center justify-center gap-1.5 pt-2 text-[#3ECBA0]">
-                <svg
-                  className="w-4 h-4 text-[#3ECBA0]"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2.5}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-xs font-bold">
-                  {credits} meals active in wallet
-                </span>
+
+                <div className="flex items-center justify-center gap-8 mb-4">
+                  <div className="text-center">
+                    <p className="text-gray-400 text-xs mb-1">Amount Paid</p>
+                    <p className="text-gray-900 font-extrabold text-3xl">RM{displayPrice}</p>
+                  </div>
+                  <div className="w-px h-12 bg-gray-100" />
+                  <div className="text-center">
+                    <p className="text-gray-400 text-xs mb-1">Meals Credited</p>
+                    <p className="text-[#3ECBA0] font-extrabold text-3xl">{displayCredits}</p>
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-100 pt-3 space-y-2 text-xs">
+                  <div className="flex items-center justify-between text-gray-500">
+                    <span>Plan:</span>
+                    <span className="font-semibold text-gray-800">{displayPlanName}</span>
+                  </div>
+                  {sessionId && (
+                    <div className="flex items-center justify-between text-gray-500 font-mono text-[11px]">
+                      <span>Reference:</span>
+                      <span className="font-medium text-gray-700">{sessionId}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-center gap-1.5 pt-2 text-[#3ECBA0]">
+                    <svg
+                      className="w-4 h-4 text-[#3ECBA0]"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-xs font-bold">
+                      {displayCredits} meals active in wallet
+                    </span>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Action buttons */}
           <div className="space-y-3">
